@@ -1,0 +1,12 @@
+# OS
+.DS_Store
+
+# Local state
+.autocodex/
+
+# Node
+node_modules/
+
+# Go build
+/bin/
+/dist/
