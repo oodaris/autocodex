@@ -3,6 +3,7 @@
 
 # Local state
 .autocodex/
+autocodex.yaml
 
 # Node
 node_modules/
