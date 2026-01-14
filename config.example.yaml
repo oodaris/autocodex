@@ -1,0 +1,58 @@
+version: v1
+mode: yolo
+
+codex:
+  cli_path: codex
+  model: gpt-5
+  timeout_seconds: 900
+  extra_args: []
+  # approval/sandbox are ignored when mode: yolo (yolo uses --yolo)
+  approval_policy: on-request
+  sandbox_mode: workspace-write
+
+paths:
+  state_dir: .autocodex
+  memory_dir: memory
+  logs_dir: logs
+  artifacts_dir: artifacts
+  runs_dir: runs
+
+skills:
+  paths:
+    - /Users/fatih/dev/oodaris_codex_skills/skills
+  allowlist: []
+  denylist: []
+
+plugins:
+  enabled: true
+  paths:
+    - plugins
+  timeout_seconds: 60
+
+api:
+  enabled: true
+  host: 127.0.0.1
+  port: 7788
+  base_path: /
+
+ui:
+  enabled: false
+  origin: http://localhost:5173
+
+beads:
+  enabled: true
+  auto_create: true
+  auto_update: true
+
+logging:
+  level: info
+  format: json
+
+loop:
+  max_iterations: 50
+  phases:
+    - ideate
+    - plan
+    - implement
+    - review
+    - test

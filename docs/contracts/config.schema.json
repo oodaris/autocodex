@@ -1,0 +1,112 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/autocodex/config.schema.json",
+  "title": "Autocodex Config",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "mode"],
+  "properties": {
+    "version": {
+      "type": "string",
+      "enum": ["v1"]
+    },
+    "mode": {
+      "type": "string",
+      "enum": ["yolo", "safe"],
+      "default": "yolo"
+    },
+    "codex": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "cli_path": {"type": "string", "default": "codex"},
+        "model": {"type": "string"},
+        "timeout_seconds": {"type": "integer", "minimum": 1, "default": 900},
+        "extra_args": {"type": "array", "items": {"type": "string"}, "default": []},
+        "approval_policy": {"type": "string", "enum": ["untrusted", "on-failure", "on-request", "never"], "default": "on-request"},
+        "sandbox_mode": {"type": "string", "enum": ["read-only", "workspace-write", "danger-full-access"], "default": "workspace-write"},
+        "env": {
+          "type": "object",
+          "additionalProperties": {"type": "string"},
+          "default": {}
+        }
+      }
+    },
+    "paths": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "state_dir": {"type": "string", "default": ".autocodex"},
+        "memory_dir": {"type": "string", "default": "memory"},
+        "logs_dir": {"type": "string", "default": "logs"},
+        "artifacts_dir": {"type": "string", "default": "artifacts"},
+        "runs_dir": {"type": "string", "default": "runs"}
+      }
+    },
+    "skills": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "paths": {"type": "array", "items": {"type": "string"}, "default": []},
+        "allowlist": {"type": "array", "items": {"type": "string"}, "default": []},
+        "denylist": {"type": "array", "items": {"type": "string"}, "default": []}
+      }
+    },
+    "plugins": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {"type": "boolean", "default": true},
+        "paths": {"type": "array", "items": {"type": "string"}, "default": ["plugins"]},
+        "timeout_seconds": {"type": "integer", "minimum": 1, "default": 60}
+      }
+    },
+    "api": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {"type": "boolean", "default": true},
+        "host": {"type": "string", "default": "127.0.0.1"},
+        "port": {"type": "integer", "minimum": 1, "maximum": 65535, "default": 7788},
+        "base_path": {"type": "string", "default": "/"}
+      }
+    },
+    "ui": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {"type": "boolean", "default": false},
+        "origin": {"type": "string"}
+      }
+    },
+    "beads": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {"type": "boolean", "default": true},
+        "auto_create": {"type": "boolean", "default": true},
+        "auto_update": {"type": "boolean", "default": true}
+      }
+    },
+    "logging": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "level": {"type": "string", "enum": ["debug", "info", "warn", "error"], "default": "info"},
+        "format": {"type": "string", "enum": ["json"], "default": "json"}
+      }
+    },
+    "loop": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "max_iterations": {"type": "integer", "minimum": 1, "default": 50},
+        "phases": {
+          "type": "array",
+          "items": {"type": "string", "enum": ["ideate", "plan", "implement", "review", "test"]},
+          "default": ["ideate", "plan", "implement", "review", "test"]
+        }
+      }
+    }
+  }
+}

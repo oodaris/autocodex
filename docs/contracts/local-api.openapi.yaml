@@ -1,0 +1,154 @@
+openapi: 3.1.0
+info:
+  title: Autocodex Local API
+  version: v1
+  description: Local API for run status, events, and artifacts.
+servers:
+  - url: http://127.0.0.1:7788
+paths:
+  /health:
+    get:
+      summary: Health check
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  status: { type: string }
+                  time: { type: string, format: date-time }
+  /runs:
+    get:
+      summary: List runs
+      responses:
+        '200':
+          description: List of runs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RunSummary'
+  /runs/{run_id}:
+    get:
+      summary: Get run detail
+      parameters:
+        - name: run_id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Run detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RunDetail'
+        '404':
+          description: Not found
+  /runs/{run_id}/events:
+    get:
+      summary: List run events
+      parameters:
+        - name: run_id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Run events
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RunEvent'
+  /runs/{run_id}/artifacts:
+    get:
+      summary: List run artifacts
+      parameters:
+        - name: run_id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Run artifacts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ArtifactSummary'
+  /artifacts/{artifact_id}:
+    get:
+      summary: Get artifact detail
+      parameters:
+        - name: artifact_id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Artifact detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ArtifactDetail'
+        '404':
+          description: Not found
+components:
+  schemas:
+    RunSummary:
+      type: object
+      additionalProperties: false
+      properties:
+        id: { type: string }
+        status: { type: string, enum: [queued, running, completed, failed, canceled] }
+        current_phase: { type: string, enum: [ideate, plan, implement, review, test] }
+        started_at: { type: string, format: date-time }
+        finished_at: { type: string, format: date-time, nullable: true }
+        iterations: { type: integer }
+    RunDetail:
+      allOf:
+        - $ref: '#/components/schemas/RunSummary'
+        - type: object
+          additionalProperties: false
+          properties:
+            config_hash: { type: string }
+            events_count: { type: integer }
+            artifacts_count: { type: integer }
+            last_error: { type: string, nullable: true }
+    RunEvent:
+      type: object
+      additionalProperties: false
+      properties:
+        id: { type: string }
+        run_id: { type: string }
+        ts: { type: string, format: date-time }
+        type: { type: string }
+        phase: { type: string, enum: [ideate, plan, implement, review, test] }
+        message: { type: string }
+        metadata: { type: object }
+    ArtifactSummary:
+      type: object
+      additionalProperties: false
+      properties:
+        id: { type: string }
+        run_id: { type: string }
+        name: { type: string }
+        type: { type: string }
+        path: { type: string }
+        created_at: { type: string, format: date-time }
+    ArtifactDetail:
+      allOf:
+        - $ref: '#/components/schemas/ArtifactSummary'
+        - type: object
+          additionalProperties: false
+          properties:
+            size_bytes: { type: integer }
+            checksum: { type: string }
+            content_url: { type: string }
