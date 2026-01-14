@@ -1,12 +1,15 @@
 # Autocodex Engineering Playbook
 
-This repo contains an open-source Codex autorunner with a Go CLI + local API and a React/Vite UI.
+This repo contains an open-source Codex autorunner with a Go CLI, local API, and a React/Vite UI.
+
+AGENTS.md is the agent-focused companion to README. Keep it short, prescriptive, and aligned with the golden workflow.
 
 ## Skills invocation
 - Use **core-qna-synthesis** for multi-part or ambiguous questions.
 - Use **core-holistic-planning-and-tracking** for planning and Beads creation.
 - Use **core-ask-questions-if-underspecified** when required inputs are missing.
 - Use **eng-code-review-playbook** for formal reviews.
+- Prefer repo-local skills in `skills/` over external/private skills.
 
 ## 0) Beads-first workflow (bd)
 - Use `bd` as the single source of truth for tasks and coordination.
@@ -39,22 +42,42 @@ Notes:
 Plan → Contracts → Code → Tests → Docs → Rollout
 
 ## 2) Project overview
-- **CLI**: Go (Cobra) for orchestration and Codex CLI integration.
+- **CLI**: Go (standard library flags) for orchestration and Codex CLI integration.
 - **Local API**: Go HTTP server for status/events/UI integration.
 - **UI**: React + Vite (deployable to Vercel).
-- **Plugins**: External processes with a manifest + RPC protocol (cross-platform, versioned).
+- **Plugins**: External processes with a manifest + JSON-RPC (stdio) protocol.
 - **State**: Repo-local markdown memory + JSONL logs.
 
-## 3) Commands (initial)
+## 3) Commands
 - Go tests: `go test ./...`
-- Go lint (when configured): `golangci-lint run ./...`
+- Go vet: `go vet ./...`
+- Go fmt: `gofmt -w $(rg --files -g '*.go')`
 - UI dev (when configured): `cd web && npm i && npm run dev`
 - UI build: `cd web && npm run build`
 
 ## 4) Observability
-- Structured JSON logs with: `trace_id, route, status, latency_ms` (+ task/bead ids when applicable).
-- Emit RED/USE metrics where meaningful (API + worker loop).
+- Structured JSON logs with: `trace_id, tenant_id, route, status, latency_ms`.
+- Log to stderr for diagnostics; stdout reserved for primary command output.
 
-## 5) Security
+## 5) Safety
 - No secrets in repo; use `.env` and document vars in `.env.example`.
 - Yolo mode must be explicit in config and surfaced in UX/CLI warnings.
+- Local API must bind to localhost only by default.
+
+## 6) Plugin rules
+- Plugins are external processes discovered via `plugin.yaml|json`.
+- JSON-RPC over stdio is the v1 transport.
+- Plugin manifests must declare protocol_version = 1 and capability names.
+
+## 7) Skill registry (public subset)
+These skills are vendored under `skills/` for public use in this repo:
+- `core-ask-questions-if-underspecified`
+- `core-qna-synthesis`
+- `core-holistic-planning-and-tracking`
+- `eng-go-cli-developer`
+- `eng-go-developer`
+- `eng-code-review-playbook`
+- `eng-smart-test-runner`
+- `eng-conventional-commit-helper`
+
+If a task needs a new skill, add a public-safe version under `skills/` and update this list.
