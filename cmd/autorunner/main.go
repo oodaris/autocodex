@@ -6,12 +6,15 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"net"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
 
+	"github.com/oodaris/autocodex/internal/api"
 	"github.com/oodaris/autocodex/internal/codex"
 	"github.com/oodaris/autocodex/internal/config"
 	"github.com/oodaris/autocodex/internal/logging"
@@ -39,6 +42,8 @@ func main() {
 		runBeads(os.Args[2:])
 	case "plugins":
 		runPlugins(os.Args[2:])
+	case "api":
+		runAPI(os.Args[2:])
 	case "config":
 		runConfig(os.Args[2:])
 	default:
@@ -49,7 +54,7 @@ func main() {
 
 func usage() {
 	fmt.Println("Usage: autorunner <command> [args]")
-	fmt.Println("Commands: init, run, status, beads, plugins, config")
+	fmt.Println("Commands: init, run, status, beads, plugins, api, config")
 }
 
 func runInit(args []string) {
@@ -157,13 +162,6 @@ func runBeads(args []string) {
 	}
 }
 
-func runConfig(args []string) {
-	fs := flag.NewFlagSet("config", flag.ExitOnError)
-	configPath := fs.String("config", config.ResolveConfigPath(), "Config file path")
-	fs.Parse(args)
-	fmt.Printf("Config path: %s\n", *configPath)
-}
-
 func runPlugins(args []string) {
 	fs := flag.NewFlagSet("plugins", flag.ExitOnError)
 	action := fs.String("action", "list", "Action: list|run")
@@ -245,6 +243,63 @@ func runPlugins(args []string) {
 	}
 }
 
+func runAPI(args []string) {
+	fs := flag.NewFlagSet("api", flag.ExitOnError)
+	action := fs.String("action", "serve", "Action: serve")
+	configPath := fs.String("config", config.ResolveConfigPath(), "Config file path")
+	fs.Parse(args)
+
+	if *action != "serve" {
+		exitErr(fmt.Errorf("unknown action: %s", *action))
+	}
+
+	cfg, err := config.Load(*configPath)
+	if err != nil {
+		exitErr(err)
+	}
+	if !cfg.API.Enabled {
+		exitErr(errors.New("api is disabled in config"))
+	}
+
+	logger := logging.NewLogger(cfg.Logging.Level)
+	store := state.NewStore(cfg.StateDir(), cfg.RunsDir(), cfg.MemoryDir(), cfg.LogsDir(), cfg.ArtifactsDir())
+	if err := store.InitDirs(); err != nil {
+		exitErr(err)
+	}
+
+	server := &api.Server{Store: store, Logger: logger}
+	addr := net.JoinHostPort(cfg.API.Host, fmt.Sprintf("%d", cfg.API.Port))
+	logger.Info("api server starting", "route", "/", "status", "starting", "latency_ms", 0, "addr", addr)
+	if err := http.ListenAndServe(addr, server.Handler()); err != nil {
+		exitErr(err)
+	}
+}
+
+func runConfig(args []string) {
+	fs := flag.NewFlagSet("config", flag.ExitOnError)
+	configPath := fs.String("config", config.ResolveConfigPath(), "Config file path")
+	fs.Parse(args)
+	fmt.Printf("Config path: %s\n", *configPath)
+}
+
+func ensureConfig(path string) error {
+	if _, err := os.Stat(path); err == nil {
+		return nil
+	} else if !errors.Is(err, os.ErrNotExist) {
+		return err
+	}
+
+	examplePath := filepath.Join("config.example.yaml")
+	data, err := os.ReadFile(examplePath)
+	if err != nil {
+		return fmt.Errorf("read config.example.yaml: %w", err)
+	}
+	if err := os.WriteFile(path, data, 0o644); err != nil {
+		return fmt.Errorf("write %s: %w", path, err)
+	}
+	return nil
+}
+
 func resolveInput(input, inputFile string) (json.RawMessage, error) {
 	if inputFile != "" {
 		data, err := os.ReadFile(inputFile)
@@ -272,24 +327,6 @@ func writeJSON(v interface{}) {
 	enc := json.NewEncoder(os.Stdout)
 	enc.SetEscapeHTML(false)
 	_ = enc.Encode(v)
-}
-
-func ensureConfig(path string) error {
-	if _, err := os.Stat(path); err == nil {
-		return nil
-	} else if !errors.Is(err, os.ErrNotExist) {
-		return err
-	}
-
-	examplePath := filepath.Join("config.example.yaml")
-	data, err := os.ReadFile(examplePath)
-	if err != nil {
-		return fmt.Errorf("read config.example.yaml: %w", err)
-	}
-	if err := os.WriteFile(path, data, 0o644); err != nil {
-		return fmt.Errorf("write %s: %w", path, err)
-	}
-	return nil
 }
 
 func exitErr(err error) {

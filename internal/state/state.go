@@ -1,13 +1,17 @@
 package state
 
 import (
+	"bufio"
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 	"time"
 )
 
@@ -36,6 +40,17 @@ type RunEvent struct {
 	Phase   string            `json:"phase"`
 	Message string            `json:"message"`
 	Meta    map[string]string `json:"meta"`
+}
+
+type Artifact struct {
+	ID        string    `json:"id"`
+	RunID     string    `json:"run_id"`
+	Name      string    `json:"name"`
+	Type      string    `json:"type"`
+	Path      string    `json:"path"`
+	CreatedAt time.Time `json:"created_at"`
+	SizeBytes int64     `json:"size_bytes"`
+	Checksum  string    `json:"checksum"`
 }
 
 func NewStore(stateDir, runsDir, memoryDir, logsDir, artifactsDir string) *Store {
@@ -153,8 +168,132 @@ func (s *Store) ListRuns() ([]Run, error) {
 	return runs, nil
 }
 
+func (s *Store) GetRun(id string) (Run, error) {
+	path := filepath.Join(s.RunsDir, id, "run.json")
+	data, err := os.ReadFile(path)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return Run{}, fmt.Errorf("run not found")
+		}
+		return Run{}, fmt.Errorf("read run: %w", err)
+	}
+	var run Run
+	if err := json.Unmarshal(data, &run); err != nil {
+		return Run{}, fmt.Errorf("parse run: %w", err)
+	}
+	return run, nil
+}
+
+func (s *Store) ListEvents(runID string) ([]RunEvent, error) {
+	path := s.eventsPath(runID)
+	file, err := os.Open(path)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return []RunEvent{}, nil
+		}
+		return nil, fmt.Errorf("open events: %w", err)
+	}
+	defer file.Close()
+
+	return decodeEvents(file)
+}
+
+func (s *Store) ListArtifacts(runID string) ([]Artifact, error) {
+	dir := filepath.Join(s.RunsDir, runID, "artifacts")
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return []Artifact{}, nil
+		}
+		return nil, fmt.Errorf("read artifacts dir: %w", err)
+	}
+	var artifacts []Artifact
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
+		}
+		info, err := entry.Info()
+		if err != nil {
+			continue
+		}
+		name := entry.Name()
+		artifact := Artifact{
+			ID:        artifactID(runID, name),
+			RunID:     runID,
+			Name:      name,
+			Type:      artifactType(name),
+			Path:      filepath.Join(dir, name),
+			CreatedAt: info.ModTime().UTC(),
+			SizeBytes: info.Size(),
+		}
+		artifacts = append(artifacts, artifact)
+	}
+	return artifacts, nil
+}
+
+func (s *Store) GetArtifact(id string) (Artifact, error) {
+	runID, name, err := parseArtifactID(id)
+	if err != nil {
+		return Artifact{}, err
+	}
+	path := filepath.Join(s.RunsDir, runID, "artifacts", name)
+	info, err := os.Stat(path)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return Artifact{}, fmt.Errorf("artifact not found")
+		}
+		return Artifact{}, fmt.Errorf("stat artifact: %w", err)
+	}
+	return Artifact{
+		ID:        id,
+		RunID:     runID,
+		Name:      name,
+		Type:      artifactType(name),
+		Path:      path,
+		CreatedAt: info.ModTime().UTC(),
+		SizeBytes: info.Size(),
+	}, nil
+}
+
 func (s *Store) eventsPath(runID string) string {
 	return filepath.Join(s.LogsDir, runID+".jsonl")
+}
+
+func decodeEvents(r io.Reader) ([]RunEvent, error) {
+	scanner := bufio.NewScanner(r)
+	var events []RunEvent
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if line == "" {
+			continue
+		}
+		var event RunEvent
+		if err := json.Unmarshal([]byte(line), &event); err != nil {
+			continue
+		}
+		events = append(events, event)
+	}
+	return events, scanner.Err()
+}
+
+func artifactID(runID, name string) string {
+	return runID + ":" + name
+}
+
+func parseArtifactID(id string) (string, string, error) {
+	parts := strings.SplitN(id, ":", 2)
+	if len(parts) != 2 {
+		return "", "", fmt.Errorf("invalid artifact id")
+	}
+	return parts[0], parts[1], nil
+}
+
+func artifactType(name string) string {
+	ext := strings.ToLower(filepath.Ext(name))
+	if ext != "" {
+		return strings.TrimPrefix(ext, ".")
+	}
+	return "file"
 }
 
 func trimExt(name string) string {
