@@ -6,18 +6,49 @@ version: 0.1.0
 
 # Go CLI Developer
 
-## Principles
-- Thin CLI, reusable packages.
-- Logs/errors go to stderr; output to stdout.
-- Stable machine-readable output (JSON) when applicable.
+## Repo anchors (Autocodex)
+- CLI_PATH: `cmd/autorunner/`
+- INTERNAL_PATH: `internal/`
+- TEST_COMMANDS
+  - `go test ./...`
+  - `go vet ./...`
+  - `gofmt -w $(rg --files -g '*.go')`
+
+## When to use
+- Adding or modifying CLI commands or flags.
+
+## Preconditions
+- CLI goals and expected workflows are defined.
+- If contracts must change, STOP and update contracts first.
+
+## Inputs to confirm
+- Command structure and flags
+- Expected outputs (human vs JSON)
+- Exit code semantics
+
+## Required artifacts
+- Deterministic CLI behavior
+- Help text or examples for new commands
+- Tests for parsing or core flows
+
+## Quick path
+- Define flags and output format.
+- Keep CLI thin; move logic to packages.
+- Add tests.
 
 ## Steps
-1) Define commands and flags.
-2) Keep command handlers small.
-3) Add tests for parsing and output.
-4) Document help/examples.
+1) Implement CLI parsing.
+2) Delegate to internal packages.
+3) Ensure stdout is for output, stderr for logs/errors.
+4) Add tests for parsing/output.
 
-## Required checks
-- `gofmt -w $(rg --files -g '*.go')`
-- `go test ./...`
-- `go vet ./...`
+## Failure modes and responses
+- **Unclear UX**: ask for expected CLI workflow.
+- **Unstable output**: add JSON output and tests.
+
+## Definition of done
+- CLI is deterministic, documented, and tested.
+
+## Example (minimal)
+- **Command**: `autorunner plugins --action list`
+- **Output**: JSON list of plugins.

@@ -6,16 +6,47 @@ version: 0.1.0
 
 # Interpretive Q&A Synthesis
 
-Use for multi-part or ambiguous questions. Produce practical recommendations.
+## Repo anchors (Autocodex)
+- CLI_PATH: `cmd/autorunner/`
+- INTERNAL_PATH: `internal/`
+- DOCS_PATH: `docs/`
+- SKILLS_PATH: `skills/`
+
+## When to use
+- The user asks multiple related questions or a vague “big” question.
+
+## Preconditions
+- The questions are visible in the thread.
+- If critical inputs are missing, STOP and use core-ask-questions-if-underspecified.
+
+## Inputs to confirm
+- Primary goal and success criteria
+- Constraints (time, environment, tooling)
+
+## Required artifacts
+- Refined question list
+- Practical answers with explicit assumptions
+- Recommended next steps
+
+## Quick path
+- Restate and cluster questions.
+- Add missing questions.
+- Answer with assumptions and tradeoffs.
+- Provide 3–7 concrete next steps.
 
 ## Steps
-1) Restate and cluster questions.
-2) Expand missing questions (minimize scope).
-3) Answer with clear assumptions and tradeoffs.
-4) Provide 3–7 concrete next steps.
+1) Restate and group questions.
+2) Expand missing-but-required questions.
+3) Answer each question clearly.
+4) Provide recommendations and next steps.
 
-## Deep Mode
-If the user requests “deep”, include:
-- Assumption log
-- Evidence checklist
-- Risk register
+## Failure modes and responses
+- **Over-expansion**: keep added questions minimal.
+- **Abstract answers**: replace with concrete actions.
+
+## Definition of done
+- Questions are refined and answered with practical guidance.
+
+## Example (minimal)
+- **Input**: “How should the plugin system work?”
+- **Output**: Protocol choice, manifest rules, call flow, and next steps.
