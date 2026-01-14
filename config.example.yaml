@@ -4,6 +4,7 @@ mode: yolo
 codex:
   cli_path: codex
   model: gpt-5
+  reasoning_effort: high
   timeout_seconds: 900
   extra_args: []
   # approval/sandbox are ignored when mode: yolo (yolo uses --yolo)

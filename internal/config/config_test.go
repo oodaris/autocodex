@@ -21,6 +21,9 @@ func TestLoadAppliesDefaults(t *testing.T) {
 	if cfg.Codex.CLIPath == "" {
 		t.Fatalf("expected codex cli path default")
 	}
+	if cfg.Codex.ReasoningEffort == "" {
+		t.Fatalf("expected codex reasoning effort default")
+	}
 	if cfg.Paths.StateDir == "" {
 		t.Fatalf("expected state dir default")
 	}

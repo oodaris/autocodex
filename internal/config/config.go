@@ -33,13 +33,14 @@ type Config struct {
 }
 
 type CodexConfig struct {
-	CLIPath        string            `yaml:"cli_path"`
-	Model          string            `yaml:"model"`
-	TimeoutSeconds int               `yaml:"timeout_seconds"`
-	ExtraArgs      []string          `yaml:"extra_args"`
-	ApprovalPolicy string            `yaml:"approval_policy"`
-	SandboxMode    string            `yaml:"sandbox_mode"`
-	Env            map[string]string `yaml:"env"`
+	CLIPath         string            `yaml:"cli_path"`
+	Model           string            `yaml:"model"`
+	ReasoningEffort string            `yaml:"reasoning_effort"`
+	TimeoutSeconds  int               `yaml:"timeout_seconds"`
+	ExtraArgs       []string          `yaml:"extra_args"`
+	ApprovalPolicy  string            `yaml:"approval_policy"`
+	SandboxMode     string            `yaml:"sandbox_mode"`
+	Env             map[string]string `yaml:"env"`
 }
 
 type PathsConfig struct {
@@ -122,6 +123,9 @@ func (c *Config) ApplyDefaults() {
 	if c.Codex.TimeoutSeconds == 0 {
 		c.Codex.TimeoutSeconds = 900
 	}
+	if c.Codex.ReasoningEffort == "" {
+		c.Codex.ReasoningEffort = "high"
+	}
 	if c.Codex.ExtraArgs == nil {
 		c.Codex.ExtraArgs = []string{}
 	}
@@ -202,6 +206,11 @@ func (c Config) Validate() error {
 	if c.Codex.SandboxMode != "" {
 		if !oneOf(c.Codex.SandboxMode, []string{"read-only", "workspace-write", "danger-full-access"}) {
 			return fmt.Errorf("invalid codex.sandbox_mode: %s", c.Codex.SandboxMode)
+		}
+	}
+	if c.Codex.ReasoningEffort != "" {
+		if !oneOf(c.Codex.ReasoningEffort, []string{"minimal", "low", "medium", "high", "xhigh"}) {
+			return fmt.Errorf("invalid codex.reasoning_effort: %s", c.Codex.ReasoningEffort)
 		}
 	}
 	if c.API.Port < 1 || c.API.Port > 65535 {

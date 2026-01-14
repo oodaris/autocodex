@@ -10,14 +10,15 @@ import (
 )
 
 type Runner struct {
-	CLIPath        string
-	Model          string
-	ExtraArgs      []string
-	Mode           string
-	ApprovalPolicy string
-	SandboxMode    string
-	Timeout        time.Duration
-	Env            map[string]string
+	CLIPath         string
+	Model           string
+	ReasoningEffort string
+	ExtraArgs       []string
+	Mode            string
+	ApprovalPolicy  string
+	SandboxMode     string
+	Timeout         time.Duration
+	Env             map[string]string
 }
 
 func (r Runner) Exec(ctx context.Context, prompt string) (string, error) {
@@ -28,6 +29,9 @@ func (r Runner) Exec(ctx context.Context, prompt string) (string, error) {
 	args := []string{"exec", prompt}
 	if r.Model != "" {
 		args = append(args, "--model", r.Model)
+	}
+	if r.ReasoningEffort != "" {
+		args = append(args, "-c", fmt.Sprintf(`reasoning.effort=%q`, r.ReasoningEffort))
 	}
 
 	args = append(args, modeFlags(r.Mode, r.ApprovalPolicy, r.SandboxMode)...)

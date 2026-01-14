@@ -96,14 +96,15 @@ func runRun(args []string) {
 	store := state.NewStore(cfg.StateDir(), cfg.RunsDir(), cfg.MemoryDir(), cfg.LogsDir(), cfg.ArtifactsDir())
 	loader := skills.Loader{Paths: cfg.Skills.Paths}
 	runner := codex.Runner{
-		CLIPath:        cfg.Codex.CLIPath,
-		Model:          cfg.Codex.Model,
-		ExtraArgs:      cfg.Codex.ExtraArgs,
-		Mode:           cfg.Mode,
-		ApprovalPolicy: cfg.Codex.ApprovalPolicy,
-		SandboxMode:    cfg.Codex.SandboxMode,
-		Timeout:        time.Duration(cfg.Codex.TimeoutSeconds) * time.Second,
-		Env:            cfg.Codex.Env,
+		CLIPath:         cfg.Codex.CLIPath,
+		Model:           cfg.Codex.Model,
+		ReasoningEffort: cfg.Codex.ReasoningEffort,
+		ExtraArgs:       cfg.Codex.ExtraArgs,
+		Mode:            cfg.Mode,
+		ApprovalPolicy:  cfg.Codex.ApprovalPolicy,
+		SandboxMode:     cfg.Codex.SandboxMode,
+		Timeout:         time.Duration(cfg.Codex.TimeoutSeconds) * time.Second,
+		Env:             cfg.Codex.Env,
 	}
 
 	orch := orchestrator.Orchestrator{
