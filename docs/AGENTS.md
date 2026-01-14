@@ -79,5 +79,7 @@ These skills are vendored under `skills/` for public use in this repo:
 - `eng-code-review-playbook`
 - `eng-smart-test-runner`
 - `eng-conventional-commit-helper`
+- `eng-plugin-authoring`
+- `eng-ui-vite-react`
 
 If a task needs a new skill, add a public-safe version under `skills/` and update this list.

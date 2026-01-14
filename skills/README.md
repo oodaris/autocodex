@@ -19,3 +19,5 @@ Each skill lives under `skills/<skill-name>/SKILL.md`.
 - eng-code-review-playbook
 - eng-smart-test-runner
 - eng-conventional-commit-helper
+- eng-plugin-authoring
+- eng-ui-vite-react
