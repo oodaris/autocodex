@@ -12,13 +12,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/fatih/autocodex/internal/codex"
-	"github.com/fatih/autocodex/internal/config"
-	"github.com/fatih/autocodex/internal/logging"
-	"github.com/fatih/autocodex/internal/orchestrator"
-	"github.com/fatih/autocodex/internal/plugins"
-	"github.com/fatih/autocodex/internal/skills"
-	"github.com/fatih/autocodex/internal/state"
+	"github.com/oodaris/autocodex/internal/codex"
+	"github.com/oodaris/autocodex/internal/config"
+	"github.com/oodaris/autocodex/internal/logging"
+	"github.com/oodaris/autocodex/internal/orchestrator"
+	"github.com/oodaris/autocodex/internal/plugins"
+	"github.com/oodaris/autocodex/internal/skills"
+	"github.com/oodaris/autocodex/internal/state"
 )
 
 func main() {

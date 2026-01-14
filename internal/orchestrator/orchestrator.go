@@ -11,10 +11,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/fatih/autocodex/internal/codex"
-	"github.com/fatih/autocodex/internal/config"
-	"github.com/fatih/autocodex/internal/skills"
-	"github.com/fatih/autocodex/internal/state"
+	"github.com/oodaris/autocodex/internal/codex"
+	"github.com/oodaris/autocodex/internal/config"
+	"github.com/oodaris/autocodex/internal/skills"
+	"github.com/oodaris/autocodex/internal/state"
 )
 
 type Orchestrator struct {

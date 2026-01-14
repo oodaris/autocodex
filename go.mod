@@ -1,4 +1,4 @@
-module github.com/fatih/autocodex
+module github.com/oodaris/autocodex
 
 go 1.22
 
