@@ -1,0 +1,33 @@
+{
+  "version": "1.0",
+  "generated_at": "2026-01-15T12:00:00Z",
+  "source_plan": "docs/plans/example-plan.md",
+  "tasks": [
+    {
+      "id": "autocodex-6kv",
+      "title": "autonomy contracts + templates",
+      "goal": "Define spec/plan templates and ACTIONS schema for autonomy loop.",
+      "scope": ["docs/contracts", "docs/specs", "docs/plans"],
+      "files": [
+        "docs/contracts/autonomy-actions.schema.json",
+        "docs/contracts/autonomy-tasks.schema.json",
+        "docs/specs/TEMPLATE.md",
+        "docs/plans/TEMPLATE.md"
+      ],
+      "dependencies": [],
+      "skills": ["core-holistic-planning-and-tracking"],
+      "acceptance_criteria": [
+        "Templates exist and are referenced in docs.",
+        "ACTIONS schema validates against example payloads."
+      ],
+      "tests": ["go test ./internal/contracts -run TestAutonomySchemas"],
+      "docs": ["docs/contracts/README.md"],
+      "rollout": "N/A",
+      "observability": "N/A",
+      "status": "todo",
+      "priority": 1,
+      "owner": "conqueror",
+      "notes": "Contract-first."
+    }
+  ]
+}

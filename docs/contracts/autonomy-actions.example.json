@@ -1,0 +1,25 @@
+{
+  "version": "1.0",
+  "summary": "Starting autonomy contracts and marking the bead in progress.",
+  "next": {
+    "type": "bead",
+    "id": "autocodex-6kv",
+    "reason": "First dependency-free bead in the plan."
+  },
+  "updates": {
+    "beads": [
+      {
+        "id": "autocodex-6kv",
+        "status": "in_progress",
+        "note": "Generating contracts and templates."
+      }
+    ]
+  },
+  "create_beads": [],
+  "gates": {
+    "review_required": true,
+    "tests": ["go test ./internal/contracts -run TestAutonomySchemas"],
+    "blocking": true
+  },
+  "stop": null
+}
