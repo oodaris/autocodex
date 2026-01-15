@@ -112,6 +112,9 @@ autocodex snapshot <run-id> --reason "handoff"
 ## Troubleshooting
 - `codex` not found: set `codex.cli_path` in `autocodex.yaml`.
 - API 401: set `auth.enabled: true` and provide `auth.token_env` or `auth.tokens`.
+- API 404 at `/`: ensure `api.base_path` is `/` and hit `/health` for a quick check.
+- UI shows zero runs: confirm `autocodex api` is running and `ui.origin` matches the UI URL.
+- Hub shows “hub not enabled”: set `hub.enabled: true` (or add workspaces in `autocodex.yaml`).
 
 ## Development
 - Tests: `go test ./...`
