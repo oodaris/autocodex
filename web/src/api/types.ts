@@ -32,3 +32,14 @@ export type Health = {
   status: string
   time: string
 }
+
+export type MemoryDocSummary = {
+  name: string
+  path: string
+  updated_at: string
+  size_bytes: number
+}
+
+export type MemoryDocDetail = MemoryDocSummary & {
+  content: string
+}

@@ -1,14 +1,16 @@
 import {
   parseArtifact,
   parseHealth,
+  parseMemoryDoc,
+  parseMemoryDocs,
   parseRun,
   parseRunArtifacts,
   parseRunEvents,
   parseRuns,
 } from './schema'
-import type { Artifact, Health, Run, RunEvent } from './types'
+import type { Artifact, Health, MemoryDocDetail, MemoryDocSummary, Run, RunEvent } from './types'
 
-export type { Artifact, Health, Run, RunEvent } from './types'
+export type { Artifact, Health, MemoryDocDetail, MemoryDocSummary, Run, RunEvent } from './types'
 
 const DEFAULT_BASE_URL = 'http://127.0.0.1:7788'
 
@@ -56,6 +58,10 @@ async function requestJson<T>(
 export const api = {
   baseUrl: apiBaseUrl,
   health: (options?: ApiRequestOptions) => requestJson<Health>('/health', options, parseHealth),
+  memoryDocs: (options?: ApiRequestOptions) =>
+    requestJson<MemoryDocSummary[]>('/memory', options, parseMemoryDocs),
+  memoryDoc: (name: string, options?: ApiRequestOptions) =>
+    requestJson<MemoryDocDetail>(`/memory/${encodeURIComponent(name)}`, options, parseMemoryDoc),
   runs: (options?: ApiRequestOptions) => requestJson<Run[]>('/runs', options, parseRuns),
   run: (id: string, options?: ApiRequestOptions) => requestJson<Run>(`/runs/${id}`, options, parseRun),
   runEvents: (id: string, options?: ApiRequestOptions) =>

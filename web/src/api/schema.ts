@@ -1,4 +1,4 @@
-import type { Artifact, Health, Run, RunEvent } from './types'
+import type { Artifact, Health, MemoryDocDetail, MemoryDocSummary, Run, RunEvent } from './types'
 
 type UnknownRecord = Record<string, unknown>
 
@@ -75,6 +75,22 @@ function assertArtifact(value: unknown, path = 'artifact'): asserts value is Art
   assertString(value.checksum, `${path}.checksum`)
 }
 
+function assertMemoryDocSummary(value: unknown, path = 'memory_doc'): asserts value is MemoryDocSummary {
+  if (!isRecord(value)) {
+    throw new Error(`Invalid ${path}: expected object`)
+  }
+  assertString(value.name, `${path}.name`)
+  assertString(value.path, `${path}.path`)
+  assertString(value.updated_at, `${path}.updated_at`)
+  assertNumber(value.size_bytes, `${path}.size_bytes`)
+}
+
+function assertMemoryDocDetail(value: unknown, path = 'memory_doc'): asserts value is MemoryDocDetail {
+  assertMemoryDocSummary(value, path)
+  const record = value as UnknownRecord
+  assertString(record.content, `${path}.content`)
+}
+
 export function parseHealth(value: unknown): Health {
   if (!isRecord(value)) {
     throw new Error('Invalid health payload: expected object')
@@ -82,6 +98,19 @@ export function parseHealth(value: unknown): Health {
   assertString(value.status, 'health.status')
   assertString(value.time, 'health.time')
   return value as Health
+}
+
+export function parseMemoryDocs(value: unknown): MemoryDocSummary[] {
+  if (!Array.isArray(value)) {
+    throw new Error('Invalid memory docs payload: expected array')
+  }
+  value.forEach((entry, index) => assertMemoryDocSummary(entry, `memory_docs[${index}]`))
+  return value as MemoryDocSummary[]
+}
+
+export function parseMemoryDoc(value: unknown): MemoryDocDetail {
+  assertMemoryDocDetail(value, 'memory_doc')
+  return value as MemoryDocDetail
 }
 
 export function parseRuns(value: unknown): Run[] {
