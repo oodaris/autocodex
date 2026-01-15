@@ -1,6 +1,7 @@
 package state
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"strings"
@@ -194,6 +195,69 @@ func TestRunLockLifecycle(t *testing.T) {
 	}
 	if err := store.ReleaseRunLock(run.ID); err != nil {
 		t.Fatalf("release run lock: %v", err)
+	}
+}
+
+func TestFinalizeStaleRuns(t *testing.T) {
+	base := t.TempDir()
+	store := NewStore(
+		filepath.Join(base, "state"),
+		filepath.Join(base, "runs"),
+		filepath.Join(base, "memory"),
+		filepath.Join(base, "logs"),
+		filepath.Join(base, "artifacts"),
+	)
+	if err := store.InitDirs(); err != nil {
+		t.Fatalf("init dirs: %v", err)
+	}
+	run, err := store.CreateRun()
+	if err != nil {
+		t.Fatalf("create run: %v", err)
+	}
+	old := time.Now().UTC().Add(-10 * time.Minute)
+	run.Status = "running"
+	run.StartedAt = old
+	if err := store.SaveRun(run); err != nil {
+		t.Fatalf("save run: %v", err)
+	}
+
+	hb := RunHeartbeat{RunID: run.ID, PID: 0, UpdatedAt: old}
+	data, err := json.Marshal(hb)
+	if err != nil {
+		t.Fatalf("marshal heartbeat: %v", err)
+	}
+	if err := os.WriteFile(store.runHeartbeatPath(run.ID), data, 0o644); err != nil {
+		t.Fatalf("write heartbeat: %v", err)
+	}
+	lock := RunLock{RunID: run.ID, PID: 0, Hostname: "test", AcquiredAt: old}
+	lockData, err := json.Marshal(lock)
+	if err != nil {
+		t.Fatalf("marshal lock: %v", err)
+	}
+	if err := os.WriteFile(store.runLockPath(run.ID), lockData, 0o644); err != nil {
+		t.Fatalf("write lock: %v", err)
+	}
+
+	finalized, err := store.FinalizeStaleRuns(60, "stale_after")
+	if err != nil {
+		t.Fatalf("finalize stale runs: %v", err)
+	}
+	if len(finalized) != 1 {
+		t.Fatalf("expected 1 finalized run, got %d", len(finalized))
+	}
+	updated, err := store.GetRun(run.ID)
+	if err != nil {
+		t.Fatalf("get run: %v", err)
+	}
+	if updated.Status != "failed" || updated.FinishedAt == nil {
+		t.Fatalf("expected run failed with finished_at")
+	}
+	control, err := store.GetRunControl(run.ID)
+	if err != nil {
+		t.Fatalf("get control: %v", err)
+	}
+	if control == nil || control.StopReason == nil {
+		t.Fatalf("expected stop reason")
 	}
 }
 

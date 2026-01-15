@@ -14,3 +14,14 @@ func IsProcessAlive(pid int) bool {
 	}
 	return true
 }
+
+func TerminateProcess(pid int) error {
+	if pid <= 0 {
+		return nil
+	}
+	process, err := os.FindProcess(pid)
+	if err != nil || process == nil {
+		return err
+	}
+	return process.Kill()
+}

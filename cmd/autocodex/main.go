@@ -174,6 +174,9 @@ func runStatus(args []string) {
 		exitErr(err)
 	}
 	store := state.NewStore(cfg.StateDir(), cfg.RunsDir(), cfg.MemoryDir(), cfg.LogsDir(), cfg.ArtifactsDir())
+	if finalized, err := store.FinalizeStaleRuns(cfg.Loop.StopConditions.MaxHeartbeatSeconds, "stale_after"); err == nil {
+		_ = finalized
+	}
 	statuses, err := selectRunStatuses(store, *runID, *latest)
 	if err != nil {
 		exitErr(err)
@@ -532,6 +535,21 @@ func requestRunAction(store *state.Store, runID, action, reason string) (*state.
 	}
 	if reason != "" && action != "resume" {
 		control.StopReason = &reason
+	}
+	if action == "kill" {
+		lock, _ := store.GetRunLock(run.ID)
+		if lock != nil && lock.PID > 0 && state.IsProcessAlive(lock.PID) {
+			_ = state.TerminateProcess(lock.PID)
+		} else {
+			stopReason := reason
+			if strings.TrimSpace(stopReason) == "" {
+				stopReason = "killed"
+			}
+			if err := store.FinalizeRun(run.ID, "failed", stopReason, "kill"); err != nil {
+				return nil, err
+			}
+			return store.GetRunControl(run.ID)
+		}
 	}
 	if err := store.SaveRunControl(control); err != nil {
 		return nil, err
