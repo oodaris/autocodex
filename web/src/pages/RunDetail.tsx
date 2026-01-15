@@ -14,25 +14,29 @@ export default function RunDetail() {
   const [state, setState] = useState<LoadState>('idle')
   const [error, setError] = useState<string | null>(null)
 
-  const refresh = useCallback(async () => {
+  const refresh = useCallback(async (signal?: AbortSignal) => {
     if (!runId) {
       setState('error')
       setError('Run ID is missing.')
       return
     }
+    if (signal?.aborted) return
     setState('loading')
     setError(null)
     try {
       const [runPayload, eventPayload, artifactPayload] = await Promise.all([
-        api.run(runId),
-        api.runEvents(runId),
-        api.runArtifacts(runId),
+        api.run(runId, { signal }),
+        api.runEvents(runId, { signal }),
+        api.runArtifacts(runId, { signal }),
       ])
+      if (signal?.aborted) return
       setRun(runPayload)
       setEvents(eventPayload)
       setArtifacts(artifactPayload)
       setState('ready')
     } catch (err) {
+      if (signal?.aborted) return
+      if (err instanceof DOMException && err.name === 'AbortError') return
       const message = err instanceof Error ? err.message : 'Unknown error'
       setError(message)
       setState('error')
@@ -40,8 +44,12 @@ export default function RunDetail() {
   }, [runId])
 
   useEffect(() => {
+    const controller = new AbortController()
     // eslint-disable-next-line react-hooks/set-state-in-effect -- initial data fetch
-    void refresh()
+    void refresh(controller.signal)
+    return () => {
+      controller.abort()
+    }
   }, [refresh])
 
   const sortedEvents = useMemo(() => {

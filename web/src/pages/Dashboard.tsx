@@ -55,17 +55,24 @@ export default function Dashboard() {
   const [error, setError] = useState<string | null>(null)
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
 
-  const refresh = useCallback(async () => {
+  const refresh = useCallback(async (signal?: AbortSignal) => {
+    if (signal?.aborted) return
     setState('loading')
     setError(null)
 
     try {
-      const [healthPayload, runsPayload] = await Promise.all([api.health(), api.runs()])
+      const [healthPayload, runsPayload] = await Promise.all([
+        api.health({ signal }),
+        api.runs({ signal }),
+      ])
+      if (signal?.aborted) return
       setHealth({ status: 'ok', time: healthPayload.time })
       setRuns(runsPayload)
       setLastUpdated(new Date())
       setState('ready')
     } catch (err) {
+      if (signal?.aborted) return
+      if (err instanceof DOMException && err.name === 'AbortError') return
       const message = err instanceof Error ? err.message : 'Unknown error'
       setHealth({ status: 'error', message })
       setError(message)
@@ -74,8 +81,12 @@ export default function Dashboard() {
   }, [])
 
   useEffect(() => {
+    const controller = new AbortController()
     // eslint-disable-next-line react-hooks/set-state-in-effect -- initial data fetch
-    void refresh()
+    void refresh(controller.signal)
+    return () => {
+      controller.abort()
+    }
   }, [refresh])
 
   const sortedRuns = useMemo(() => {

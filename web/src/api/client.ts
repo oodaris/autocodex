@@ -52,7 +52,9 @@ function buildUrl(path: string): string {
   return `${normalizedBase}${normalizedPath}`
 }
 
-async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
+export type ApiRequestOptions = RequestInit
+
+async function requestJson<T>(path: string, init?: ApiRequestOptions): Promise<T> {
   const response = await fetch(buildUrl(path), {
     ...init,
     headers: {
@@ -71,10 +73,12 @@ async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
 
 export const api = {
   baseUrl: apiBaseUrl,
-  health: () => requestJson<Health>('/health'),
-  runs: () => requestJson<Run[]>('/runs'),
-  run: (id: string) => requestJson<Run>(`/runs/${id}`),
-  runEvents: (id: string) => requestJson<RunEvent[]>(`/runs/${id}/events`),
-  runArtifacts: (id: string) => requestJson<Artifact[]>(`/runs/${id}/artifacts`),
-  artifact: (id: string) => requestJson<Artifact>(`/artifacts/${id}`),
+  health: (options?: ApiRequestOptions) => requestJson<Health>('/health', options),
+  runs: (options?: ApiRequestOptions) => requestJson<Run[]>('/runs', options),
+  run: (id: string, options?: ApiRequestOptions) => requestJson<Run>(`/runs/${id}`, options),
+  runEvents: (id: string, options?: ApiRequestOptions) =>
+    requestJson<RunEvent[]>(`/runs/${id}/events`, options),
+  runArtifacts: (id: string, options?: ApiRequestOptions) =>
+    requestJson<Artifact[]>(`/runs/${id}/artifacts`, options),
+  artifact: (id: string, options?: ApiRequestOptions) => requestJson<Artifact>(`/artifacts/${id}`, options),
 }
