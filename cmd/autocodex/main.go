@@ -17,11 +17,13 @@ import (
 	"github.com/oodaris/autocodex/internal/api"
 	"github.com/oodaris/autocodex/internal/codex"
 	"github.com/oodaris/autocodex/internal/config"
+	"github.com/oodaris/autocodex/internal/hub"
 	"github.com/oodaris/autocodex/internal/logging"
 	"github.com/oodaris/autocodex/internal/orchestrator"
 	"github.com/oodaris/autocodex/internal/plugins"
 	"github.com/oodaris/autocodex/internal/skills"
 	"github.com/oodaris/autocodex/internal/state"
+	"github.com/oodaris/autocodex/internal/terminal"
 )
 
 func main() {
@@ -343,7 +345,32 @@ func runAPI(args []string) {
 		exitErr(err)
 	}
 
-	server := &api.Server{Store: store, Logger: logger}
+	rootDir, err := filepath.Abs(filepath.Dir(*configPath))
+	if err != nil {
+		rootDir = ""
+	}
+	var hubManager *hub.Manager
+	if cfg.Hub.Enabled {
+		hubManager, err = hub.NewManager(cfg, logger)
+		if err != nil {
+			exitErr(err)
+		}
+	}
+
+	authConfig := api.NewAuthConfig(cfg.Auth)
+	if authConfig.Enabled && len(authConfig.Tokens) == 0 {
+		exitErr(errors.New("auth enabled but no tokens resolved"))
+	}
+
+	server := &api.Server{
+		Store:    store,
+		Logger:   logger,
+		Hub:      hubManager,
+		Terminal: terminal.NewManager(logger),
+		Auth:     authConfig,
+		Config:   cfg,
+		RootDir:  rootDir,
+	}
 	addr := net.JoinHostPort(cfg.API.Host, fmt.Sprintf("%d", cfg.API.Port))
 	logger.Info("api server starting", "route", "/", "status", "starting", "latency_ms", 0, "addr", addr)
 	if err := http.ListenAndServe(addr, server.Handler()); err != nil {

@@ -11,12 +11,20 @@ import (
 	"strings"
 	"time"
 
+	"github.com/oodaris/autocodex/internal/config"
+	"github.com/oodaris/autocodex/internal/hub"
 	"github.com/oodaris/autocodex/internal/state"
+	"github.com/oodaris/autocodex/internal/terminal"
 )
 
 type Server struct {
-	Store  *state.Store
-	Logger *slog.Logger
+	Store    *state.Store
+	Logger   *slog.Logger
+	Hub      *hub.Manager
+	Terminal *terminal.Manager
+	Auth     *AuthConfig
+	Config   config.Config
+	RootDir  string
 }
 
 type RunControlRequest struct {
@@ -48,7 +56,16 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("/artifacts/", s.handleArtifactDetail)
 	mux.HandleFunc("/memory", s.handleMemoryDocs)
 	mux.HandleFunc("/memory/", s.handleMemoryDocDetail)
-	return mux
+	mux.HandleFunc("/hub/workspaces", s.handleHubWorkspaces)
+	mux.HandleFunc("/hub/workspaces/", s.handleHubWorkspace)
+	mux.HandleFunc("/terminal/sessions", s.handleTerminalSessions)
+	mux.HandleFunc("/terminal/sessions/", s.handleTerminalSession)
+
+	handler := http.Handler(mux)
+	if s.Auth != nil && s.Auth.Enabled {
+		handler = s.authMiddleware(handler)
+	}
+	return handler
 }
 
 func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
@@ -299,6 +316,9 @@ func (s *Server) log(r *http.Request, status int, start time.Time, err error) {
 		"status", status,
 		"latency_ms", latency,
 	}
+	if workspaceID := workspaceIDFromRequest(r); workspaceID != "" {
+		attrs = append(attrs, "workspace_id", workspaceID)
+	}
 	if err != nil {
 		attrs = append(attrs, "error", err.Error())
 	}
@@ -351,4 +371,14 @@ func tenantIDFromRequest(r *http.Request) string {
 		return v
 	}
 	return "local"
+}
+
+func workspaceIDFromRequest(r *http.Request) string {
+	if r == nil {
+		return ""
+	}
+	if v := r.Header.Get("X-Workspace-Id"); v != "" {
+		return v
+	}
+	return ""
 }

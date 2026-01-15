@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"gopkg.in/yaml.v3"
 )
@@ -25,10 +26,12 @@ type Config struct {
 	Paths   PathsConfig   `yaml:"paths"`
 	Skills  SkillsConfig  `yaml:"skills"`
 	Plugins PluginsConfig `yaml:"plugins"`
+	Hub     HubConfig     `yaml:"hub"`
 	API     APIConfig     `yaml:"api"`
 	UI      UIConfig      `yaml:"ui"`
 	Beads   BeadsConfig   `yaml:"beads"`
 	Logging LoggingConfig `yaml:"logging"`
+	Auth    AuthConfig    `yaml:"auth"`
 	Loop    LoopConfig    `yaml:"loop"`
 }
 
@@ -63,6 +66,18 @@ type PluginsConfig struct {
 	TimeoutSeconds int      `yaml:"timeout_seconds"`
 }
 
+type HubConfig struct {
+	Enabled    bool              `yaml:"enabled"`
+	Workspaces []WorkspaceConfig `yaml:"workspaces"`
+}
+
+type WorkspaceConfig struct {
+	ID         string `yaml:"id"`
+	Name       string `yaml:"name"`
+	Root       string `yaml:"root"`
+	ConfigPath string `yaml:"config_path"`
+}
+
 type APIConfig struct {
 	Enabled  bool   `yaml:"enabled"`
 	Host     string `yaml:"host"`
@@ -84,6 +99,12 @@ type BeadsConfig struct {
 type LoggingConfig struct {
 	Level  string `yaml:"level"`
 	Format string `yaml:"format"`
+}
+
+type AuthConfig struct {
+	Enabled  bool     `yaml:"enabled"`
+	TokenEnv string   `yaml:"token_env"`
+	Tokens   []string `yaml:"tokens"`
 }
 
 type LoopConfig struct {
@@ -186,6 +207,9 @@ func (c *Config) ApplyDefaults() {
 	if c.Plugins.TimeoutSeconds == 0 {
 		c.Plugins.TimeoutSeconds = 60
 	}
+	if c.Hub.Workspaces == nil {
+		c.Hub.Workspaces = []WorkspaceConfig{}
+	}
 	if c.API.Host == "" {
 		c.API.Host = "127.0.0.1"
 	}
@@ -200,6 +224,9 @@ func (c *Config) ApplyDefaults() {
 	}
 	if c.Logging.Format == "" {
 		c.Logging.Format = "json"
+	}
+	if c.Auth.Tokens == nil {
+		c.Auth.Tokens = []string{}
 	}
 	if c.Loop.MaxIterations == 0 {
 		c.Loop.MaxIterations = 50
@@ -248,6 +275,24 @@ func (c Config) Validate() error {
 		if !oneOf(c.Codex.ReasoningEffort, []string{"minimal", "low", "medium", "high", "xhigh"}) {
 			return fmt.Errorf("invalid codex.reasoning_effort: %s", c.Codex.ReasoningEffort)
 		}
+	}
+	if c.Hub.Enabled {
+		seen := map[string]bool{}
+		for _, ws := range c.Hub.Workspaces {
+			if ws.ID == "" {
+				return errors.New("hub.workspaces.id is required")
+			}
+			if strings.TrimSpace(ws.Root) == "" {
+				return fmt.Errorf("hub workspace %s root is required", ws.ID)
+			}
+			if seen[ws.ID] {
+				return fmt.Errorf("duplicate hub workspace id: %s", ws.ID)
+			}
+			seen[ws.ID] = true
+		}
+	}
+	if c.Auth.Enabled && len(c.Auth.Tokens) == 0 && strings.TrimSpace(c.Auth.TokenEnv) == "" {
+		return errors.New("auth.tokens or auth.token_env is required when auth is enabled")
 	}
 	if c.Loop.Mode != "" {
 		if !oneOf(c.Loop.Mode, []string{"bounded", "continuous"}) {
