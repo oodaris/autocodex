@@ -26,28 +26,41 @@ go install github.com/oodaris/autocodex/cmd/autocodex@latest
 Option B: download a release binary from GitHub Releases.
 
 ## Quickstart
-1) Initialize (creates `autocodex.yaml` if missing):
+**Prereqs**
+1) Install Go (1.22+).
+2) Install the Codex CLI (ensure `codex` is on PATH).
+
+**Install autocodex**
+```bash
+go install github.com/oodaris/autocodex/cmd/autocodex@latest
+```
+
+**Initialize (creates `autocodex.yaml` if missing)**
 ```bash
 autocodex init
 ```
-2) Run a task with the shortest command:
+
+**Run a task (shortest command)**
 ```bash
 autocodex "Review backend API and fix issues."
 ```
-3) (Optional) Run a bounded loop:
+
+**Other common commands**
 ```bash
+# bounded loop
 autocodex once "Run a quick UI a11y review."
-```
-4) (Optional) Snapshot a run:
-```bash
+
+# snapshot a run
 autocodex snapshot 20260115T142253Z-4a4ae121 --reason "handoff"
 ```
-5) (Optional) Start the UI:
+
+**Optional UI**
 ```bash
 cd web
 npm install
 npm run dev
 ```
+
 For a longer walkthrough, see `docs/quickstart.md`.
 
 ## Configuration
