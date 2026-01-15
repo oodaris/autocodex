@@ -5,6 +5,8 @@ info:
   description: Local API for run status, events, and artifacts.
 servers:
   - url: http://127.0.0.1:7788
+security:
+  - ApiToken: []
 paths:
   /health:
     get:
@@ -232,7 +234,376 @@ paths:
                 $ref: '#/components/schemas/MemoryDocDetail'
         '404':
           description: Not found
+  /hub/workspaces:
+    get:
+      summary: List hub workspaces
+      responses:
+        '200':
+          description: Workspace summaries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/WorkspaceSummary'
+  /hub/workspaces/{workspace_id}:
+    get:
+      summary: Get hub workspace summary
+      parameters:
+        - name: workspace_id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Workspace summary
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkspaceSummary'
+        '404':
+          description: Not found
+  /hub/workspaces/{workspace_id}/runs:
+    get:
+      summary: List runs for a workspace
+      parameters:
+        - name: workspace_id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: List of runs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RunSummary'
+  /hub/workspaces/{workspace_id}/runs/{run_id}:
+    get:
+      summary: Get run detail for a workspace
+      parameters:
+        - name: workspace_id
+          in: path
+          required: true
+          schema: { type: string }
+        - name: run_id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Run detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RunDetail'
+        '404':
+          description: Not found
+  /hub/workspaces/{workspace_id}/runs/{run_id}/control:
+    get:
+      summary: Get run control status for a workspace
+      parameters:
+        - name: workspace_id
+          in: path
+          required: true
+          schema: { type: string }
+        - name: run_id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Run control status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RunControlStatus'
+        '404':
+          description: Not found
+    post:
+      summary: Request run control action for a workspace
+      parameters:
+        - name: workspace_id
+          in: path
+          required: true
+          schema: { type: string }
+        - name: run_id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RunControlRequest'
+      responses:
+        '202':
+          description: Run control accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RunControlResponse'
+        '400':
+          description: Invalid request
+        '404':
+          description: Not found
+  /hub/workspaces/{workspace_id}/runs/{run_id}/events:
+    get:
+      summary: List run events for a workspace
+      parameters:
+        - name: workspace_id
+          in: path
+          required: true
+          schema: { type: string }
+        - name: run_id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Run events
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RunEvent'
+  /hub/workspaces/{workspace_id}/runs/{run_id}/artifacts:
+    get:
+      summary: List run artifacts for a workspace
+      parameters:
+        - name: workspace_id
+          in: path
+          required: true
+          schema: { type: string }
+        - name: run_id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Run artifacts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ArtifactSummary'
+  /hub/workspaces/{workspace_id}/runs/{run_id}/snapshots:
+    get:
+      summary: List run snapshots for a workspace
+      parameters:
+        - name: workspace_id
+          in: path
+          required: true
+          schema: { type: string }
+        - name: run_id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Run snapshots
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SnapshotSummary'
+    post:
+      summary: Create run snapshot for a workspace
+      parameters:
+        - name: workspace_id
+          in: path
+          required: true
+          schema: { type: string }
+        - name: run_id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SnapshotCreateRequest'
+      responses:
+        '201':
+          description: Snapshot created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SnapshotDetail'
+        '400':
+          description: Invalid request
+        '404':
+          description: Not found
+  /hub/workspaces/{workspace_id}/runs/{run_id}/snapshots/{snapshot_id}:
+    get:
+      summary: Get run snapshot detail for a workspace
+      parameters:
+        - name: workspace_id
+          in: path
+          required: true
+          schema: { type: string }
+        - name: run_id
+          in: path
+          required: true
+          schema: { type: string }
+        - name: snapshot_id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Snapshot detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SnapshotDetail'
+        '404':
+          description: Not found
+  /hub/workspaces/{workspace_id}/artifacts/{artifact_id}:
+    get:
+      summary: Get artifact detail for a workspace
+      parameters:
+        - name: workspace_id
+          in: path
+          required: true
+          schema: { type: string }
+        - name: artifact_id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Artifact detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ArtifactDetail'
+        '404':
+          description: Not found
+  /hub/workspaces/{workspace_id}/memory:
+    get:
+      summary: List memory docs for a workspace
+      parameters:
+        - name: workspace_id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Memory docs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MemoryDocSummary'
+  /hub/workspaces/{workspace_id}/memory/{doc_name}:
+    get:
+      summary: Get memory doc for a workspace
+      parameters:
+        - name: workspace_id
+          in: path
+          required: true
+          schema: { type: string }
+        - name: doc_name
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Memory doc detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemoryDocDetail'
+        '404':
+          description: Not found
+  /terminal/sessions:
+    get:
+      summary: List terminal sessions
+      responses:
+        '200':
+          description: Terminal sessions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TerminalSessionSummary'
+    post:
+      summary: Create terminal session
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TerminalSessionCreateRequest'
+      responses:
+        '201':
+          description: Session created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TerminalSessionSummary'
+  /terminal/sessions/{session_id}:
+    get:
+      summary: Get terminal session
+      parameters:
+        - name: session_id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Session detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TerminalSessionSummary'
+        '404':
+          description: Not found
+    delete:
+      summary: Close terminal session
+      parameters:
+        - name: session_id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Session closed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TerminalSessionSummary'
+  /terminal/sessions/{session_id}/ws:
+    get:
+      summary: Terminal websocket stream
+      parameters:
+        - name: session_id
+          in: path
+          required: true
+          schema: { type: string }
+        - name: token
+          in: query
+          required: false
+          schema: { type: string }
+      responses:
+        '101':
+          description: Websocket upgrade
 components:
+  securitySchemes:
+    ApiToken:
+      type: http
+      scheme: bearer
+      bearerFormat: token
   schemas:
     RunSummary:
       type: object
@@ -356,3 +727,47 @@ components:
           additionalProperties: false
           properties:
             content: { type: string }
+    WorkspaceSummary:
+      type: object
+      additionalProperties: false
+      properties:
+        id: { type: string }
+        name: { type: string }
+        root: { type: string }
+        config_path: { type: string }
+        status: { type: string, enum: [ok, missing_config, invalid_config, state_error] }
+        error: { type: string, nullable: true }
+        runs_count: { type: integer }
+        last_run_id: { type: string, nullable: true }
+        last_run_status: { type: string, nullable: true }
+        last_run_phase: { type: string, nullable: true }
+        last_run_started_at: { type: string, format: date-time, nullable: true }
+        last_run_finished_at: { type: string, format: date-time, nullable: true }
+    TerminalSessionCreateRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        workspace_id: { type: string }
+        command: { type: string }
+        args:
+          type: array
+          items: { type: string }
+        env:
+          type: array
+          items: { type: string }
+    TerminalSessionSummary:
+      type: object
+      additionalProperties: false
+      properties:
+        id: { type: string }
+        status: { type: string, enum: [running, closed] }
+        command: { type: string }
+        args:
+          type: array
+          items: { type: string }
+        cwd: { type: string }
+        workspace_id: { type: string, nullable: true }
+        pid: { type: integer }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+        exit_code: { type: integer, nullable: true }
