@@ -1,6 +1,6 @@
-# Autocodex Skills (Public)
+# autocodex Skills (Public)
 
-This directory contains public, repo‑safe skills used by Autocodex. These are concise playbooks for agents and contributors.
+This directory contains public, repo‑safe skills used by autocodex. These are concise playbooks for agents and contributors.
 
 ## Principles
 - Keep skills short and practical.

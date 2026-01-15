@@ -1,6 +1,6 @@
 # Plugins Subproject
 
-This folder contains Autocodex plugins (external processes) and their manifests.
+This folder contains autocodex plugins (external processes) and their manifests.
 
 ## Rules
 - Plugins must have a `plugin.yaml` or `plugin.json` manifest.

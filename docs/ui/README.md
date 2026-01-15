@@ -22,6 +22,36 @@ export VITE_API_BASE_URL="http://127.0.0.1:7788"
 - **Runs**: See run status, phases, and artifacts.
 - **Memory**: Review memory docs (`/memory`) that autocodex uses across loops.
 - **Detail views**: Inspect the event stream for each run.
+- **Terminal**: Start a live terminal session from the UI.
+
+## Hub mode
+
+Hub mode lets you monitor multiple repos from a single UI.
+
+1) Enable hub mode in `autocodex.yaml`:
+
+```yaml
+hub:
+  enabled: true
+  workspaces:
+    - id: repo-a
+      name: Repo A
+      root: /path/to/repo-a
+      config_path: autocodex.yaml
+```
+
+2) Start the API server and open the UI route at `/hub`.
+3) Click a workspace to view runs and memory docs for that repo.
+
+## Terminal sessions
+
+The terminal view opens a websocket-backed PTY session.
+
+- Start a session from the UI.
+- Use the input field to send commands.
+- Close sessions when finished.
+
+If API auth is enabled, the terminal websocket uses `?token=` in the URL.
 
 ## Vercel deploy notes
 
@@ -33,3 +63,11 @@ Vercel serves a static build of the UI. The API must be reachable from the brows
 - Environment variable: `VITE_API_BASE_URL` (point to a reachable autocodex API)
 
 > Note: `127.0.0.1` only works for local development. Use a LAN host or a hosted API for remote access.
+
+## API auth
+
+If `auth.enabled` is true in `autocodex.yaml`, you must provide an API token.
+
+- Set `auth.token_env` to read a token from an env var (for example `AUTOCODEX_API_TOKEN`).
+- UI: paste the token in the header input (stored in session storage).
+- API calls: send `Authorization: Bearer <token>`.

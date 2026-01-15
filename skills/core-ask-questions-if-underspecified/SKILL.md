@@ -6,7 +6,7 @@ version: 0.1.0
 
 # Ask Questions If Underspecified
 
-## Repo anchors (Autocodex)
+## Repo anchors (autocodex)
 - CLI_PATH: `cmd/autocodex/`
 - INTERNAL_PATH: `internal/`
 - PLUGINS_PATH: `plugins/`

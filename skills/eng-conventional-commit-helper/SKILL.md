@@ -6,7 +6,7 @@ version: 0.1.0
 
 # Conventional Commit Helper
 
-## Repo anchors (Autocodex)
+## Repo anchors (autocodex)
 - REPO_ROOT: `.`
 
 ## When to use

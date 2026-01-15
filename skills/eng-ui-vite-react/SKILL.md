@@ -1,12 +1,12 @@
 ---
 name: eng-ui-vite-react
-description: Build Autocodex UI with React + Vite.
+description: Build autocodex UI with React + Vite.
 version: 0.1.0
 ---
 
 # UI: React + Vite
 
-## Repo anchors (Autocodex)
+## Repo anchors (autocodex)
 - UI_PATH: `web/`
 - API_CONTRACT: `docs/contracts/local-api.openapi.yaml`
 

@@ -6,7 +6,7 @@ version: 0.1.0
 
 # Code Review Playbook
 
-## Repo anchors (Autocodex)
+## Repo anchors (autocodex)
 - INTERNAL_PATH: `internal/`
 - DOCS_PATH: `docs/`
 

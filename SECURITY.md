@@ -5,7 +5,7 @@ We support the latest commit on the `main` branch. If you are using a tagged
 release, please upgrade to the most recent version before reporting issues.
 
 ## Reporting a Vulnerability
-If you believe you have found a security vulnerability in Autocodex:
+If you believe you have found a security vulnerability in autocodex:
 
 1. **Do not** open a public issue.
 2. Report it privately via GitHub Security Advisories for this repository.

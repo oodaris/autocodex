@@ -1,4 +1,4 @@
-# Contributing to Autocodex
+# Contributing to autocodex
 
 Thanks for contributing!
 

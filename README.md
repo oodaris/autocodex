@@ -11,6 +11,9 @@ autocodex orchestrates a structured loop: ideate → plan → implement → revi
 - External plugin system (JSON‑RPC over stdio)
 - React/Vite UI for runs, events, artifacts, and memory docs
 - Optional UI auto‑refresh with backoff
+- Hub mode for multi-repo dashboards
+- Terminal sessions (websocket PTY)
+- Optional token auth for the API/UI
 
 ## Quickstart
 1) Install Go and the Codex CLI.
@@ -33,6 +36,9 @@ npm run dev
 ## Configuration
 - `autocodex.yaml` controls mode, paths, Codex CLI settings, plugins, and API settings.
 - `mode: yolo` is explicit and must be used intentionally.
+- `hub.enabled` adds multi-repo workspace tracking.
+- `auth.enabled` enforces API tokens (see `docs/ui/README.md`).
+- `auth.token_env` can read a token from an environment variable.
 
 ## UI usage
 See `docs/ui/README.md` for local usage and Vercel deployment notes.

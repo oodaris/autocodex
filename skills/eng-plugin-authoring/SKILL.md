@@ -1,17 +1,17 @@
 ---
 name: eng-plugin-authoring
-description: Build external Autocodex plugins with manifest + JSON-RPC.
+description: Build external autocodex plugins with manifest + JSON-RPC.
 version: 0.1.0
 ---
 
 # Plugin Authoring
 
-## Repo anchors (Autocodex)
+## Repo anchors (autocodex)
 - PLUGINS_PATH: `plugins/`
 - DOCS_PATH: `docs/plugins/README.md`
 
 ## When to use
-- Creating or updating an Autocodex plugin.
+- Creating or updating an autocodex plugin.
 
 ## Preconditions
 - You know the capability inputs/outputs.

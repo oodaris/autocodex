@@ -6,7 +6,7 @@ version: 0.1.0
 
 # Go Developer
 
-## Repo anchors (Autocodex)
+## Repo anchors (autocodex)
 - INTERNAL_PATH: `internal/`
 - TEST_COMMANDS
   - `go test ./...`

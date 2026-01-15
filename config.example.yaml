@@ -30,6 +30,14 @@ plugins:
     - plugins
   timeout_seconds: 60
 
+hub:
+  enabled: false
+  workspaces:
+    - id: demo
+      name: Demo repo
+      root: /path/to/repo
+      config_path: autocodex.yaml
+
 api:
   enabled: true
   host: 127.0.0.1
@@ -48,6 +56,12 @@ beads:
 logging:
   level: info
   format: json
+
+auth:
+  enabled: false
+  token_env: AUTOCODEX_API_TOKEN
+  tokens:
+    - "replace-with-secret-token"
 
 loop:
   mode: bounded

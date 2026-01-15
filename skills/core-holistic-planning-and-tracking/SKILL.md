@@ -6,7 +6,7 @@ version: 0.1.0
 
 # Holistic Planning + Beads Tracking
 
-## Repo anchors (Autocodex)
+## Repo anchors (autocodex)
 - DOCS_PATH: `docs/`
 - PLANS_PATH: `docs/plans/`
 - BEADS_PATH: `.beads/`

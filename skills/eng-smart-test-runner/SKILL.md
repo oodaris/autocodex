@@ -6,7 +6,7 @@ version: 0.1.0
 
 # Smart Test Runner
 
-## Repo anchors (Autocodex)
+## Repo anchors (autocodex)
 - TEST_COMMANDS
   - `go test ./...`
   - `go vet ./...`

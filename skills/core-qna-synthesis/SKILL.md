@@ -6,7 +6,7 @@ version: 0.1.0
 
 # Interpretive Q&A Synthesis
 
-## Repo anchors (Autocodex)
+## Repo anchors (autocodex)
 - CLI_PATH: `cmd/autocodex/`
 - INTERNAL_PATH: `internal/`
 - DOCS_PATH: `docs/`
