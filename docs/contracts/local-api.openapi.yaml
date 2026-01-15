@@ -100,6 +100,35 @@ paths:
                 $ref: '#/components/schemas/ArtifactDetail'
         '404':
           description: Not found
+  /memory:
+    get:
+      summary: List memory docs
+      responses:
+        '200':
+          description: Memory docs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MemoryDocSummary'
+  /memory/{doc_name}:
+    get:
+      summary: Get memory doc
+      parameters:
+        - name: doc_name
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Memory doc detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemoryDocDetail'
+        '404':
+          description: Not found
 components:
   schemas:
     RunSummary:
@@ -152,3 +181,18 @@ components:
             size_bytes: { type: integer }
             checksum: { type: string }
             content_url: { type: string }
+    MemoryDocSummary:
+      type: object
+      additionalProperties: false
+      properties:
+        name: { type: string }
+        path: { type: string }
+        updated_at: { type: string, format: date-time }
+        size_bytes: { type: integer }
+    MemoryDocDetail:
+      allOf:
+        - $ref: '#/components/schemas/MemoryDocSummary'
+        - type: object
+          additionalProperties: false
+          properties:
+            content: { type: string }
