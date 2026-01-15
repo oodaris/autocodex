@@ -128,21 +128,35 @@ button:focus-visible {
   overflow: hidden;
 }
 
+.hero--banner::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.95) 0%,
+    rgba(255, 255, 255, 0.78) 48%,
+    rgba(255, 255, 255, 0.4) 100%
+  );
+  z-index: 1;
+}
+
 .hero__banner {
   position: absolute;
   inset: 0;
   background-image: url('/autocodex-banner.png');
-  background-size: 120% auto;
-  background-position: left center;
+  background-size: 140% auto;
+  background-position: 115% center;
   background-repeat: no-repeat;
-  opacity: 0.22;
+  opacity: 0.2;
   pointer-events: none;
+  z-index: 0;
 }
 
 .hero--banner .hero__copy,
 .hero--banner .hero__status {
   position: relative;
-  z-index: 1;
+  z-index: 2;
 }
 
 .hero__copy {
@@ -249,6 +263,9 @@ button:focus-visible {
 }
 
 .button {
+  display: inline-flex;
+  justify-content: center;
+  min-width: 120px;
   align-self: flex-start;
   padding: 10px 18px;
   border-radius: 999px;
@@ -946,8 +963,17 @@ button:focus-visible {
   }
 
   .hero__banner {
-    background-size: cover;
+    background-size: 120% auto;
     background-position: center;
+  }
+
+  .hero--banner::before {
+    background: linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.92) 0%,
+      rgba(255, 255, 255, 0.68) 55%,
+      rgba(255, 255, 255, 0.36) 100%
+    );
   }
 
   .memory-grid {
