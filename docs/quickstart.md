@@ -23,6 +23,7 @@ cp config.example.yaml autocodex.yaml
 
 Edit `autocodex.yaml` for your repo paths, model, and loop settings.
 See the config reference in `docs/config/README.md`.
+If Codex is installed outside PATH, set `codex.cli_path`.
 
 ## Run a loop
 

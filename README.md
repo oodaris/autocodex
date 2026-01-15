@@ -23,7 +23,7 @@ Install with Go:
 go install github.com/oodaris/autocodex/cmd/autocodex@latest
 ```
 
-Or download a release binary from GitHub Releases.
+Or download a release binary from GitHub Releases (recommended for non-Go setups).
 
 ## Quickstart
 **Prereqs**
@@ -78,6 +78,13 @@ For a longer walkthrough, see `docs/quickstart.md`.
 - `auth.token_env` can read a token from an environment variable.
 If the Codex CLI is not on PATH, set `codex.cli_path` in `autocodex.yaml`.
 For a full reference, see `docs/config/README.md`.
+
+## Agent requirements
+To run autocodex in an agent environment:
+- `autocodex.yaml` present in the repo (or pass `--config`)
+- Codex CLI installed and reachable (`codex.cli_path` if not on PATH)
+- Skills path configured (`skills.paths`)
+- Optional: Beads (`bd`) if you want task tracking
 
 ## UI usage
 See `docs/ui/README.md` for local usage and Vercel deployment notes.

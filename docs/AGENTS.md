@@ -48,6 +48,17 @@ Plan → Contracts → Code → Tests → Docs → Rollout
 - **Plugins**: External processes with a manifest + JSON-RPC (stdio) protocol.
 - **State**: Repo-local markdown memory + JSONL logs.
 
+## 2.1) Agent setup (minimum)
+- Ensure `autocodex.yaml` exists (`autocodex init` creates one).
+- Codex CLI available on PATH or set `codex.cli_path` in config.
+- Skill paths configured under `skills.paths`.
+- Optional: `bd` installed for bead tracking.
+
+Common start:
+```bash
+autocodex "Add a quick summary to memory docs."
+```
+
 ## 3) Commands
 - Go tests: `go test ./...`
 - Go vet: `go vet ./...`
