@@ -181,3 +181,51 @@ Ordered to respect the golden workflow and current dependencies.
 8. **autocodex-cdu** — Tooling: add a11y + bundlesize scripts (depends on autocodex-0bm).
 9. **autocodex-llw** — Tests + CI gates.
 10. **autocodex-pzy** — Docs + release packaging.
+
+## Autonomy + parity expansion (v1.5+)
+Goal: close key gaps vs codex-autorunner and deliver true autonomy (continuous loop + feedback).
+
+### Phase A — Autonomy contracts + state
+- Extend config schema for loop mode, stop conditions, and feedback sources.
+- Update OpenAPI for run control + snapshot endpoints.
+
+### Phase B — Autonomy runtime + CLI controls
+- Implement continuous loop with safe stop conditions.
+- Inject memory docs + prior artifacts into prompts.
+- Add CLI commands: `once`, `resume`, `kill`, and richer `status`.
+
+### Phase C — Control plane API + UI
+- Implement run control endpoints and UI controls.
+- Add snapshot generation and UI view.
+
+### Phase D — Hub mode (multi-repo)
+- Workspace config + multi-repo state aggregation.
+- Hub API + UI dashboard for multiple repos.
+
+### Phase E — Terminal sessions
+- PTY session backend with websocket transport.
+- UI terminal view (read/write) with session list.
+
+### Phase F — Auth + remote access
+- Token-based auth for API/UI.
+- Config + docs for safe remote access.
+
+**Risks**:
+- Scope growth vs v1 stability. Mitigate by staged phases + feature flags.
+- Codex CLI compatibility for long runs. Mitigate with timeouts + resume support.
+
+### Autonomy parity work items (tracking)
+1. **autocodex-6s1** — Contracts: loop + feedback config.
+2. **autocodex-g9k** — Contracts: run control + snapshot API (depends on 6s1).
+3. **autocodex-y2j** — State: run control + feedback metadata (depends on 6s1).
+4. **autocodex-zvq** — Orchestrator: continuous loop + feedback injection (depends on 6s1, y2j).
+5. **autocodex-0d3** — CLI: once/resume/kill + richer status (depends on y2j, zvq).
+6. **autocodex-mso** — API: run control endpoints (depends on g9k, y2j, zvq).
+7. **autocodex-do8** — UI: run control + status (depends on mso).
+8. **autocodex-iwb** — Snapshot: generator + storage (depends on g9k, y2j).
+9. **autocodex-vna** — UI: snapshot view + trigger (depends on iwb).
+10. **autocodex-1ez** — Hub: multi-repo workspace server (depends on 6s1, g9k, y2j).
+11. **autocodex-cdz** — UI: hub dashboard (depends on 1ez).
+12. **autocodex-d67** — Terminal: PTY session backend (depends on g9k, 1ez).
+13. **autocodex-v1f** — UI: terminal sessions (depends on d67).
+14. **autocodex-0v8** — Auth: token-protected API/UI (depends on 6s1, g9k, mso, 1ez).
