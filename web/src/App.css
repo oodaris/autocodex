@@ -119,45 +119,23 @@ button:focus-visible {
   align-items: stretch;
 }
 
-.hero--banner {
-  position: relative;
-  padding: 32px;
+.hero--split {
+  padding: 28px 32px;
   border-radius: 24px;
   background: rgba(255, 255, 255, 0.78);
   box-shadow: 0 20px 40px rgba(15, 23, 42, 0.08);
-  overflow: hidden;
 }
 
-.hero--banner::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    90deg,
-    rgba(255, 255, 255, 0.95) 0%,
-    rgba(255, 255, 255, 0.78) 48%,
-    rgba(255, 255, 255, 0.4) 100%
-  );
-  z-index: 1;
-}
-
-.hero__banner {
-  position: absolute;
-  inset: 0;
+.hero__media {
+  min-height: 220px;
+  border-radius: 20px;
+  border: 1px solid var(--panel-border);
   background-image: url('/autocodex-banner.png');
-  background-size: 110% auto;
-  background-position: right -40px center;
+  background-size: 120% auto;
+  background-position: right center;
   background-repeat: no-repeat;
-  opacity: 0.28;
-  filter: saturate(1.05);
-  pointer-events: none;
-  z-index: 0;
-}
-
-.hero--banner .hero__copy,
-.hero--banner .hero__status {
-  position: relative;
-  z-index: 2;
+  background-color: rgba(255, 255, 255, 0.6);
+  box-shadow: var(--panel-shadow);
 }
 
 .hero__copy {
@@ -963,18 +941,10 @@ button:focus-visible {
     justify-content: flex-start;
   }
 
-  .hero__banner {
-    background-size: 120% auto;
+  .hero__media {
+    min-height: 180px;
+    background-size: 130% auto;
     background-position: center;
-  }
-
-  .hero--banner::before {
-    background: linear-gradient(
-      180deg,
-      rgba(255, 255, 255, 0.92) 0%,
-      rgba(255, 255, 255, 0.68) 55%,
-      rgba(255, 255, 255, 0.36) 100%
-    );
   }
 
   .memory-grid {
