@@ -50,6 +50,7 @@ function Layout() {
               className="visually-hidden"
               type="text"
               name="username"
+              aria-label="Username"
               autoComplete="username"
               tabIndex={-1}
             />
