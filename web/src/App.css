@@ -144,14 +144,7 @@ button:focus-visible {
 .hero__banner {
   position: absolute;
   inset: 0;
-  background-image: url('/autocodex-banner.png');
-  background-size: 140% auto;
-  background-position: right -60px center;
-  background-repeat: no-repeat;
-  opacity: 0.3;
-  filter: saturate(1.08);
-  pointer-events: none;
-  z-index: 0;
+  display: none;
 }
 
 .hero--banner .hero__copy,
@@ -167,11 +160,11 @@ button:focus-visible {
 }
 
 .hero__logo {
-  height: 36px;
+  height: 60px;
   width: auto;
   align-self: flex-start;
   object-fit: contain;
-  opacity: 0.92;
+  opacity: 1;
 }
 
 .hero h1 {
@@ -960,8 +953,7 @@ button:focus-visible {
   }
 
   .hero__banner {
-    background-size: 150% auto;
-    background-position: center;
+    display: none;
   }
 
   .hero--banner::before {
