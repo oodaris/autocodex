@@ -105,6 +105,31 @@ button:focus-visible {
   align-items: stretch;
 }
 
+.hero--banner {
+  position: relative;
+  padding: 32px;
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.78);
+  box-shadow: 0 20px 40px rgba(15, 23, 42, 0.08);
+  overflow: hidden;
+}
+
+.hero__banner {
+  position: absolute;
+  inset: 0;
+  background-image: url('/autocodex-banner.png');
+  background-size: cover;
+  background-position: center;
+  opacity: 0.18;
+  pointer-events: none;
+}
+
+.hero--banner .hero__copy,
+.hero--banner .hero__status {
+  position: relative;
+  z-index: 1;
+}
+
 .hero__copy {
   display: flex;
   flex-direction: column;

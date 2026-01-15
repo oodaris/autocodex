@@ -119,7 +119,8 @@ export default function Dashboard() {
 
   return (
     <div className="page">
-      <header className="hero">
+      <header className="hero hero--banner">
+        <div className="hero__banner" aria-hidden="true" />
         <div className="hero__copy">
           <span className="hero__badge">Autocodex Control Deck</span>
           <h1>Keep the loop moving. See every run in one place.</h1>
