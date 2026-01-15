@@ -125,9 +125,10 @@ export default function Dashboard() {
 
   return (
     <div className="page">
-      <header className="hero hero--split">
+      <header className="hero hero--banner">
+        <div className="hero__banner" aria-hidden="true" />
         <div className="hero__copy">
-          <span className="hero__badge">autocodex Control Deck</span>
+          <img className="hero__logo" src="/autocodex-banner.png" alt="autocodex" />
           {workspaceId ? (
             <>
               <h1>Workspace {workspace?.name ?? workspaceId}</h1>
@@ -143,11 +144,7 @@ export default function Dashboard() {
             </>
           )}
         </div>
-        <div className="hero__media" role="img" aria-label="autocodex banner" />
-      </header>
-
-      <section className="grid">
-        <div className="grid__item">
+        <div className="hero__status">
           <div className={`status-card status-card--${health.status}`} role="status" aria-live="polite">
             <p className="status-card__label">API status</p>
             <h2>
@@ -177,6 +174,9 @@ export default function Dashboard() {
             </button>
           </div>
         </div>
+      </header>
+
+      <section className="grid">
         <div className="grid__item">
           <div className="panel">
             <div className="panel__header">

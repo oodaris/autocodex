@@ -70,14 +70,14 @@
 .nav a {
   padding: 6px 14px;
   border-radius: 999px;
-  background: rgba(15, 118, 110, 0.08);
+  background: var(--accent-soft);
   color: var(--text-muted);
   font-size: 0.85rem;
   transition: background 180ms ease, color 180ms ease;
 }
 
 .nav a:hover {
-  background: rgba(15, 118, 110, 0.18);
+  background: var(--accent-soft-strong);
   color: var(--text);
 }
 
@@ -119,23 +119,45 @@ button:focus-visible {
   align-items: stretch;
 }
 
-.hero--split {
-  padding: 28px 32px;
+.hero--banner {
+  position: relative;
+  padding: 32px;
   border-radius: 24px;
   background: rgba(255, 255, 255, 0.78);
   box-shadow: 0 20px 40px rgba(15, 23, 42, 0.08);
+  overflow: hidden;
 }
 
-.hero__media {
-  min-height: 220px;
-  border-radius: 20px;
-  border: 1px solid var(--panel-border);
+.hero--banner::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.96) 0%,
+    rgba(255, 255, 255, 0.78) 48%,
+    rgba(255, 255, 255, 0.32) 100%
+  );
+  z-index: 1;
+}
+
+.hero__banner {
+  position: absolute;
+  inset: 0;
   background-image: url('/autocodex-banner.png');
-  background-size: 120% auto;
-  background-position: right center;
+  background-size: 140% auto;
+  background-position: right -60px center;
   background-repeat: no-repeat;
-  background-color: rgba(255, 255, 255, 0.6);
-  box-shadow: var(--panel-shadow);
+  opacity: 0.3;
+  filter: saturate(1.08);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.hero--banner .hero__copy,
+.hero--banner .hero__status {
+  position: relative;
+  z-index: 2;
 }
 
 .hero__copy {
@@ -144,16 +166,12 @@ button:focus-visible {
   gap: 16px;
 }
 
-.hero__badge {
+.hero__logo {
+  height: 26px;
+  width: auto;
   align-self: flex-start;
-  padding: 6px 12px;
-  background: var(--badge-bg);
-  color: var(--badge-text);
-  border-radius: 999px;
-  font-size: 0.8rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  font-weight: 600;
+  object-fit: contain;
+  opacity: 0.92;
 }
 
 .hero h1 {
@@ -941,10 +959,18 @@ button:focus-visible {
     justify-content: flex-start;
   }
 
-  .hero__media {
-    min-height: 180px;
-    background-size: 130% auto;
+  .hero__banner {
+    background-size: 150% auto;
     background-position: center;
+  }
+
+  .hero--banner::before {
+    background: linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.96) 0%,
+      rgba(255, 255, 255, 0.72) 55%,
+      rgba(255, 255, 255, 0.35) 100%
+    );
   }
 
   .memory-grid {

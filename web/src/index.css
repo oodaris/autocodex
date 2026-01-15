@@ -8,10 +8,12 @@
 
   --text: #0f172a;
   --text-muted: #475569;
-  --accent: #0f766e;
+  --accent: #3ba8ff;
   --accent-contrast: #f8fafc;
-  --badge-bg: rgba(15, 118, 110, 0.12);
-  --badge-text: #0f766e;
+  --accent-soft: rgba(59, 168, 255, 0.12);
+  --accent-soft-strong: rgba(59, 168, 255, 0.22);
+  --badge-bg: rgba(59, 168, 255, 0.14);
+  --badge-text: #2c7fd6;
   --panel-bg: rgba(255, 255, 255, 0.9);
   --panel-border: rgba(148, 163, 184, 0.35);
   --panel-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
