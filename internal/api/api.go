@@ -19,6 +19,27 @@ type Server struct {
 	Logger *slog.Logger
 }
 
+type RunControlRequest struct {
+	Action string `json:"action"`
+	Reason string `json:"reason"`
+	DryRun bool   `json:"dry_run"`
+}
+
+type RunControlResponse struct {
+	RunID    string `json:"run_id"`
+	Action   string `json:"action"`
+	Accepted bool   `json:"accepted"`
+	Status   string `json:"status"`
+	Message  string `json:"message"`
+}
+
+type RunControlStatus struct {
+	RunID        string     `json:"run_id"`
+	Status       string     `json:"status"`
+	LastAction   *string    `json:"last_action,omitempty"`
+	LastActionAt *time.Time `json:"last_action_at,omitempty"`
+}
+
 func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/health", s.handleHealth)
@@ -85,6 +106,83 @@ func (s *Server) handleRunDetail(w http.ResponseWriter, r *http.Request) {
 	}
 
 	switch parts[1] {
+	case "control":
+		switch r.Method {
+		case http.MethodGet:
+			run, err := s.Store.GetRun(runID)
+			if err != nil {
+				respondError(w, http.StatusNotFound, "run not found")
+				s.log(r, http.StatusNotFound, start, err)
+				return
+			}
+			control, err := s.Store.GetRunControl(runID)
+			if err != nil {
+				respondError(w, http.StatusInternalServerError, err.Error())
+				s.log(r, http.StatusInternalServerError, start, err)
+				return
+			}
+			status := RunControlStatus{
+				RunID:  runID,
+				Status: run.Status,
+			}
+			if control != nil {
+				status.LastAction = control.LastAction
+				status.LastActionAt = control.LastActionAt
+			}
+			respondJSON(w, http.StatusOK, status)
+			s.log(r, http.StatusOK, start, nil)
+		case http.MethodPost:
+			run, err := s.Store.GetRun(runID)
+			if err != nil {
+				respondError(w, http.StatusNotFound, "run not found")
+				s.log(r, http.StatusNotFound, start, err)
+				return
+			}
+			var req RunControlRequest
+			if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+				respondError(w, http.StatusBadRequest, "invalid json")
+				s.log(r, http.StatusBadRequest, start, err)
+				return
+			}
+			if !validAction(req.Action) {
+				respondError(w, http.StatusBadRequest, "invalid action")
+				s.log(r, http.StatusBadRequest, start, nil)
+				return
+			}
+			now := time.Now().UTC()
+			control := state.RunControl{
+				RunID:        runID,
+				Status:       run.Status,
+				LastAction:   &req.Action,
+				LastActionAt: &now,
+				UpdatedAt:    now,
+			}
+			if req.Reason != "" && req.Action != "resume" {
+				control.StopReason = &req.Reason
+			}
+			if !req.DryRun {
+				if err := s.Store.SaveRunControl(control); err != nil {
+					respondError(w, http.StatusInternalServerError, err.Error())
+					s.log(r, http.StatusInternalServerError, start, err)
+					return
+				}
+			}
+			message := "accepted"
+			if req.DryRun {
+				message = "dry run"
+			}
+			respondJSON(w, http.StatusAccepted, RunControlResponse{
+				RunID:    runID,
+				Action:   req.Action,
+				Accepted: true,
+				Status:   run.Status,
+				Message:  message,
+			})
+			s.log(r, http.StatusAccepted, start, nil)
+		default:
+			respondError(w, http.StatusMethodNotAllowed, "method not allowed")
+			s.log(r, http.StatusMethodNotAllowed, start, nil)
+		}
 	case "events":
 		if r.Method != http.MethodGet {
 			respondError(w, http.StatusMethodNotAllowed, "method not allowed")
@@ -217,6 +315,15 @@ func respondJSON(w http.ResponseWriter, status int, v interface{}) {
 
 func respondError(w http.ResponseWriter, status int, message string) {
 	respondJSON(w, status, map[string]string{"error": message})
+}
+
+func validAction(action string) bool {
+	switch action {
+	case "resume", "stop", "cancel", "kill":
+		return true
+	default:
+		return false
+	}
 }
 
 func traceIDFromRequest(r *http.Request) string {

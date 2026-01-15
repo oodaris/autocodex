@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -108,6 +109,52 @@ func TestMemoryDocsEndpoints(t *testing.T) {
 	}
 	if detail.Content == "" {
 		t.Fatalf("expected content")
+	}
+}
+
+func TestRunControlEndpoints(t *testing.T) {
+	store := newTestStore(t)
+	run, err := store.CreateRun()
+	if err != nil {
+		t.Fatalf("create run: %v", err)
+	}
+
+	srv := &Server{Store: store}
+
+	req := httptest.NewRequest(http.MethodGet, "/runs/"+run.ID+"/control", nil)
+	rr := httptest.NewRecorder()
+	srv.Handler().ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("status: %d", rr.Code)
+	}
+
+	var status RunControlStatus
+	if err := json.Unmarshal(rr.Body.Bytes(), &status); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if status.RunID != run.ID {
+		t.Fatalf("unexpected run id")
+	}
+
+	body := strings.NewReader(`{"action":"stop","reason":"pause"}`)
+	req = httptest.NewRequest(http.MethodPost, "/runs/"+run.ID+"/control", body)
+	rr = httptest.NewRecorder()
+	srv.Handler().ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusAccepted {
+		t.Fatalf("status: %d", rr.Code)
+	}
+
+	control, err := store.GetRunControl(run.ID)
+	if err != nil {
+		t.Fatalf("get control: %v", err)
+	}
+	if control == nil || control.LastAction == nil || *control.LastAction != "stop" {
+		t.Fatalf("expected stop action saved")
+	}
+	if control.StopReason == nil || *control.StopReason != "pause" {
+		t.Fatalf("expected stop reason saved")
 	}
 }
 
