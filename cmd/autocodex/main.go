@@ -36,6 +36,12 @@ func main() {
 		runInit(os.Args[2:])
 	case "run":
 		runRun(os.Args[2:])
+	case "once":
+		runOnce(os.Args[2:])
+	case "resume":
+		runResume(os.Args[2:])
+	case "kill":
+		runKill(os.Args[2:])
 	case "status":
 		runStatus(os.Args[2:])
 	case "beads":
@@ -54,7 +60,7 @@ func main() {
 
 func usage() {
 	fmt.Println("Usage: autocodex <command> [args]")
-	fmt.Println("Commands: init, run, status, beads, plugins, api, config")
+	fmt.Println("Commands: init, run, once, resume, kill, status, beads, plugins, api, config")
 }
 
 func runInit(args []string) {
@@ -92,37 +98,11 @@ func runRun(args []string) {
 		exitErr(err)
 	}
 
-	logger := logging.NewLogger(cfg.Logging.Level)
-	store := state.NewStore(cfg.StateDir(), cfg.RunsDir(), cfg.MemoryDir(), cfg.LogsDir(), cfg.ArtifactsDir())
-	loader := skills.Loader{Paths: cfg.Skills.Paths}
-	runner := codex.Runner{
-		CLIPath:         cfg.Codex.CLIPath,
-		Model:           cfg.Codex.Model,
-		ReasoningEffort: cfg.Codex.ReasoningEffort,
-		ExtraArgs:       cfg.Codex.ExtraArgs,
-		Mode:            cfg.Mode,
-		ApprovalPolicy:  cfg.Codex.ApprovalPolicy,
-		SandboxMode:     cfg.Codex.SandboxMode,
-		Timeout:         time.Duration(cfg.Codex.TimeoutSeconds) * time.Second,
-		Env:             cfg.Codex.Env,
-	}
-
-	orch := orchestrator.Orchestrator{
-		Config: cfg,
-		Logger: logger,
-		Store:  store,
-		Skills: loader,
-		Codex:  runner,
-	}
-
-	ctx := context.Background()
-	if _, err := orch.Run(ctx); err != nil {
-		exitErr(err)
-	}
+	runLoop(cfg)
 }
 
-func runStatus(args []string) {
-	fs := flag.NewFlagSet("status", flag.ExitOnError)
+func runOnce(args []string) {
+	fs := flag.NewFlagSet("once", flag.ExitOnError)
 	configPath := fs.String("config", config.ResolveConfigPath(), "Config file path")
 	fs.Parse(args)
 
@@ -130,18 +110,54 @@ func runStatus(args []string) {
 	if err != nil {
 		exitErr(err)
 	}
-	store := state.NewStore(cfg.StateDir(), cfg.RunsDir(), cfg.MemoryDir(), cfg.LogsDir(), cfg.ArtifactsDir())
-	runs, err := store.ListRuns()
+	cfg.Loop.Mode = "bounded"
+	runLoop(cfg)
+}
+
+func runStatus(args []string) {
+	fs := flag.NewFlagSet("status", flag.ExitOnError)
+	configPath := fs.String("config", config.ResolveConfigPath(), "Config file path")
+	runID := fs.String("run", "", "run id (optional)")
+	jsonOut := fs.Bool("json", false, "output JSON")
+	fs.Parse(args)
+
+	cfg, err := config.Load(*configPath)
 	if err != nil {
 		exitErr(err)
 	}
-	if len(runs) == 0 {
+	store := state.NewStore(cfg.StateDir(), cfg.RunsDir(), cfg.MemoryDir(), cfg.LogsDir(), cfg.ArtifactsDir())
+	statuses, err := collectRunStatuses(store, *runID)
+	if err != nil {
+		exitErr(err)
+	}
+	if len(statuses) == 0 {
 		fmt.Println("No runs found")
 		return
 	}
-	for _, run := range runs {
-		fmt.Printf("%s\t%s\t%s\n", run.ID, run.Status, run.CurrentPhase)
+	if *jsonOut {
+		writeJSON(statuses)
+		return
 	}
+	for _, status := range statuses {
+		fmt.Printf(
+			"%s\t%s\t%s\t%d\t%s\t%s\t%s\n",
+			status.ID,
+			status.Status,
+			status.CurrentPhase,
+			status.Iterations,
+			emptyOr(status.LastAction),
+			emptyOr(status.StopReason),
+			emptyOr(status.LastError),
+		)
+	}
+}
+
+func runResume(args []string) {
+	runControlAction(args, "resume")
+}
+
+func runKill(args []string) {
+	runControlAction(args, "kill")
 }
 
 func runBeads(args []string) {
@@ -276,11 +292,187 @@ func runAPI(args []string) {
 	}
 }
 
+type RunStatus struct {
+	ID           string               `json:"id"`
+	Status       string               `json:"status"`
+	CurrentPhase string               `json:"current_phase"`
+	Iterations   int                  `json:"iterations"`
+	StartedAt    time.Time            `json:"started_at"`
+	FinishedAt   *time.Time           `json:"finished_at"`
+	LastAction   *string              `json:"last_action,omitempty"`
+	LastActionAt *time.Time           `json:"last_action_at,omitempty"`
+	StopReason   *string              `json:"stop_reason,omitempty"`
+	LastError    *string              `json:"last_error,omitempty"`
+	Feedback     *state.RunFeedback   `json:"feedback,omitempty"`
+	Control      *state.RunControl    `json:"control,omitempty"`
+}
+
+func runControlAction(args []string, action string) {
+	fs := flag.NewFlagSet(action, flag.ExitOnError)
+	configPath := fs.String("config", config.ResolveConfigPath(), "Config file path")
+	runID := fs.String("run", "", "run id")
+	reason := fs.String("reason", "", "reason (optional)")
+	jsonOut := fs.Bool("json", false, "output JSON")
+	fs.Parse(args)
+
+	if *runID == "" {
+		exitErr(fmt.Errorf("run id is required"))
+	}
+	cfg, err := config.Load(*configPath)
+	if err != nil {
+		exitErr(err)
+	}
+	store := state.NewStore(cfg.StateDir(), cfg.RunsDir(), cfg.MemoryDir(), cfg.LogsDir(), cfg.ArtifactsDir())
+	if err := store.InitDirs(); err != nil {
+		exitErr(err)
+	}
+	control, err := requestRunAction(store, *runID, action, *reason)
+	if err != nil {
+		exitErr(err)
+	}
+	if *jsonOut {
+		writeJSON(control)
+		return
+	}
+	fmt.Printf("Requested %s for run %s\n", action, *runID)
+}
+
+func requestRunAction(store *state.Store, runID, action, reason string) (*state.RunControl, error) {
+	run, err := store.GetRun(runID)
+	if err != nil {
+		return nil, err
+	}
+	now := time.Now().UTC()
+	control := state.RunControl{
+		RunID:        run.ID,
+		Status:       run.Status,
+		LastAction:   &action,
+		LastActionAt: &now,
+		UpdatedAt:    now,
+	}
+	if reason != "" && action != "resume" {
+		control.StopReason = &reason
+	}
+	if err := store.SaveRunControl(control); err != nil {
+		return nil, err
+	}
+	return &control, nil
+}
+
+func collectRunStatuses(store *state.Store, runID string) ([]RunStatus, error) {
+	var runs []state.Run
+	if runID != "" {
+		run, err := store.GetRun(runID)
+		if err != nil {
+			return nil, err
+		}
+		runs = []state.Run{run}
+	} else {
+		list, err := store.ListRuns()
+		if err != nil {
+			return nil, err
+		}
+		runs = list
+	}
+
+	statuses := make([]RunStatus, 0, len(runs))
+	for _, run := range runs {
+		control, err := store.GetRunControl(run.ID)
+		if err != nil {
+			return nil, err
+		}
+		feedback, err := store.GetRunFeedback(run.ID)
+		if err != nil {
+			return nil, err
+		}
+		statuses = append(statuses, RunStatus{
+			ID:           run.ID,
+			Status:       run.Status,
+			CurrentPhase: run.CurrentPhase,
+			Iterations:   run.Iterations,
+			StartedAt:    run.StartedAt,
+			FinishedAt:   run.FinishedAt,
+			LastAction:   actionValue(control),
+			LastActionAt: actionAtValue(control),
+			StopReason:   stopReasonValue(control),
+			LastError:    lastErrorValue(control),
+			Feedback:     feedback,
+			Control:      control,
+		})
+	}
+	return statuses, nil
+}
+
+func actionValue(control *state.RunControl) *string {
+	if control == nil {
+		return nil
+	}
+	return control.LastAction
+}
+
+func actionAtValue(control *state.RunControl) *time.Time {
+	if control == nil {
+		return nil
+	}
+	return control.LastActionAt
+}
+
+func stopReasonValue(control *state.RunControl) *string {
+	if control == nil {
+		return nil
+	}
+	return control.StopReason
+}
+
+func lastErrorValue(control *state.RunControl) *string {
+	if control == nil {
+		return nil
+	}
+	return control.LastError
+}
+
+func emptyOr(value *string) string {
+	if value == nil || *value == "" {
+		return "—"
+	}
+	return *value
+}
+
 func runConfig(args []string) {
 	fs := flag.NewFlagSet("config", flag.ExitOnError)
 	configPath := fs.String("config", config.ResolveConfigPath(), "Config file path")
 	fs.Parse(args)
 	fmt.Printf("Config path: %s\n", *configPath)
+}
+
+func runLoop(cfg config.Config) {
+	logger := logging.NewLogger(cfg.Logging.Level)
+	store := state.NewStore(cfg.StateDir(), cfg.RunsDir(), cfg.MemoryDir(), cfg.LogsDir(), cfg.ArtifactsDir())
+	loader := skills.Loader{Paths: cfg.Skills.Paths}
+	runner := codex.Runner{
+		CLIPath:         cfg.Codex.CLIPath,
+		Model:           cfg.Codex.Model,
+		ReasoningEffort: cfg.Codex.ReasoningEffort,
+		ExtraArgs:       cfg.Codex.ExtraArgs,
+		Mode:            cfg.Mode,
+		ApprovalPolicy:  cfg.Codex.ApprovalPolicy,
+		SandboxMode:     cfg.Codex.SandboxMode,
+		Timeout:         time.Duration(cfg.Codex.TimeoutSeconds) * time.Second,
+		Env:             cfg.Codex.Env,
+	}
+
+	orch := orchestrator.Orchestrator{
+		Config: cfg,
+		Logger: logger,
+		Store:  store,
+		Skills: loader,
+		Codex:  runner,
+	}
+
+	ctx := context.Background()
+	if _, err := orch.Run(ctx); err != nil {
+		exitErr(err)
+	}
 }
 
 func ensureConfig(path string) error {
