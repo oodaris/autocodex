@@ -11,66 +11,66 @@ import (
 	"unicode"
 )
 
-func (c *Controller) generateSpecAndPlan(ctx context.Context, task string) (string, string, error) {
+func (c *Controller) generateSpecAndPlan(ctx context.Context, task string) (string, string, string, error) {
 	slug := slugify(task)
 	if slug == "" {
-		return "", "", errors.New("empty task slug")
+		return "", "", "", errors.New("empty task slug")
 	}
 
 	specTemplatePath := filepath.Clean(c.Config.Autonomy.SpecTemplate)
 	planTemplatePath := filepath.Clean(c.Config.Autonomy.PlanTemplate)
 	specTemplate, err := os.ReadFile(specTemplatePath)
 	if err != nil {
-		return "", "", fmt.Errorf("read spec template: %w", err)
+		return "", "", "", fmt.Errorf("read spec template: %w", err)
 	}
 	planTemplate, err := os.ReadFile(planTemplatePath)
 	if err != nil {
-		return "", "", fmt.Errorf("read plan template: %w", err)
+		return "", "", "", fmt.Errorf("read plan template: %w", err)
 	}
 
 	specOutputPath := uniquePath(specOutputPath(specTemplatePath, slug))
 	planOutputPath := uniquePath(planOutputPath(planTemplatePath, slug))
 
 	if err := os.MkdirAll(filepath.Dir(specOutputPath), 0o755); err != nil {
-		return "", "", fmt.Errorf("create spec dir: %w", err)
+		return "", "", "", fmt.Errorf("create spec dir: %w", err)
 	}
 	if err := os.MkdirAll(filepath.Dir(planOutputPath), 0o755); err != nil {
-		return "", "", fmt.Errorf("create plan dir: %w", err)
+		return "", "", "", fmt.Errorf("create plan dir: %w", err)
 	}
 
 	specPrompt, err := c.buildPrompt(task, "core-qna-synthesis", string(specTemplate), specOutputPath)
 	if err != nil {
-		return "", "", err
+		return "", "", "", err
 	}
 	planPrompt, err := c.buildPrompt(task, "core-holistic-planning-and-tracking", string(planTemplate), planOutputPath)
 	if err != nil {
-		return "", "", err
+		return "", "", "", err
 	}
 
 	specCtx, cancel := context.WithTimeout(ctx, time.Duration(c.Config.Codex.TimeoutSeconds)*time.Second)
 	specOutput, err := c.Codex.Exec(specCtx, specPrompt)
 	cancel()
 	if err != nil {
-		return "", "", fmt.Errorf("spec generation failed: %w", err)
+		return "", "", "", fmt.Errorf("spec generation failed: %w", err)
 	}
 	planOutputCtx, cancelPlan := context.WithTimeout(ctx, time.Duration(c.Config.Codex.TimeoutSeconds)*time.Second)
 	planOutput, err := c.Codex.Exec(planOutputCtx, planPrompt)
 	cancelPlan()
 	if err != nil {
-		return "", "", fmt.Errorf("plan generation failed: %w", err)
+		return "", "", "", fmt.Errorf("plan generation failed: %w", err)
 	}
 
 	if err := os.WriteFile(specOutputPath, []byte(strings.TrimSpace(specOutput)+"\n"), 0o644); err != nil {
-		return "", "", fmt.Errorf("write spec: %w", err)
+		return "", "", "", fmt.Errorf("write spec: %w", err)
 	}
 	if err := os.WriteFile(planOutputPath, []byte(strings.TrimSpace(planOutput)+"\n"), 0o644); err != nil {
-		return "", "", fmt.Errorf("write plan: %w", err)
+		return "", "", "", fmt.Errorf("write plan: %w", err)
 	}
 
 	if c.Logger != nil {
 		c.Logger.Info("autonomy artifacts written", "spec_path", specOutputPath, "plan_path", planOutputPath)
 	}
-	return specOutputPath, planOutputPath, nil
+	return specOutputPath, planOutputPath, slug, nil
 }
 
 func (c *Controller) buildPrompt(task, skillName, template, outputPath string) (string, error) {

@@ -36,8 +36,19 @@ func (c *Controller) Run(ctx context.Context, input Input) (*state.Run, error) {
 			return nil, err
 		}
 	}
-	if _, _, err := c.generateSpecAndPlan(ctx, task); err != nil {
+	specPath, planPath, slug, err := c.generateSpecAndPlan(ctx, task)
+	if err != nil {
 		return nil, err
+	}
+	tasksPath, tasksFile, err := c.generateTasksFile(ctx, task, slug, planPath)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.createBeads(tasksFile); err != nil {
+		return nil, err
+	}
+	if c.Logger != nil {
+		c.Logger.Info("autonomy artifacts ready", "spec_path", specPath, "plan_path", planPath, "tasks_path", tasksPath)
 	}
 	orch := orchestrator.Orchestrator{
 		Config: c.Config,
