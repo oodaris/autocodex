@@ -65,7 +65,7 @@ func (s *Server) Handler() http.Handler {
 	if s.Auth != nil && s.Auth.Enabled {
 		handler = s.authMiddleware(handler)
 	}
-	return handler
+	return s.corsMiddleware(handler)
 }
 
 func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
