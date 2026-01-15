@@ -70,6 +70,47 @@ func TestArtifactsEndpoint(t *testing.T) {
 	}
 }
 
+func TestMemoryDocsEndpoints(t *testing.T) {
+	store := newTestStore(t)
+
+	srv := &Server{Store: store}
+
+	req := httptest.NewRequest(http.MethodGet, "/memory", nil)
+	rr := httptest.NewRecorder()
+	srv.Handler().ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("status: %d", rr.Code)
+	}
+
+	var docs []state.MemoryDocSummary
+	if err := json.Unmarshal(rr.Body.Bytes(), &docs); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if len(docs) == 0 {
+		t.Fatalf("expected memory docs")
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/memory/"+docs[0].Name, nil)
+	rr = httptest.NewRecorder()
+	srv.Handler().ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("detail status: %d", rr.Code)
+	}
+
+	var detail state.MemoryDocDetail
+	if err := json.Unmarshal(rr.Body.Bytes(), &detail); err != nil {
+		t.Fatalf("decode detail: %v", err)
+	}
+	if detail.Name != docs[0].Name {
+		t.Fatalf("unexpected doc name")
+	}
+	if detail.Content == "" {
+		t.Fatalf("expected content")
+	}
+}
+
 func newTestStore(t *testing.T) *state.Store {
 	base := t.TempDir()
 	store := state.NewStore(
