@@ -1,6 +1,8 @@
-# Autocodex
+![autocodex banner](docs/assets/autocodex-banner.png)
 
-Autocodex orchestrates a structured loop: ideate → plan → implement → review → test. It uses Beads for task tracking, runs the local Codex CLI, and supports external plugins via JSON‑RPC.
+# autocodex
+
+autocodex orchestrates a structured loop: ideate → plan → implement → review → test. It uses Beads for task tracking, runs the local Codex CLI, and supports external plugins via JSON‑RPC.
 
 ## Features
 - Go CLI with a deterministic, scriptable workflow
