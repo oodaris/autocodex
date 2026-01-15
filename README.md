@@ -56,6 +56,12 @@ go run ./cmd/autocodex plugins --action run \
   --input '{"text":"hello world"}'
 ```
 
+## Snapshots
+Generate a run snapshot (memory docs + recent events/artifacts) for sharing or continuity:
+```bash
+go run ./cmd/autocodex snapshot --run <run-id> --reason "handoff"
+```
+
 ## Development
 - Tests: `go test ./...`
 - Vet: `go vet ./...`

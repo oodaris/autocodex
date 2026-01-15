@@ -42,6 +42,8 @@ func main() {
 		runResume(os.Args[2:])
 	case "kill":
 		runKill(os.Args[2:])
+	case "snapshot":
+		runSnapshot(os.Args[2:])
 	case "status":
 		runStatus(os.Args[2:])
 	case "beads":
@@ -60,7 +62,7 @@ func main() {
 
 func usage() {
 	fmt.Println("Usage: autocodex <command> [args]")
-	fmt.Println("Commands: init, run, once, resume, kill, status, beads, plugins, api, config")
+	fmt.Println("Commands: init, run, once, resume, kill, snapshot, status, beads, plugins, api, config")
 }
 
 func runInit(args []string) {
@@ -150,6 +152,63 @@ func runStatus(args []string) {
 			emptyOr(status.LastError),
 		)
 	}
+}
+
+func runSnapshot(args []string) {
+	fs := flag.NewFlagSet("snapshot", flag.ExitOnError)
+	configPath := fs.String("config", config.ResolveConfigPath(), "Config file path")
+	runID := fs.String("run", "", "run id (optional, defaults to latest)")
+	reason := fs.String("reason", "", "snapshot reason")
+	sources := fs.String("sources", "", "comma-separated sources (memory,events,artifacts)")
+	maxBytes := fs.Int("max-bytes", 0, "max snapshot bytes (0 = no limit)")
+	maxEvents := fs.Int("max-events", 0, "max events included (0 = no limit)")
+	maxArtifacts := fs.Int("max-artifacts", 0, "max artifacts included (0 = no limit)")
+	memoryGlob := fs.String("memory-glob", "", "memory glob filter (default *.md)")
+	jsonOut := fs.Bool("json", false, "output JSON")
+	fs.Parse(args)
+
+	cfg, err := config.Load(*configPath)
+	if err != nil {
+		exitErr(err)
+	}
+	store := state.NewStore(cfg.StateDir(), cfg.RunsDir(), cfg.MemoryDir(), cfg.LogsDir(), cfg.ArtifactsDir())
+	if err := store.InitDirs(); err != nil {
+		exitErr(err)
+	}
+
+	selectedRun := *runID
+	if selectedRun == "" {
+		latest, err := latestRunID(store)
+		if err != nil {
+			exitErr(err)
+		}
+		selectedRun = latest
+	}
+
+	sourceList := parseSources(*sources, cfg.Loop.Feedback.Sources)
+	options := state.SnapshotOptions{
+		Reason:       *reason,
+		Sources:      sourceList,
+		MaxBytes:     *maxBytes,
+		MaxEvents:    chooseLimit(*maxEvents, cfg.Loop.Feedback.MaxEvents),
+		MaxArtifacts: chooseLimit(*maxArtifacts, cfg.Loop.Feedback.MaxArtifacts),
+		MemoryGlob:   defaultIfEmpty(*memoryGlob, cfg.Loop.Feedback.MemoryGlob),
+	}
+	snapshot, err := store.CreateSnapshot(selectedRun, options)
+	if err != nil {
+		exitErr(err)
+	}
+	if *jsonOut {
+		writeJSON(snapshot)
+		return
+	}
+	fmt.Printf(
+		"Snapshot %s created for run %s (%d bytes)\nPath: %s\n",
+		snapshot.Summary.ID,
+		snapshot.Summary.RunID,
+		snapshot.Summary.SizeBytes,
+		snapshot.Summary.ContentPath,
+	)
 }
 
 func runResume(args []string) {
@@ -293,18 +352,18 @@ func runAPI(args []string) {
 }
 
 type RunStatus struct {
-	ID           string               `json:"id"`
-	Status       string               `json:"status"`
-	CurrentPhase string               `json:"current_phase"`
-	Iterations   int                  `json:"iterations"`
-	StartedAt    time.Time            `json:"started_at"`
-	FinishedAt   *time.Time           `json:"finished_at"`
-	LastAction   *string              `json:"last_action,omitempty"`
-	LastActionAt *time.Time           `json:"last_action_at,omitempty"`
-	StopReason   *string              `json:"stop_reason,omitempty"`
-	LastError    *string              `json:"last_error,omitempty"`
-	Feedback     *state.RunFeedback   `json:"feedback,omitempty"`
-	Control      *state.RunControl    `json:"control,omitempty"`
+	ID           string             `json:"id"`
+	Status       string             `json:"status"`
+	CurrentPhase string             `json:"current_phase"`
+	Iterations   int                `json:"iterations"`
+	StartedAt    time.Time          `json:"started_at"`
+	FinishedAt   *time.Time         `json:"finished_at"`
+	LastAction   *string            `json:"last_action,omitempty"`
+	LastActionAt *time.Time         `json:"last_action_at,omitempty"`
+	StopReason   *string            `json:"stop_reason,omitempty"`
+	LastError    *string            `json:"last_error,omitempty"`
+	Feedback     *state.RunFeedback `json:"feedback,omitempty"`
+	Control      *state.RunControl  `json:"control,omitempty"`
 }
 
 func runControlAction(args []string, action string) {
@@ -520,6 +579,53 @@ func writeJSON(v interface{}) {
 	enc := json.NewEncoder(os.Stdout)
 	enc.SetEscapeHTML(false)
 	_ = enc.Encode(v)
+}
+
+func parseSources(input string, fallback []string) []string {
+	if strings.TrimSpace(input) == "" {
+		if len(fallback) == 0 {
+			return []string{"memory", "events", "artifacts"}
+		}
+		return append([]string{}, fallback...)
+	}
+	parts := strings.Split(input, ",")
+	sources := make([]string, 0, len(parts))
+	for _, part := range parts {
+		item := strings.TrimSpace(part)
+		if item == "" {
+			continue
+		}
+		sources = append(sources, item)
+	}
+	if len(sources) == 0 {
+		return append([]string{}, fallback...)
+	}
+	return sources
+}
+
+func latestRunID(store *state.Store) (string, error) {
+	runs, err := store.ListRuns()
+	if err != nil {
+		return "", err
+	}
+	if len(runs) == 0 {
+		return "", fmt.Errorf("no runs found")
+	}
+	return runs[len(runs)-1].ID, nil
+}
+
+func chooseLimit(input, fallback int) int {
+	if input != 0 {
+		return input
+	}
+	return fallback
+}
+
+func defaultIfEmpty(value, fallback string) string {
+	if strings.TrimSpace(value) == "" {
+		return fallback
+	}
+	return value
 }
 
 func exitErr(err error) {

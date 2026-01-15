@@ -85,3 +85,38 @@ func TestCollectRunStatuses(t *testing.T) {
 		t.Fatalf("expected feedback in status")
 	}
 }
+
+func TestParseSources(t *testing.T) {
+	sources := parseSources("memory, events", []string{"artifacts"})
+	if len(sources) != 2 || sources[0] != "memory" || sources[1] != "events" {
+		t.Fatalf("unexpected sources")
+	}
+	fallback := parseSources("", []string{"artifacts"})
+	if len(fallback) != 1 || fallback[0] != "artifacts" {
+		t.Fatalf("expected fallback sources")
+	}
+}
+
+func TestLatestRunID(t *testing.T) {
+	base := t.TempDir()
+	store := state.NewStore(
+		filepath.Join(base, "state"),
+		filepath.Join(base, "runs"),
+		filepath.Join(base, "memory"),
+		filepath.Join(base, "logs"),
+		filepath.Join(base, "artifacts"),
+	)
+	if err := store.InitDirs(); err != nil {
+		t.Fatalf("init dirs: %v", err)
+	}
+	if _, err := store.CreateRun(); err != nil {
+		t.Fatalf("create run: %v", err)
+	}
+	id, err := latestRunID(store)
+	if err != nil {
+		t.Fatalf("latest run: %v", err)
+	}
+	if id == "" {
+		t.Fatalf("expected run id")
+	}
+}
