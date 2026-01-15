@@ -31,6 +31,12 @@ autocodex init --config autocodex.yaml
 autocodex run --config autocodex.yaml
 ```
 
+You can also append a task directly:
+
+```bash
+autocodex run --config autocodex.yaml --task "Add a memory docs summary card."
+```
+
 ## Start the API
 
 ```bash
@@ -44,4 +50,3 @@ cd web
 npm install
 npm run dev
 ```
-

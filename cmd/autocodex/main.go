@@ -95,10 +95,16 @@ func runInit(args []string) {
 func runRun(args []string) {
 	fs := flag.NewFlagSet("run", flag.ExitOnError)
 	configPath := fs.String("config", config.ResolveConfigPath(), "Config file path")
+	task := fs.String("task", "", "task text to append to TODO.md before run")
+	taskFile := fs.String("task-file", "", "path to task file (appended to TODO.md before run)")
 	fs.Parse(args)
 
 	cfg, err := config.Load(*configPath)
 	if err != nil {
+		exitErr(err)
+	}
+
+	if err := applyTaskInput(&cfg, *task, *taskFile); err != nil {
 		exitErr(err)
 	}
 
@@ -108,10 +114,15 @@ func runRun(args []string) {
 func runOnce(args []string) {
 	fs := flag.NewFlagSet("once", flag.ExitOnError)
 	configPath := fs.String("config", config.ResolveConfigPath(), "Config file path")
+	task := fs.String("task", "", "task text to append to TODO.md before run")
+	taskFile := fs.String("task-file", "", "path to task file (appended to TODO.md before run)")
 	fs.Parse(args)
 
 	cfg, err := config.Load(*configPath)
 	if err != nil {
+		exitErr(err)
+	}
+	if err := applyTaskInput(&cfg, *task, *taskFile); err != nil {
 		exitErr(err)
 	}
 	cfg.Loop.Mode = "bounded"
@@ -612,6 +623,65 @@ func resolveInput(input, inputFile string) (json.RawMessage, error) {
 		return json.RawMessage([]byte("{}")), nil
 	}
 	return json.RawMessage([]byte(input)), nil
+}
+
+func applyTaskInput(cfg *config.Config, task, taskFile string) error {
+	if cfg == nil {
+		return nil
+	}
+	if strings.TrimSpace(task) == "" && strings.TrimSpace(taskFile) == "" {
+		return nil
+	}
+	if strings.TrimSpace(task) != "" && strings.TrimSpace(taskFile) != "" {
+		return fmt.Errorf("only one of --task or --task-file may be set")
+	}
+	payload := task
+	if strings.TrimSpace(taskFile) != "" {
+		data, err := os.ReadFile(taskFile)
+		if err != nil {
+			return fmt.Errorf("read task file: %w", err)
+		}
+		payload = string(data)
+	}
+	payload = strings.TrimSpace(payload)
+	if payload == "" {
+		return nil
+	}
+
+	store := state.NewStore(cfg.StateDir(), cfg.RunsDir(), cfg.MemoryDir(), cfg.LogsDir(), cfg.ArtifactsDir())
+	if err := store.InitDirs(); err != nil {
+		return err
+	}
+	if err := store.EnsureMemoryDocs(); err != nil {
+		return err
+	}
+	if err := appendTaskToTodo(cfg.MemoryDir(), payload); err != nil {
+		return err
+	}
+
+	if cfg.Loop.Feedback.Mode == "" || cfg.Loop.Feedback.Mode == "off" {
+		cfg.Loop.Feedback.Mode = "on"
+	}
+	fmt.Println("Task appended to TODO.md")
+	return nil
+}
+
+func appendTaskToTodo(memoryDir, payload string) error {
+	if strings.TrimSpace(memoryDir) == "" {
+		return fmt.Errorf("memory dir is empty")
+	}
+	path := filepath.Join(memoryDir, "TODO.md")
+	now := time.Now().UTC().Format(time.RFC3339)
+	entry := fmt.Sprintf("\n\n## Task (%s)\n%s\n", now, strings.TrimSpace(payload))
+	f, err := os.OpenFile(path, os.O_APPEND|os.O_WRONLY, 0o644)
+	if err != nil {
+		return fmt.Errorf("open TODO.md: %w", err)
+	}
+	defer f.Close()
+	if _, err := f.WriteString(entry); err != nil {
+		return fmt.Errorf("append TODO.md: %w", err)
+	}
+	return nil
 }
 
 func findPlugin(pluginsList []plugins.Plugin, name string) (plugins.Plugin, error) {

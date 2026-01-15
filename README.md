@@ -36,6 +36,10 @@ cp config.example.yaml autocodex.yaml
 autocodex init --config autocodex.yaml
 autocodex run --config autocodex.yaml
 ```
+Or append a task directly:
+```bash
+autocodex run --config autocodex.yaml --task "Review backend API and fix issues."
+```
 4) (Optional) Start the UI:
 ```bash
 cd web
