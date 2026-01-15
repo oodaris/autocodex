@@ -1,4 +1,13 @@
-import type { Artifact, Health, MemoryDocDetail, MemoryDocSummary, Run, RunEvent } from './types'
+import type {
+  Artifact,
+  Health,
+  MemoryDocDetail,
+  MemoryDocSummary,
+  Run,
+  RunControlResponse,
+  RunControlStatus,
+  RunEvent,
+} from './types'
 
 type UnknownRecord = Record<string, unknown>
 
@@ -91,6 +100,29 @@ function assertMemoryDocDetail(value: unknown, path = 'memory_doc'): asserts val
   assertString(record.content, `${path}.content`)
 }
 
+function assertRunControlStatus(value: unknown, path = 'run_control'): asserts value is RunControlStatus {
+  if (!isRecord(value)) {
+    throw new Error(`Invalid ${path}: expected object`)
+  }
+  assertString(value.run_id, `${path}.run_id`)
+  assertString(value.status, `${path}.status`)
+  assertNullableString(value.last_action, `${path}.last_action`)
+  assertNullableString(value.last_action_at, `${path}.last_action_at`)
+}
+
+function assertRunControlResponse(value: unknown, path = 'run_control_response'): asserts value is RunControlResponse {
+  if (!isRecord(value)) {
+    throw new Error(`Invalid ${path}: expected object`)
+  }
+  assertString(value.run_id, `${path}.run_id`)
+  assertString(value.action, `${path}.action`)
+  if (typeof value.accepted !== 'boolean') {
+    throw new Error(`Invalid ${path}.accepted: expected boolean`)
+  }
+  assertString(value.status, `${path}.status`)
+  assertString(value.message, `${path}.message`)
+}
+
 export function parseHealth(value: unknown): Health {
   if (!isRecord(value)) {
     throw new Error('Invalid health payload: expected object')
@@ -145,4 +177,14 @@ export function parseRunArtifacts(value: unknown): Artifact[] {
 export function parseArtifact(value: unknown): Artifact {
   assertArtifact(value, 'artifact')
   return value as Artifact
+}
+
+export function parseRunControlStatus(value: unknown): RunControlStatus {
+  assertRunControlStatus(value, 'run_control')
+  return value as RunControlStatus
+}
+
+export function parseRunControlResponse(value: unknown): RunControlResponse {
+  assertRunControlResponse(value, 'run_control_response')
+  return value as RunControlResponse
 }

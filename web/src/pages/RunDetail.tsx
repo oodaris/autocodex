@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { api } from '../api/client'
-import type { Artifact, Run, RunEvent } from '../api/client'
+import type { Artifact, Run, RunControlStatus, RunEvent } from '../api/client'
 import { useAsync } from '../hooks/useAsync'
 import { usePolling } from '../hooks/usePolling'
 import { formatBytes, formatTimestamp, statusLabel } from '../utils/format'
@@ -13,6 +13,12 @@ export default function RunDetail() {
   const [run, setRun] = useState<Run | null>(null)
   const [events, setEvents] = useState<RunEvent[]>([])
   const [artifacts, setArtifacts] = useState<Artifact[]>([])
+  const [controlStatus, setControlStatus] = useState<RunControlStatus | null>(null)
+  const [controlAction, setControlAction] =
+    useState<RunControlStatus['last_action'] | 'resume' | 'stop' | 'cancel' | 'kill'>('stop')
+  const [controlReason, setControlReason] = useState('')
+  const [controlMessage, setControlMessage] = useState<string | null>(null)
+  const [controlBusy, setControlBusy] = useState(false)
   const [state, setState] = useState<LoadState>('idle')
   const [error, setError] = useState<string | null>(null)
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
@@ -35,15 +41,17 @@ export default function RunDetail() {
       if (!silent) setState('loading')
       setError(null)
       try {
-        const [runPayload, eventPayload, artifactPayload] = await Promise.all([
+        const [runPayload, eventPayload, artifactPayload, controlPayload] = await Promise.all([
           api.run(runId, { signal }),
           api.runEvents(runId, { signal }),
           api.runArtifacts(runId, { signal }),
+          api.runControlStatus(runId, { signal }),
         ])
         if (signal?.aborted) return
         setRun(runPayload)
         setEvents(eventPayload)
         setArtifacts(artifactPayload)
+        setControlStatus(controlPayload)
         setLastUpdated(new Date())
         setState('ready')
       } catch (err) {
@@ -145,6 +153,84 @@ export default function RunDetail() {
                 <dd>{lastUpdated ? formatTimestamp(lastUpdated.toISOString()) : '—'}</dd>
               </div>
             </dl>
+          </div>
+
+          <div className="panel panel--note">
+            <div className="panel__header">
+              <h2>Run control</h2>
+              <span className="panel__meta">
+                {controlStatus?.last_action ? `Last: ${controlStatus.last_action}` : 'No actions yet'}
+              </span>
+            </div>
+            <div className="control-grid">
+              <div>
+                <p className="control-label">Action</p>
+                <div className="control-row">
+                  <select
+                    className="control-select"
+                    value={controlAction ?? 'stop'}
+                    onChange={(event) => setControlAction(event.target.value as typeof controlAction)}
+                    disabled={controlBusy}
+                  >
+                    <option value="resume">Resume</option>
+                    <option value="stop">Stop</option>
+                    <option value="cancel">Cancel</option>
+                    <option value="kill">Kill</option>
+                  </select>
+                  <button
+                    className="button button--danger"
+                    type="button"
+                    disabled={controlBusy || !runId}
+                    onClick={async () => {
+                      if (!runId) return
+                      setControlBusy(true)
+                      setControlMessage(null)
+                      try {
+                        const payload = {
+                          action: controlAction as 'resume' | 'stop' | 'cancel' | 'kill',
+                          reason: controlReason.trim() || undefined,
+                        }
+                        const response = await api.runControlAction(runId, payload)
+                        setControlMessage(`Requested ${response.action}. ${response.message}`)
+                        const latest = await api.runControlStatus(runId)
+                        setControlStatus(latest)
+                      } catch (err) {
+                        const message = err instanceof Error ? err.message : 'Failed to send control action'
+                        setControlMessage(message)
+                      } finally {
+                        setControlBusy(false)
+                      }
+                    }}
+                  >
+                    {controlBusy ? 'Sending…' : 'Send'}
+                  </button>
+                </div>
+              </div>
+              <div>
+                <p className="control-label">Reason (optional)</p>
+                <input
+                  className="control-input"
+                  type="text"
+                  value={controlReason}
+                  onChange={(event) => setControlReason(event.target.value)}
+                  placeholder="Why should this run stop?"
+                  disabled={controlBusy}
+                />
+              </div>
+              <div className="control-meta">
+                <p>
+                  <strong>Status:</strong> {controlStatus?.status ?? run.status}
+                </p>
+                <p>
+                  <strong>Last action:</strong> {controlStatus?.last_action ?? '—'}
+                </p>
+                <p>
+                  <strong>Last action at:</strong>{' '}
+                  {controlStatus?.last_action_at ? formatTimestamp(controlStatus.last_action_at) : '—'}
+                </p>
+              </div>
+              {controlMessage ? <p className="control-message">{controlMessage}</p> : null}
+            </div>
           </div>
 
           <div className="panel panel--note">

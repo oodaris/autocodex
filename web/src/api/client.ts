@@ -5,12 +5,34 @@ import {
   parseMemoryDocs,
   parseRun,
   parseRunArtifacts,
+  parseRunControlResponse,
+  parseRunControlStatus,
   parseRunEvents,
   parseRuns,
 } from './schema'
-import type { Artifact, Health, MemoryDocDetail, MemoryDocSummary, Run, RunEvent } from './types'
+import type {
+  Artifact,
+  Health,
+  MemoryDocDetail,
+  MemoryDocSummary,
+  Run,
+  RunControlRequest,
+  RunControlResponse,
+  RunControlStatus,
+  RunEvent,
+} from './types'
 
-export type { Artifact, Health, MemoryDocDetail, MemoryDocSummary, Run, RunEvent } from './types'
+export type {
+  Artifact,
+  Health,
+  MemoryDocDetail,
+  MemoryDocSummary,
+  Run,
+  RunControlRequest,
+  RunControlResponse,
+  RunControlStatus,
+  RunEvent,
+} from './types'
 
 const DEFAULT_BASE_URL = 'http://127.0.0.1:7788'
 
@@ -70,4 +92,16 @@ export const api = {
     requestJson<Artifact[]>(`/runs/${id}/artifacts`, options, parseRunArtifacts),
   artifact: (id: string, options?: ApiRequestOptions) =>
     requestJson<Artifact>(`/artifacts/${id}`, options, parseArtifact),
+  runControlStatus: (id: string, options?: ApiRequestOptions) =>
+    requestJson<RunControlStatus>(`/runs/${id}/control`, options, parseRunControlStatus),
+  runControlAction: (id: string, payload: RunControlRequest, options?: ApiRequestOptions) =>
+    requestJson<RunControlResponse>(
+      `/runs/${id}/control`,
+      {
+        method: 'POST',
+        body: JSON.stringify(payload),
+        ...options,
+      },
+      parseRunControlResponse,
+    ),
 }

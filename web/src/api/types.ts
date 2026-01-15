@@ -43,3 +43,24 @@ export type MemoryDocSummary = {
 export type MemoryDocDetail = MemoryDocSummary & {
   content: string
 }
+
+export type RunControlStatus = {
+  run_id: string
+  status: string
+  last_action?: string | null
+  last_action_at?: string | null
+}
+
+export type RunControlRequest = {
+  action: 'resume' | 'stop' | 'cancel' | 'kill'
+  reason?: string
+  dry_run?: boolean
+}
+
+export type RunControlResponse = {
+  run_id: string
+  action: string
+  accepted: boolean
+  status: string
+  message: string
+}
