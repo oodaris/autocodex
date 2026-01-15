@@ -9,6 +9,8 @@ import type {
   SnapshotDetail,
   SnapshotSummary,
   RunEvent,
+  WorkspaceSummary,
+  TerminalSessionSummary,
 } from './types'
 
 type UnknownRecord = Record<string, unknown>
@@ -26,6 +28,13 @@ function assertString(value: unknown, path: string): asserts value is string {
 function assertNumber(value: unknown, path: string): asserts value is number {
   if (typeof value !== 'number' || Number.isNaN(value)) {
     throw new Error(`Invalid ${path}: expected number`)
+  }
+}
+
+function assertNullableNumber(value: unknown, path: string): asserts value is number | null | undefined {
+  if (value == null) return
+  if (typeof value !== 'number' || Number.isNaN(value)) {
+    throw new Error(`Invalid ${path}: expected number or null`)
   }
 }
 
@@ -152,6 +161,43 @@ function assertSnapshotDetail(value: unknown, path = 'snapshot_detail'): asserts
   assertString(value.content, `${path}.content`)
 }
 
+function assertWorkspaceSummary(value: unknown, path = 'workspace'): asserts value is WorkspaceSummary {
+  if (!isRecord(value)) {
+    throw new Error(`Invalid ${path}: expected object`)
+  }
+  assertString(value.id, `${path}.id`)
+  assertString(value.name, `${path}.name`)
+  assertString(value.root, `${path}.root`)
+  assertString(value.config_path, `${path}.config_path`)
+  assertString(value.status, `${path}.status`)
+  assertNullableString(value.error, `${path}.error`)
+  assertNumber(value.runs_count, `${path}.runs_count`)
+  assertNullableString(value.last_run_id, `${path}.last_run_id`)
+  assertNullableString(value.last_run_status, `${path}.last_run_status`)
+  assertNullableString(value.last_run_phase, `${path}.last_run_phase`)
+  assertNullableString(value.last_run_started_at, `${path}.last_run_started_at`)
+  assertNullableString(value.last_run_finished_at, `${path}.last_run_finished_at`)
+}
+
+function assertTerminalSessionSummary(value: unknown, path = 'terminal_session'): asserts value is TerminalSessionSummary {
+  if (!isRecord(value)) {
+    throw new Error(`Invalid ${path}: expected object`)
+  }
+  assertString(value.id, `${path}.id`)
+  assertString(value.status, `${path}.status`)
+  assertString(value.command, `${path}.command`)
+  if (!Array.isArray(value.args)) {
+    throw new Error(`Invalid ${path}.args: expected array`)
+  }
+  value.args.forEach((entry: unknown, index: number) => assertString(entry, `${path}.args[${index}]`))
+  assertString(value.cwd, `${path}.cwd`)
+  assertNullableString(value.workspace_id, `${path}.workspace_id`)
+  assertNumber(value.pid, `${path}.pid`)
+  assertString(value.created_at, `${path}.created_at`)
+  assertString(value.updated_at, `${path}.updated_at`)
+  assertNullableNumber(value.exit_code, `${path}.exit_code`)
+}
+
 export function parseHealth(value: unknown): Health {
   if (!isRecord(value)) {
     throw new Error('Invalid health payload: expected object')
@@ -229,4 +275,30 @@ export function parseSnapshotSummaries(value: unknown): SnapshotSummary[] {
 export function parseSnapshotDetail(value: unknown): SnapshotDetail {
   assertSnapshotDetail(value, 'snapshot_detail')
   return value as SnapshotDetail
+}
+
+export function parseWorkspaceSummaries(value: unknown): WorkspaceSummary[] {
+  if (!Array.isArray(value)) {
+    throw new Error('Invalid workspaces payload: expected array')
+  }
+  value.forEach((entry, index) => assertWorkspaceSummary(entry, `workspaces[${index}]`))
+  return value as WorkspaceSummary[]
+}
+
+export function parseWorkspaceSummary(value: unknown): WorkspaceSummary {
+  assertWorkspaceSummary(value, 'workspace')
+  return value as WorkspaceSummary
+}
+
+export function parseTerminalSessionSummaries(value: unknown): TerminalSessionSummary[] {
+  if (!Array.isArray(value)) {
+    throw new Error('Invalid terminal sessions payload: expected array')
+  }
+  value.forEach((entry, index) => assertTerminalSessionSummary(entry, `terminal_sessions[${index}]`))
+  return value as TerminalSessionSummary[]
+}
+
+export function parseTerminalSessionSummary(value: unknown): TerminalSessionSummary {
+  assertTerminalSessionSummary(value, 'terminal_session')
+  return value as TerminalSessionSummary
 }

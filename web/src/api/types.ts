@@ -94,3 +94,38 @@ export type SnapshotCreateRequest = {
   include_memory?: boolean
   max_bytes?: number
 }
+
+export type WorkspaceSummary = {
+  id: string
+  name: string
+  root: string
+  config_path: string
+  status: 'ok' | 'missing_config' | 'invalid_config' | 'state_error'
+  error?: string | null
+  runs_count: number
+  last_run_id?: string | null
+  last_run_status?: string | null
+  last_run_phase?: string | null
+  last_run_started_at?: string | null
+  last_run_finished_at?: string | null
+}
+
+export type TerminalSessionCreateRequest = {
+  workspace_id?: string
+  command?: string
+  args?: string[]
+  env?: string[]
+}
+
+export type TerminalSessionSummary = {
+  id: string
+  status: 'running' | 'closed'
+  command: string
+  args: string[]
+  cwd: string
+  workspace_id?: string | null
+  pid: number
+  created_at: string
+  updated_at: string
+  exit_code?: number | null
+}

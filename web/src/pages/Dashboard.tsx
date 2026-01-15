@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
 import { api } from '../api/client'
-import type { Run } from '../api/client'
+import type { Run, WorkspaceSummary } from '../api/client'
 import { useAsync } from '../hooks/useAsync'
 import { usePolling } from '../hooks/usePolling'
 import { formatTimestamp, statusLabel } from '../utils/format'
@@ -16,11 +16,12 @@ type HealthState = {
 
 type RunCardProps = {
   run: Run
+  href: string
 }
 
-function RunCard({ run }: RunCardProps) {
+function RunCard({ run, href }: RunCardProps) {
   return (
-    <Link to={`/runs/${run.id}`} className={`card card--run card--${run.status}`}>
+    <Link to={href} className={`card card--run card--${run.status}`}>
       <div className="card__header">
         <div>
           <p className="card__eyebrow">Run ID</p>
@@ -51,7 +52,9 @@ function RunCard({ run }: RunCardProps) {
 }
 
 export default function Dashboard() {
+  const { workspaceId } = useParams<{ workspaceId?: string }>()
   const [runs, setRuns] = useState<Run[]>([])
+  const [workspace, setWorkspace] = useState<WorkspaceSummary | null>(null)
   const [state, setState] = useState<LoadState>('idle')
   const [health, setHealth] = useState<HealthState>({ status: 'unknown' })
   const [error, setError] = useState<string | null>(null)
@@ -71,13 +74,16 @@ export default function Dashboard() {
       setError(null)
 
       try {
-        const [healthPayload, runsPayload] = await Promise.all([
+        const workspace = workspaceId?.trim()
+        const [healthPayload, runsPayload, workspacePayload] = await Promise.all([
           api.health({ signal }),
-          api.runs({ signal }),
+          workspace ? api.hubRuns(workspace, { signal }) : api.runs({ signal }),
+          workspace ? api.hubWorkspace(workspace, { signal }) : Promise.resolve(null),
         ])
         if (signal?.aborted) return
         setHealth({ status: 'ok', time: healthPayload.time })
         setRuns(runsPayload)
+        setWorkspace(workspacePayload)
         setLastUpdated(new Date())
         setState('ready')
       } catch (err) {
@@ -89,7 +95,7 @@ export default function Dashboard() {
         setState('error')
       }
     },
-    [],
+    [workspaceId],
   )
 
   useAsync((signal) => refresh({ signal }), [refresh])
@@ -123,11 +129,20 @@ export default function Dashboard() {
         <div className="hero__banner" aria-hidden="true" />
         <div className="hero__copy">
           <span className="hero__badge">autocodex Control Deck</span>
-          <h1>Keep the loop moving. See every run in one place.</h1>
-          <p>
-            This dashboard reads from your local autocodex API and surfaces run history, phases, and
-            artifacts. Keep it open while autocodex iterates.
-          </p>
+          {workspaceId ? (
+            <>
+              <h1>Workspace {workspace?.name ?? workspaceId}</h1>
+              <p>Review recent runs and loop activity for this workspace.</p>
+            </>
+          ) : (
+            <>
+              <h1>Keep the loop moving. See every run in one place.</h1>
+              <p>
+                This dashboard reads from your local autocodex API and surfaces run history, phases, and
+                artifacts. Keep it open while autocodex iterates.
+              </p>
+            </>
+          )}
         </div>
         <div className="hero__status">
           <div className={`status-card status-card--${health.status}`} role="status" aria-live="polite">
@@ -223,7 +238,15 @@ export default function Dashboard() {
               </p>
             </div>
           ) : (
-            sortedRuns.slice(0, 6).map((run) => <RunCard key={run.id} run={run} />)
+            sortedRuns
+              .slice(0, 6)
+              .map((run) => (
+                <RunCard
+                  key={run.id}
+                  run={run}
+                  href={workspaceId ? `/hub/${workspaceId}/runs/${run.id}` : `/runs/${run.id}`}
+                />
+              ))
           )}
         </div>
       </section>

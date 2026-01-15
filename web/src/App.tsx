@@ -1,10 +1,25 @@
-import { Link, Outlet, Route, Routes } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { Link, Outlet, Route, Routes, useParams } from 'react-router-dom'
+import { apiAuth } from './api/client'
 import Dashboard from './pages/Dashboard'
+import Hub from './pages/Hub'
 import MemoryDocs from './pages/MemoryDocs'
 import RunDetail from './pages/RunDetail'
+import Terminal from './pages/Terminal'
 import './App.css'
 
 function Layout() {
+  const { workspaceId } = useParams()
+  const [token, setToken] = useState(apiAuth.getToken())
+
+  useEffect(() => {
+    apiAuth.setToken(token)
+  }, [token])
+
+  const runsLink = workspaceId ? `/hub/${workspaceId}` : '/'
+  const memoryLink = workspaceId ? `/hub/${workspaceId}/memory` : '/memory'
+  const terminalLink = workspaceId ? `/hub/${workspaceId}/terminal` : '/terminal'
+
   return (
     <div className="app">
       <a className="skip-link" href="#main-content">
@@ -17,12 +32,25 @@ function Layout() {
             <span>Control Deck</span>
           </div>
           <nav className="nav" aria-label="Primary">
-            <Link to="/">Runs</Link>
-            <Link to="/memory">Memory</Link>
+            <Link to={runsLink}>Runs</Link>
+            <Link to={memoryLink}>Memory</Link>
+            <Link to={terminalLink}>Terminal</Link>
+            <Link to="/hub">Hub</Link>
             <a href="https://github.com/oodaris/autocodex" target="_blank" rel="noreferrer">
               GitHub
             </a>
           </nav>
+          <div className="token">
+            <label htmlFor="api-token">API token</label>
+            <input
+              id="api-token"
+              type="password"
+              placeholder="optional"
+              className="control-input token-input"
+              value={token}
+              onChange={(event) => setToken(event.target.value)}
+            />
+          </div>
         </header>
         <main id="main-content" className="content">
           <Outlet />
@@ -52,7 +80,13 @@ export default function App() {
       <Route element={<Layout />}>
         <Route index element={<Dashboard />} />
         <Route path="memory" element={<MemoryDocs />} />
+        <Route path="terminal" element={<Terminal />} />
+        <Route path="hub" element={<Hub />} />
+        <Route path="hub/:workspaceId" element={<Dashboard />} />
+        <Route path="hub/:workspaceId/memory" element={<MemoryDocs />} />
+        <Route path="hub/:workspaceId/terminal" element={<Terminal />} />
         <Route path="runs/:runId" element={<RunDetail />} />
+        <Route path="hub/:workspaceId/runs/:runId" element={<RunDetail />} />
         <Route path="*" element={<NotFound />} />
       </Route>
     </Routes>

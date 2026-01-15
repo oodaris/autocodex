@@ -1,6 +1,7 @@
 import { cleanup, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { MemoryRouter } from 'react-router-dom'
 
 type MockApi = {
   memoryDocs: ReturnType<typeof vi.fn>
@@ -54,7 +55,11 @@ describe('MemoryDocs', () => {
     }))
 
     const { default: MemoryDocs } = await import('../MemoryDocs')
-    render(<MemoryDocs />)
+    render(
+      <MemoryRouter>
+        <MemoryDocs />
+      </MemoryRouter>,
+    )
 
     expect(await screen.findByText('TODO.md')).toBeInTheDocument()
     expect(await screen.findByText('Focus on memory docs.')).toBeInTheDocument()
@@ -96,7 +101,11 @@ describe('MemoryDocs', () => {
     })
 
     const { default: MemoryDocs } = await import('../MemoryDocs')
-    render(<MemoryDocs />)
+    render(
+      <MemoryRouter>
+        <MemoryDocs />
+      </MemoryRouter>,
+    )
 
     await screen.findByText('First doc.')
     const specButtons = await screen.findAllByText('SPEC.md')

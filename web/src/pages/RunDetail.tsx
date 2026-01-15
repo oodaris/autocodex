@@ -16,7 +16,7 @@ import { formatBytes, formatTimestamp, statusLabel } from '../utils/format'
 type LoadState = 'idle' | 'loading' | 'ready' | 'error'
 
 export default function RunDetail() {
-  const { runId } = useParams<{ runId: string }>()
+  const { runId, workspaceId } = useParams<{ runId: string; workspaceId?: string }>()
   const [run, setRun] = useState<Run | null>(null)
   const [events, setEvents] = useState<RunEvent[]>([])
   const [artifacts, setArtifacts] = useState<Artifact[]>([])
@@ -53,12 +53,15 @@ export default function RunDetail() {
       if (!silent) setState('loading')
       setError(null)
       try {
+        const workspace = workspaceId?.trim()
         const [runPayload, eventPayload, artifactPayload, controlPayload, snapshotPayload] = await Promise.all([
-          api.run(runId, { signal }),
-          api.runEvents(runId, { signal }),
-          api.runArtifacts(runId, { signal }),
-          api.runControlStatus(runId, { signal }),
-          api.runSnapshots(runId, { signal }),
+          workspace ? api.hubRun(workspace, runId, { signal }) : api.run(runId, { signal }),
+          workspace ? api.hubRunEvents(workspace, runId, { signal }) : api.runEvents(runId, { signal }),
+          workspace ? api.hubRunArtifacts(workspace, runId, { signal }) : api.runArtifacts(runId, { signal }),
+          workspace
+            ? api.hubRunControlStatus(workspace, runId, { signal })
+            : api.runControlStatus(runId, { signal }),
+          workspace ? api.hubRunSnapshots(workspace, runId, { signal }) : api.runSnapshots(runId, { signal }),
         ])
         if (signal?.aborted) return
         setRun(runPayload)
@@ -76,7 +79,7 @@ export default function RunDetail() {
         setState('error')
       }
     },
-    [runId],
+    [runId, workspaceId],
   )
 
   useAsync((signal) => refresh({ signal }), [refresh])
@@ -98,7 +101,7 @@ export default function RunDetail() {
     <div className="page">
       <header className="detail-header">
         <div>
-          <Link className="link" to="/">
+          <Link className="link" to={workspaceId ? `/hub/${workspaceId}` : '/'}>
             ← Back to runs
           </Link>
           <h1>Run details</h1>
@@ -204,9 +207,14 @@ export default function RunDetail() {
                           action: controlAction as 'resume' | 'stop' | 'cancel' | 'kill',
                           reason: controlReason.trim() || undefined,
                         }
-                        const response = await api.runControlAction(runId, payload)
-                        setControlMessage(`Requested ${response.action}. ${response.message}`)
-                        const latest = await api.runControlStatus(runId)
+                      const workspace = workspaceId?.trim()
+                      const response = workspace
+                        ? await api.hubRunControlAction(workspace, runId, payload)
+                        : await api.runControlAction(runId, payload)
+                      setControlMessage(`Requested ${response.action}. ${response.message}`)
+                      const latest = workspace
+                        ? await api.hubRunControlStatus(workspace, runId)
+                        : await api.runControlStatus(runId)
                         setControlStatus(latest)
                       } catch (err) {
                         const message = err instanceof Error ? err.message : 'Failed to send control action'
@@ -275,10 +283,15 @@ export default function RunDetail() {
                     setSnapshotMessage(null)
                     try {
                       const payload = snapshotReason.trim() ? { reason: snapshotReason.trim() } : {}
-                      const response = await api.createSnapshot(runId, payload)
+                      const workspace = workspaceId?.trim()
+                      const response = workspace
+                        ? await api.hubCreateSnapshot(workspace, runId, payload)
+                        : await api.createSnapshot(runId, payload)
                       setSnapshotDetail(response)
                       setSnapshotMessage(`Snapshot ${response.summary.id} created.`)
-                      const latest = await api.runSnapshots(runId)
+                      const latest = workspace
+                        ? await api.hubRunSnapshots(workspace, runId)
+                        : await api.runSnapshots(runId)
                       setSnapshots(latest)
                     } catch (err) {
                       const message = err instanceof Error ? err.message : 'Failed to create snapshot'
@@ -304,7 +317,10 @@ export default function RunDetail() {
                         onClick={async () => {
                           if (!runId) return
                           try {
-                            const detail = await api.snapshot(runId, snapshot.id)
+                            const workspace = workspaceId?.trim()
+                            const detail = workspace
+                              ? await api.hubSnapshot(workspace, runId, snapshot.id)
+                              : await api.snapshot(runId, snapshot.id)
                             setSnapshotDetail(detail)
                           } catch (err) {
                             const message =

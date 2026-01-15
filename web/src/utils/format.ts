@@ -14,6 +14,8 @@ export function statusLabel(status: string): string {
   if (status === 'running') return 'Running'
   if (status === 'failed') return 'Failed'
   if (status === 'completed') return 'Completed'
+  if (status === 'queued') return 'Queued'
+  if (status === 'canceled') return 'Canceled'
   return status
 }
 

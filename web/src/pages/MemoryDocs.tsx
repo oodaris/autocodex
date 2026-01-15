@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useState } from 'react'
+import { useParams } from 'react-router-dom'
 import { api } from '../api/client'
 import type { MemoryDocDetail, MemoryDocSummary } from '../api/client'
 import { useAsync } from '../hooks/useAsync'
@@ -7,6 +8,7 @@ import { formatBytes, formatTimestamp } from '../utils/format'
 type LoadState = 'idle' | 'loading' | 'ready' | 'error'
 
 export default function MemoryDocs() {
+  const { workspaceId } = useParams<{ workspaceId?: string }>()
   const [docs, setDocs] = useState<MemoryDocSummary[]>([])
   const [selectedName, setSelectedName] = useState<string | null>(null)
   const [activeDoc, setActiveDoc] = useState<MemoryDocDetail | null>(null)
@@ -19,7 +21,8 @@ export default function MemoryDocs() {
     setListState('loading')
     setError(null)
     try {
-      const payload = await api.memoryDocs({ signal })
+      const workspace = workspaceId?.trim()
+      const payload = workspace ? await api.hubMemoryDocs(workspace, { signal }) : await api.memoryDocs({ signal })
       if (signal?.aborted) return
       setDocs(payload)
       setListState('ready')
@@ -33,7 +36,7 @@ export default function MemoryDocs() {
       setError(message)
       setListState('error')
     }
-  }, [selectedName])
+  }, [selectedName, workspaceId])
 
   const refreshDetail = useCallback(
     async ({ signal }: { signal?: AbortSignal } = {}) => {
@@ -45,7 +48,10 @@ export default function MemoryDocs() {
       setDetailState('loading')
       setError(null)
       try {
-        const payload = await api.memoryDoc(selectedName, { signal })
+        const workspace = workspaceId?.trim()
+        const payload = workspace
+          ? await api.hubMemoryDoc(workspace, selectedName, { signal })
+          : await api.memoryDoc(selectedName, { signal })
         if (signal?.aborted) return
         setActiveDoc(payload)
         setDetailState('ready')
@@ -57,7 +63,7 @@ export default function MemoryDocs() {
         setDetailState('error')
       }
     },
-    [selectedName],
+    [selectedName, workspaceId],
   )
 
   useAsync((signal) => refreshList({ signal }), [refreshList])
@@ -72,7 +78,10 @@ export default function MemoryDocs() {
       <header className="detail-header">
         <div>
           <h1>Memory docs</h1>
-          <p>Local markdown notes that autocodex reads and updates during each loop.</p>
+          <p>
+            Local markdown notes that autocodex reads and updates during each loop.
+            {workspaceId ? ` Workspace: ${workspaceId}.` : ''}
+          </p>
         </div>
         <button className="button" type="button" onClick={() => void refreshList()}>
           Refresh list
