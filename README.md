@@ -18,37 +18,38 @@ autocodex orchestrates a structured loop: ideate → plan → implement → revi
 - Optional token auth for the API/UI
 
 ## Install
-Option A: install with Go:
+Install with Go:
 ```bash
 go install github.com/oodaris/autocodex/cmd/autocodex@latest
 ```
 
-Option B: download a release binary from GitHub Releases.
+Or download a release binary from GitHub Releases.
 
 ## Quickstart
 **Prereqs**
-1) Install Go (1.22+).
-2) Install the Codex CLI (ensure `codex` is on PATH).
+- Go 1.22+
+- Codex CLI on PATH (`codex --version`)
 
-**Install autocodex**
-```bash
-go install github.com/oodaris/autocodex/cmd/autocodex@latest
-```
-
-**Initialize (creates `autocodex.yaml` if missing)**
+**Initialize** (creates `autocodex.yaml` if missing)
 ```bash
 autocodex init
 ```
 
-**Run a task (shortest command)**
+**Run a task** (shortest command)
 ```bash
 autocodex "Review backend API and fix issues."
 ```
 
-**Other common commands**
+**Common commands**
 ```bash
 # bounded loop
 autocodex once "Run a quick UI a11y review."
+
+# inspect status
+autocodex status
+
+# start the local API
+autocodex api
 
 # snapshot a run
 autocodex snapshot 20260115T142253Z-4a4ae121 --reason "handoff"
@@ -61,6 +62,11 @@ npm install
 npm run dev
 ```
 
+**Custom config path**
+```bash
+autocodex run --config path/to/autocodex.yaml --task "Review backend API and fix issues."
+```
+
 For a longer walkthrough, see `docs/quickstart.md`.
 
 ## Configuration
@@ -70,6 +76,7 @@ For a longer walkthrough, see `docs/quickstart.md`.
 - `hub.enabled` adds multi-repo workspace tracking.
 - `auth.enabled` enforces API tokens (see `docs/ui/README.md`).
 - `auth.token_env` can read a token from an environment variable.
+If the Codex CLI is not on PATH, set `codex.cli_path` in `autocodex.yaml`.
 For a full reference, see `docs/config/README.md`.
 
 ## UI usage
@@ -101,6 +108,10 @@ Generate a run snapshot (memory docs + recent events/artifacts) for sharing or c
 ```bash
 autocodex snapshot <run-id> --reason "handoff"
 ```
+
+## Troubleshooting
+- `codex` not found: set `codex.cli_path` in `autocodex.yaml`.
+- API 401: set `auth.enabled: true` and provide `auth.token_env` or `auth.tokens`.
 
 ## Development
 - Tests: `go test ./...`
