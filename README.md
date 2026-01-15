@@ -49,6 +49,11 @@ You can also run a bounded loop with a positional task:
 ```bash
 autocodex once "Run a quick UI a11y review."
 ```
+
+Snapshot with a positional run id:
+```bash
+autocodex snapshot 20260115T142253Z-4a4ae121 --reason "handoff"
+```
 4) (Optional) Start the UI:
 ```bash
 cd web

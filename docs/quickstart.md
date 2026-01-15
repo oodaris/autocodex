@@ -49,6 +49,12 @@ Bounded loop shortcut:
 autocodex once "Run a quick UI a11y review."
 ```
 
+Snapshot shortcut:
+
+```bash
+autocodex snapshot 20260115T142253Z-4a4ae121 --reason "handoff"
+```
+
 ## Start the API
 
 ```bash

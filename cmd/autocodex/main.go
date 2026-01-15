@@ -204,6 +204,10 @@ func runSnapshot(args []string) {
 	jsonOut := fs.Bool("json", false, "output JSON")
 	fs.Parse(args)
 
+	if *runID == "" && fs.NArg() > 0 {
+		*runID = strings.TrimSpace(fs.Arg(0))
+	}
+
 	cfg, err := config.Load(*configPath)
 	if err != nil {
 		exitErr(err)
