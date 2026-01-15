@@ -32,6 +32,37 @@ type Run struct {
 	Iterations   int        `json:"iterations"`
 }
 
+type RunControl struct {
+	RunID        string     `json:"run_id"`
+	Status       string     `json:"status"`
+	StopReason   *string    `json:"stop_reason,omitempty"`
+	LastError    *string    `json:"last_error,omitempty"`
+	LastAction   *string    `json:"last_action,omitempty"`
+	LastActionAt *time.Time `json:"last_action_at,omitempty"`
+	UpdatedAt    time.Time  `json:"updated_at"`
+}
+
+type RunFeedback struct {
+	RunID             string    `json:"run_id"`
+	UpdatedAt         time.Time `json:"updated_at"`
+	Sources           []string  `json:"sources,omitempty"`
+	LastPromptSummary string    `json:"last_prompt_summary,omitempty"`
+	LastOutputSummary string    `json:"last_output_summary,omitempty"`
+	MemoryDocs        []string  `json:"memory_docs,omitempty"`
+	ArtifactIDs       []string  `json:"artifact_ids,omitempty"`
+	EventIDs          []string  `json:"event_ids,omitempty"`
+	Bytes             int       `json:"bytes,omitempty"`
+}
+
+type RunLock struct {
+	RunID      string    `json:"run_id"`
+	PID        int       `json:"pid"`
+	Hostname   string    `json:"hostname"`
+	AcquiredAt time.Time `json:"acquired_at"`
+}
+
+var ErrRunLocked = errors.New("run is locked")
+
 type RunEvent struct {
 	ID      string            `json:"id"`
 	RunID   string            `json:"run_id"`
@@ -305,6 +336,126 @@ func (s *Store) ListArtifacts(runID string) ([]Artifact, error) {
 	return artifacts, nil
 }
 
+func (s *Store) SaveRunControl(control RunControl) error {
+	if control.RunID == "" {
+		return errors.New("run id required")
+	}
+	if control.UpdatedAt.IsZero() {
+		control.UpdatedAt = time.Now().UTC()
+	}
+	path := s.runControlPath(control.RunID)
+	data, err := json.MarshalIndent(control, "", "  ")
+	if err != nil {
+		return fmt.Errorf("marshal run control: %w", err)
+	}
+	return os.WriteFile(path, data, 0o644)
+}
+
+func (s *Store) GetRunControl(runID string) (*RunControl, error) {
+	path := s.runControlPath(runID)
+	data, err := os.ReadFile(path)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("read run control: %w", err)
+	}
+	var control RunControl
+	if err := json.Unmarshal(data, &control); err != nil {
+		return nil, fmt.Errorf("parse run control: %w", err)
+	}
+	return &control, nil
+}
+
+func (s *Store) SaveRunFeedback(feedback RunFeedback) error {
+	if feedback.RunID == "" {
+		return errors.New("run id required")
+	}
+	if feedback.UpdatedAt.IsZero() {
+		feedback.UpdatedAt = time.Now().UTC()
+	}
+	path := s.runFeedbackPath(feedback.RunID)
+	data, err := json.MarshalIndent(feedback, "", "  ")
+	if err != nil {
+		return fmt.Errorf("marshal run feedback: %w", err)
+	}
+	return os.WriteFile(path, data, 0o644)
+}
+
+func (s *Store) GetRunFeedback(runID string) (*RunFeedback, error) {
+	path := s.runFeedbackPath(runID)
+	data, err := os.ReadFile(path)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("read run feedback: %w", err)
+	}
+	var feedback RunFeedback
+	if err := json.Unmarshal(data, &feedback); err != nil {
+		return nil, fmt.Errorf("parse run feedback: %w", err)
+	}
+	return &feedback, nil
+}
+
+func (s *Store) AcquireRunLock(runID string) (*RunLock, error) {
+	if runID == "" {
+		return nil, errors.New("run id required")
+	}
+	path := s.runLockPath(runID)
+	file, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o644)
+	if err != nil {
+		if errors.Is(err, os.ErrExist) {
+			return nil, ErrRunLocked
+		}
+		return nil, fmt.Errorf("create run lock: %w", err)
+	}
+	defer file.Close()
+
+	host, _ := os.Hostname()
+	lock := &RunLock{
+		RunID:      runID,
+		PID:        os.Getpid(),
+		Hostname:   host,
+		AcquiredAt: time.Now().UTC(),
+	}
+	data, err := json.Marshal(lock)
+	if err != nil {
+		return nil, fmt.Errorf("marshal run lock: %w", err)
+	}
+	if _, err := file.Write(data); err != nil {
+		return nil, fmt.Errorf("write run lock: %w", err)
+	}
+	return lock, nil
+}
+
+func (s *Store) GetRunLock(runID string) (*RunLock, error) {
+	path := s.runLockPath(runID)
+	data, err := os.ReadFile(path)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("read run lock: %w", err)
+	}
+	var lock RunLock
+	if err := json.Unmarshal(data, &lock); err != nil {
+		return nil, fmt.Errorf("parse run lock: %w", err)
+	}
+	return &lock, nil
+}
+
+func (s *Store) ReleaseRunLock(runID string) error {
+	path := s.runLockPath(runID)
+	if err := os.Remove(path); err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return nil
+		}
+		return fmt.Errorf("remove run lock: %w", err)
+	}
+	return nil
+}
+
 func (s *Store) GetArtifact(id string) (Artifact, error) {
 	runID, name, err := parseArtifactID(id)
 	if err != nil {
@@ -331,6 +482,18 @@ func (s *Store) GetArtifact(id string) (Artifact, error) {
 
 func (s *Store) eventsPath(runID string) string {
 	return filepath.Join(s.LogsDir, runID+".jsonl")
+}
+
+func (s *Store) runControlPath(runID string) string {
+	return filepath.Join(s.RunsDir, runID, "control.json")
+}
+
+func (s *Store) runFeedbackPath(runID string) string {
+	return filepath.Join(s.RunsDir, runID, "feedback.json")
+}
+
+func (s *Store) runLockPath(runID string) string {
+	return filepath.Join(s.RunsDir, runID, "run.lock")
 }
 
 func decodeEvents(r io.Reader) ([]RunEvent, error) {
