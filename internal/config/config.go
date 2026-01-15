@@ -159,11 +159,14 @@ func (c *Config) ApplyDefaults() {
 	if c.Codex.CLIPath == "" {
 		c.Codex.CLIPath = "codex"
 	}
+	if c.Codex.Model == "" {
+		c.Codex.Model = "gpt-5.2-codex"
+	}
 	if c.Codex.TimeoutSeconds == 0 {
 		c.Codex.TimeoutSeconds = 900
 	}
 	if c.Codex.ReasoningEffort == "" {
-		c.Codex.ReasoningEffort = "high"
+		c.Codex.ReasoningEffort = "xhigh"
 	}
 	if c.Codex.ExtraArgs == nil {
 		c.Codex.ExtraArgs = []string{}

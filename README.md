@@ -36,6 +36,7 @@ npm run dev
 ## Configuration
 - `autocodex.yaml` controls mode, paths, Codex CLI settings, plugins, and API settings.
 - `mode: yolo` is explicit and must be used intentionally.
+- Default Codex model/effort: `gpt-5.2-codex` + `xhigh` (override in `autocodex.yaml` if needed).
 - `hub.enabled` adds multi-repo workspace tracking.
 - `auth.enabled` enforces API tokens (see `docs/ui/README.md`).
 - `auth.token_env` can read a token from an environment variable.

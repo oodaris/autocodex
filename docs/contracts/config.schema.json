@@ -20,8 +20,8 @@
       "additionalProperties": false,
       "properties": {
         "cli_path": {"type": "string", "default": "codex"},
-        "model": {"type": "string"},
-        "reasoning_effort": {"type": "string", "enum": ["minimal", "low", "medium", "high", "xhigh"], "default": "high"},
+        "model": {"type": "string", "default": "gpt-5.2-codex"},
+        "reasoning_effort": {"type": "string", "enum": ["minimal", "low", "medium", "high", "xhigh"], "default": "xhigh"},
         "timeout_seconds": {"type": "integer", "minimum": 1, "default": 900},
         "extra_args": {"type": "array", "items": {"type": "string"}, "default": []},
         "approval_policy": {"type": "string", "enum": ["untrusted", "on-failure", "on-request", "never"], "default": "on-request"},
