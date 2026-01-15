@@ -4,31 +4,84 @@
   "title": "autocodex Config",
   "type": "object",
   "additionalProperties": false,
-  "required": ["version", "mode"],
+  "required": [
+    "version",
+    "mode"
+  ],
   "properties": {
     "version": {
       "type": "string",
-      "enum": ["v1"]
+      "enum": [
+        "v1"
+      ]
     },
     "mode": {
       "type": "string",
-      "enum": ["yolo", "safe"],
+      "enum": [
+        "yolo",
+        "safe"
+      ],
       "default": "yolo"
     },
     "codex": {
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "cli_path": {"type": "string", "default": "codex"},
-        "model": {"type": "string", "default": "gpt-5.2-codex"},
-        "reasoning_effort": {"type": "string", "enum": ["minimal", "low", "medium", "high", "xhigh"], "default": "xhigh"},
-        "timeout_seconds": {"type": "integer", "minimum": 1, "default": 900},
-        "extra_args": {"type": "array", "items": {"type": "string"}, "default": []},
-        "approval_policy": {"type": "string", "enum": ["untrusted", "on-failure", "on-request", "never"], "default": "on-request"},
-        "sandbox_mode": {"type": "string", "enum": ["read-only", "workspace-write", "danger-full-access"], "default": "workspace-write"},
+        "cli_path": {
+          "type": "string",
+          "default": "codex"
+        },
+        "model": {
+          "type": "string",
+          "default": "gpt-5.2-codex"
+        },
+        "reasoning_effort": {
+          "type": "string",
+          "enum": [
+            "minimal",
+            "low",
+            "medium",
+            "high",
+            "xhigh"
+          ],
+          "default": "xhigh"
+        },
+        "timeout_seconds": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 900
+        },
+        "extra_args": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": []
+        },
+        "approval_policy": {
+          "type": "string",
+          "enum": [
+            "untrusted",
+            "on-failure",
+            "on-request",
+            "never"
+          ],
+          "default": "on-request"
+        },
+        "sandbox_mode": {
+          "type": "string",
+          "enum": [
+            "read-only",
+            "workspace-write",
+            "danger-full-access"
+          ],
+          "default": "workspace-write"
+        },
         "env": {
           "type": "object",
-          "additionalProperties": {"type": "string"},
+          "additionalProperties": {
+            "type": "string"
+          },
           "default": {}
         }
       }
@@ -37,48 +90,110 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "state_dir": {"type": "string", "default": ".autocodex"},
-        "memory_dir": {"type": "string", "default": "memory"},
-        "logs_dir": {"type": "string", "default": "logs"},
-        "artifacts_dir": {"type": "string", "default": "artifacts"},
-        "runs_dir": {"type": "string", "default": "runs"}
+        "state_dir": {
+          "type": "string",
+          "default": ".autocodex"
+        },
+        "memory_dir": {
+          "type": "string",
+          "default": "memory"
+        },
+        "logs_dir": {
+          "type": "string",
+          "default": "logs"
+        },
+        "artifacts_dir": {
+          "type": "string",
+          "default": "artifacts"
+        },
+        "runs_dir": {
+          "type": "string",
+          "default": "runs"
+        }
       }
     },
     "skills": {
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "paths": {"type": "array", "items": {"type": "string"}, "default": []},
-        "allowlist": {"type": "array", "items": {"type": "string"}, "default": []},
-        "denylist": {"type": "array", "items": {"type": "string"}, "default": []}
+        "paths": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": []
+        },
+        "allowlist": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": []
+        },
+        "denylist": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": []
+        }
       }
     },
     "plugins": {
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "enabled": {"type": "boolean", "default": true},
-        "paths": {"type": "array", "items": {"type": "string"}, "default": ["plugins"]},
-        "timeout_seconds": {"type": "integer", "minimum": 1, "default": 60}
+        "enabled": {
+          "type": "boolean",
+          "default": true
+        },
+        "paths": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [
+            "plugins"
+          ]
+        },
+        "timeout_seconds": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 60
+        }
       }
     },
     "hub": {
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "enabled": {"type": "boolean", "default": false},
+        "enabled": {
+          "type": "boolean",
+          "default": false
+        },
         "workspaces": {
           "type": "array",
           "default": [],
           "items": {
             "type": "object",
             "additionalProperties": false,
-            "required": ["id", "root"],
+            "required": [
+              "id",
+              "root"
+            ],
             "properties": {
-              "id": {"type": "string"},
-              "name": {"type": "string"},
-              "root": {"type": "string"},
-              "config_path": {"type": "string"}
+              "id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "root": {
+                "type": "string"
+              },
+              "config_path": {
+                "type": "string"
+              }
             }
           }
         }
@@ -88,44 +203,98 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "enabled": {"type": "boolean", "default": true},
-        "host": {"type": "string", "default": "127.0.0.1"},
-        "port": {"type": "integer", "minimum": 1, "maximum": 65535, "default": 7788},
-        "base_path": {"type": "string", "default": "/"}
+        "enabled": {
+          "type": "boolean",
+          "default": true
+        },
+        "host": {
+          "type": "string",
+          "default": "127.0.0.1"
+        },
+        "port": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 65535,
+          "default": 7788
+        },
+        "base_path": {
+          "type": "string",
+          "default": "/"
+        }
       }
     },
     "ui": {
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "enabled": {"type": "boolean", "default": false},
-        "origin": {"type": "string"}
+        "enabled": {
+          "type": "boolean",
+          "default": false
+        },
+        "origin": {
+          "type": "string"
+        }
       }
     },
     "beads": {
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "enabled": {"type": "boolean", "default": true},
-        "auto_create": {"type": "boolean", "default": true},
-        "auto_update": {"type": "boolean", "default": true}
+        "enabled": {
+          "type": "boolean",
+          "default": true
+        },
+        "auto_create": {
+          "type": "boolean",
+          "default": true
+        },
+        "auto_update": {
+          "type": "boolean",
+          "default": true
+        }
       }
     },
     "logging": {
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "level": {"type": "string", "enum": ["debug", "info", "warn", "error"], "default": "info"},
-        "format": {"type": "string", "enum": ["json"], "default": "json"}
+        "level": {
+          "type": "string",
+          "enum": [
+            "debug",
+            "info",
+            "warn",
+            "error"
+          ],
+          "default": "info"
+        },
+        "format": {
+          "type": "string",
+          "enum": [
+            "json"
+          ],
+          "default": "json"
+        }
       }
     },
     "auth": {
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "enabled": {"type": "boolean", "default": false},
-        "token_env": {"type": "string"},
-        "tokens": {"type": "array", "items": {"type": "string"}, "default": []}
+        "enabled": {
+          "type": "boolean",
+          "default": false
+        },
+        "token_env": {
+          "type": "string"
+        },
+        "tokens": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": []
+        }
       }
     },
     "loop": {
@@ -134,38 +303,110 @@
       "properties": {
         "mode": {
           "type": "string",
-          "enum": ["bounded", "continuous"],
+          "enum": [
+            "bounded",
+            "continuous"
+          ],
           "default": "bounded"
         },
-        "max_iterations": {"type": "integer", "minimum": 1, "default": 50},
+        "max_iterations": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 50
+        },
         "phases": {
           "type": "array",
-          "items": {"type": "string", "enum": ["ideate", "plan", "implement", "review", "test"]},
-          "default": ["ideate", "plan", "implement", "review", "test"]
+          "items": {
+            "type": "string",
+            "enum": [
+              "ideate",
+              "plan",
+              "implement",
+              "review",
+              "test"
+            ]
+          },
+          "default": [
+            "ideate",
+            "plan",
+            "implement",
+            "review",
+            "test"
+          ]
         },
         "stop_conditions": {
           "type": "object",
           "additionalProperties": false,
           "properties": {
-            "max_duration_seconds": {"type": "integer", "minimum": 0, "default": 0},
-            "max_idle_seconds": {"type": "integer", "minimum": 0, "default": 0},
-            "max_consecutive_failures": {"type": "integer", "minimum": 0, "default": 0}
+            "max_duration_seconds": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
+            },
+            "max_idle_seconds": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
+            },
+            "max_consecutive_failures": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
+            },
+            "max_heartbeat_seconds": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 180
+            }
           }
         },
         "feedback": {
           "type": "object",
           "additionalProperties": false,
           "properties": {
-            "mode": {"type": "string", "enum": ["off", "on"], "default": "off"},
+            "mode": {
+              "type": "string",
+              "enum": [
+                "off",
+                "on"
+              ],
+              "default": "off"
+            },
             "sources": {
               "type": "array",
-              "items": {"type": "string", "enum": ["memory", "events", "artifacts"]},
-              "default": ["memory", "events", "artifacts"]
+              "items": {
+                "type": "string",
+                "enum": [
+                  "memory",
+                  "events",
+                  "artifacts"
+                ]
+              },
+              "default": [
+                "memory",
+                "events",
+                "artifacts"
+              ]
             },
-            "max_artifacts": {"type": "integer", "minimum": 0, "default": 20},
-            "max_events": {"type": "integer", "minimum": 0, "default": 200},
-            "max_bytes": {"type": "integer", "minimum": 0, "default": 0},
-            "memory_glob": {"type": "string", "default": "*.md"}
+            "max_artifacts": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 20
+            },
+            "max_events": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 200
+            },
+            "max_bytes": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
+            },
+            "memory_glob": {
+              "type": "string",
+              "default": "*.md"
+            }
           }
         }
       }

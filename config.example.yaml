@@ -32,6 +32,7 @@ plugins:
 
 hub:
   enabled: false
+  # If enabled and workspaces is empty, the current repo is used as a default workspace.
   workspaces:
     - id: demo
       name: Demo repo
@@ -76,6 +77,7 @@ loop:
     max_duration_seconds: 0
     max_idle_seconds: 0
     max_consecutive_failures: 0
+    max_heartbeat_seconds: 180
   feedback:
     mode: off
     sources:
