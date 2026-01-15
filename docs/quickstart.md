@@ -43,6 +43,12 @@ Shortcut:
 autocodex "Add a memory docs summary card."
 ```
 
+Bounded loop shortcut:
+
+```bash
+autocodex once "Run a quick UI a11y review."
+```
+
 ## Start the API
 
 ```bash

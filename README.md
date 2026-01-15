@@ -44,6 +44,11 @@ Or use the shortcut:
 ```bash
 autocodex "Review backend API and fix issues."
 ```
+
+You can also run a bounded loop with a positional task:
+```bash
+autocodex once "Run a quick UI a11y review."
+```
 4) (Optional) Start the UI:
 ```bash
 cd web

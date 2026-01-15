@@ -115,6 +115,10 @@ func runRun(args []string) {
 	taskFile := fs.String("task-file", "", "path to task file (appended to TODO.md before run)")
 	fs.Parse(args)
 
+	if strings.TrimSpace(*task) == "" && strings.TrimSpace(*taskFile) == "" && fs.NArg() > 0 {
+		*task = strings.Join(fs.Args(), " ")
+	}
+
 	cfg, err := config.Load(*configPath)
 	if err != nil {
 		exitErr(err)
@@ -133,6 +137,10 @@ func runOnce(args []string) {
 	task := fs.String("task", "", "task text to append to TODO.md before run")
 	taskFile := fs.String("task-file", "", "path to task file (appended to TODO.md before run)")
 	fs.Parse(args)
+
+	if strings.TrimSpace(*task) == "" && strings.TrimSpace(*taskFile) == "" && fs.NArg() > 0 {
+		*task = strings.Join(fs.Args(), " ")
+	}
 
 	cfg, err := config.Load(*configPath)
 	if err != nil {
@@ -448,6 +456,10 @@ func runControlAction(args []string, action string) {
 	reason := fs.String("reason", "", "reason (optional)")
 	jsonOut := fs.Bool("json", false, "output JSON")
 	fs.Parse(args)
+
+	if *runID == "" && fs.NArg() > 0 {
+		*runID = strings.TrimSpace(fs.Arg(0))
+	}
 
 	if *runID == "" {
 		exitErr(fmt.Errorf("run id is required"))
