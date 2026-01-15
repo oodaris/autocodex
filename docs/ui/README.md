@@ -40,6 +40,9 @@ hub:
       config_path: autocodex.yaml
 ```
 
+If `hub.enabled` is true and no `hub.workspaces` are configured, the API will
+auto-register the current repo as a single workspace.
+
 2) Start the API server and open the UI route at `/hub`.
 3) Click a workspace to view runs and memory docs for that repo.
 
@@ -50,6 +53,7 @@ The terminal view opens a websocket-backed PTY session.
 - Start a session from the UI.
 - Use the input field to send commands.
 - Close sessions when finished.
+- If you leave Command empty, the session starts with `codex` by default.
 
 If API auth is enabled, the terminal websocket uses `?token=` in the URL.
 

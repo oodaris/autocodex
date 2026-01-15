@@ -182,6 +182,24 @@ Ordered to respect the golden workflow and current dependencies.
 9. **autocodex-llw** — Tests + CI gates.
 10. **autocodex-pzy** — Docs + release packaging.
 
+## Execution update (2026-01-15)
+Recent changes include:
+- Watchdog + run heartbeats to mark orphaned runs failed.
+- Phase-by-phase run summaries appended to `PROGRESS.md`.
+- Terminal auto-start defaults to `codex`.
+- Memory UI shows a “Latest summary” card.
+
+### Next steps (current)
+1) **Quality gates**: run UI lint/build/tests and re-run Go tests after any UI updates.  
+   - Evidence: `npm run lint`, `npm run build`, `npm test`, `go test ./...`.
+2) **autocodex-cdu**: add a11y + bundlesize scripts and docs in `web/`.  
+3) **autocodex-llw**: add CI workflows for Go + UI (depends on cdu).  
+4) **autocodex-pzy**: finalize OSS release docs + goreleaser (depends on llw).
+
+### Risks & mitigations
+- **Run watchdog false positives** → keep heartbeat threshold configurable; surface in UI/Docs.
+- **UI drift vs API changes** → run lint/build/test before release; keep contract schema in sync.
+
 ## Autonomy + parity expansion (v1.5+)
 Goal: close key gaps vs codex-autorunner and deliver true autonomy (continuous loop + feedback).
 
