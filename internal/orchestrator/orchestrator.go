@@ -225,11 +225,11 @@ func (o *Orchestrator) Run(ctx context.Context) (*state.Run, error) {
 
 func (o *Orchestrator) buildPrompt(phase, runID, feedback string) string {
 	skillName := skillForPhase(phase)
-	skillContent := ""
+	skillPath := ""
 	if skillName != "" {
 		skill, err := o.Skills.LoadSkill(skillName)
 		if err == nil {
-			skillContent = skill.Content
+			skillPath = skill.Path
 		}
 	}
 
@@ -245,10 +245,11 @@ func (o *Orchestrator) buildPrompt(phase, runID, feedback string) string {
 		b.WriteString(skillName)
 		b.WriteString("\n\n")
 	}
-	if skillContent != "" {
-		b.WriteString("--- Skill Content ---\n")
-		b.WriteString(skillContent)
-		b.WriteString("\n--- End Skill Content ---\n")
+	if skillPath != "" {
+		b.WriteString("Skill file: ")
+		b.WriteString(skillPath)
+		b.WriteString("\n")
+		b.WriteString("Read the skill file and follow it before responding.\n")
 	}
 	if feedback != "" {
 		b.WriteString("\n--- Feedback Context ---\n")
