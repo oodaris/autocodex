@@ -9,6 +9,8 @@ import {
   parseRunControlStatus,
   parseRunEvents,
   parseRuns,
+  parseSnapshotDetail,
+  parseSnapshotSummaries,
 } from './schema'
 import type {
   Artifact,
@@ -19,6 +21,9 @@ import type {
   RunControlRequest,
   RunControlResponse,
   RunControlStatus,
+  SnapshotCreateRequest,
+  SnapshotDetail,
+  SnapshotSummary,
   RunEvent,
 } from './types'
 
@@ -31,6 +36,9 @@ export type {
   RunControlRequest,
   RunControlResponse,
   RunControlStatus,
+  SnapshotCreateRequest,
+  SnapshotDetail,
+  SnapshotSummary,
   RunEvent,
 } from './types'
 
@@ -103,5 +111,23 @@ export const api = {
         ...options,
       },
       parseRunControlResponse,
+    ),
+  runSnapshots: (id: string, options?: ApiRequestOptions) =>
+    requestJson<SnapshotSummary[]>(`/runs/${id}/snapshots`, options, parseSnapshotSummaries),
+  createSnapshot: (id: string, payload: SnapshotCreateRequest, options?: ApiRequestOptions) =>
+    requestJson<SnapshotDetail>(
+      `/runs/${id}/snapshots`,
+      {
+        method: 'POST',
+        body: JSON.stringify(payload),
+        ...options,
+      },
+      parseSnapshotDetail,
+    ),
+  snapshot: (runId: string, snapshotId: string, options?: ApiRequestOptions) =>
+    requestJson<SnapshotDetail>(
+      `/runs/${runId}/snapshots/${snapshotId}`,
+      options,
+      parseSnapshotDetail,
     ),
 }

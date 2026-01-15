@@ -510,6 +510,58 @@ button:focus-visible {
   color: var(--text-strong);
 }
 
+.list__item--clickable {
+  padding: 0;
+}
+
+.ghost-button {
+  width: 100%;
+  background: transparent;
+  border: none;
+  padding: 10px 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  text-align: left;
+  cursor: pointer;
+  color: inherit;
+}
+
+.ghost-button:hover {
+  background: rgba(15, 23, 42, 0.04);
+}
+
+.snapshot-detail {
+  border-radius: 12px;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  background: rgba(255, 255, 255, 0.7);
+  padding: 12px;
+  display: grid;
+  gap: 12px;
+}
+
+.snapshot-detail h3 {
+  margin: 0;
+}
+
+.snapshot-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.snapshot-content {
+  background: #0f172a;
+  color: #e2e8f0;
+  padding: 12px;
+  border-radius: 10px;
+  max-height: 320px;
+  overflow: auto;
+  white-space: pre-wrap;
+}
+
 .button--danger {
   background: linear-gradient(120deg, #f97316, #ef4444);
   border: none;

@@ -6,6 +6,8 @@ import type {
   Run,
   RunControlResponse,
   RunControlStatus,
+  SnapshotDetail,
+  SnapshotSummary,
   RunEvent,
 } from './types'
 
@@ -123,6 +125,33 @@ function assertRunControlResponse(value: unknown, path = 'run_control_response')
   assertString(value.message, `${path}.message`)
 }
 
+function assertSnapshotSummary(value: unknown, path = 'snapshot_summary'): asserts value is SnapshotSummary {
+  if (!isRecord(value)) {
+    throw new Error(`Invalid ${path}: expected object`)
+  }
+  assertString(value.id, `${path}.id`)
+  assertString(value.run_id, `${path}.run_id`)
+  assertString(value.created_at, `${path}.created_at`)
+  assertString(value.reason, `${path}.reason`)
+  assertNumber(value.size_bytes, `${path}.size_bytes`)
+  assertString(value.content_path, `${path}.content_path`)
+}
+
+function assertSnapshotDetail(value: unknown, path = 'snapshot_detail'): asserts value is SnapshotDetail {
+  if (!isRecord(value)) {
+    throw new Error(`Invalid ${path}: expected object`)
+  }
+  assertSnapshotSummary(value.summary, `${path}.summary`)
+  if (!isRecord(value.manifest)) {
+    throw new Error(`Invalid ${path}.manifest: expected object`)
+  }
+  assertNumber(value.manifest.events, `${path}.manifest.events`)
+  assertNumber(value.manifest.artifacts, `${path}.manifest.artifacts`)
+  assertNumber(value.manifest.memory_docs, `${path}.manifest.memory_docs`)
+  assertNumber(value.manifest.bytes, `${path}.manifest.bytes`)
+  assertString(value.content, `${path}.content`)
+}
+
 export function parseHealth(value: unknown): Health {
   if (!isRecord(value)) {
     throw new Error('Invalid health payload: expected object')
@@ -187,4 +216,17 @@ export function parseRunControlStatus(value: unknown): RunControlStatus {
 export function parseRunControlResponse(value: unknown): RunControlResponse {
   assertRunControlResponse(value, 'run_control_response')
   return value as RunControlResponse
+}
+
+export function parseSnapshotSummaries(value: unknown): SnapshotSummary[] {
+  if (!Array.isArray(value)) {
+    throw new Error('Invalid snapshots payload: expected array')
+  }
+  value.forEach((entry, index) => assertSnapshotSummary(entry, `snapshots[${index}]`))
+  return value as SnapshotSummary[]
+}
+
+export function parseSnapshotDetail(value: unknown): SnapshotDetail {
+  assertSnapshotDetail(value, 'snapshot_detail')
+  return value as SnapshotDetail
 }

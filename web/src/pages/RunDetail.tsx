@@ -1,7 +1,14 @@
 import { useCallback, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { api } from '../api/client'
-import type { Artifact, Run, RunControlStatus, RunEvent } from '../api/client'
+import type {
+  Artifact,
+  Run,
+  RunControlStatus,
+  RunEvent,
+  SnapshotDetail,
+  SnapshotSummary,
+} from '../api/client'
 import { useAsync } from '../hooks/useAsync'
 import { usePolling } from '../hooks/usePolling'
 import { formatBytes, formatTimestamp, statusLabel } from '../utils/format'
@@ -19,6 +26,11 @@ export default function RunDetail() {
   const [controlReason, setControlReason] = useState('')
   const [controlMessage, setControlMessage] = useState<string | null>(null)
   const [controlBusy, setControlBusy] = useState(false)
+  const [snapshots, setSnapshots] = useState<SnapshotSummary[]>([])
+  const [snapshotDetail, setSnapshotDetail] = useState<SnapshotDetail | null>(null)
+  const [snapshotReason, setSnapshotReason] = useState('')
+  const [snapshotBusy, setSnapshotBusy] = useState(false)
+  const [snapshotMessage, setSnapshotMessage] = useState<string | null>(null)
   const [state, setState] = useState<LoadState>('idle')
   const [error, setError] = useState<string | null>(null)
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
@@ -41,17 +53,19 @@ export default function RunDetail() {
       if (!silent) setState('loading')
       setError(null)
       try {
-        const [runPayload, eventPayload, artifactPayload, controlPayload] = await Promise.all([
+        const [runPayload, eventPayload, artifactPayload, controlPayload, snapshotPayload] = await Promise.all([
           api.run(runId, { signal }),
           api.runEvents(runId, { signal }),
           api.runArtifacts(runId, { signal }),
           api.runControlStatus(runId, { signal }),
+          api.runSnapshots(runId, { signal }),
         ])
         if (signal?.aborted) return
         setRun(runPayload)
         setEvents(eventPayload)
         setArtifacts(artifactPayload)
         setControlStatus(controlPayload)
+        setSnapshots(snapshotPayload)
         setLastUpdated(new Date())
         setState('ready')
       } catch (err) {
@@ -230,6 +244,100 @@ export default function RunDetail() {
                 </p>
               </div>
               {controlMessage ? <p className="control-message">{controlMessage}</p> : null}
+            </div>
+          </div>
+
+          <div className="panel panel--note">
+            <div className="panel__header">
+              <h2>Snapshots</h2>
+              <span className="panel__meta">{snapshots.length} saved</span>
+            </div>
+            <div className="control-grid">
+              <div>
+                <p className="control-label">Snapshot reason (optional)</p>
+                <input
+                  className="control-input"
+                  type="text"
+                  value={snapshotReason}
+                  onChange={(event) => setSnapshotReason(event.target.value)}
+                  placeholder="Why capture this snapshot?"
+                  disabled={snapshotBusy}
+                />
+              </div>
+              <div className="control-row">
+                <button
+                  className="button"
+                  type="button"
+                  disabled={snapshotBusy || !runId}
+                  onClick={async () => {
+                    if (!runId) return
+                    setSnapshotBusy(true)
+                    setSnapshotMessage(null)
+                    try {
+                      const payload = snapshotReason.trim() ? { reason: snapshotReason.trim() } : {}
+                      const response = await api.createSnapshot(runId, payload)
+                      setSnapshotDetail(response)
+                      setSnapshotMessage(`Snapshot ${response.summary.id} created.`)
+                      const latest = await api.runSnapshots(runId)
+                      setSnapshots(latest)
+                    } catch (err) {
+                      const message = err instanceof Error ? err.message : 'Failed to create snapshot'
+                      setSnapshotMessage(message)
+                    } finally {
+                      setSnapshotBusy(false)
+                    }
+                  }}
+                >
+                  {snapshotBusy ? 'Creating…' : 'Create snapshot'}
+                </button>
+              </div>
+              {snapshotMessage ? <p className="control-message">{snapshotMessage}</p> : null}
+              {snapshots.length === 0 ? (
+                <p className="empty">No snapshots yet.</p>
+              ) : (
+                <ul className="list">
+                  {snapshots.map((snapshot) => (
+                    <li key={snapshot.id} className="list__item list__item--clickable">
+                      <button
+                        className="ghost-button"
+                        type="button"
+                        onClick={async () => {
+                          if (!runId) return
+                          try {
+                            const detail = await api.snapshot(runId, snapshot.id)
+                            setSnapshotDetail(detail)
+                          } catch (err) {
+                            const message =
+                              err instanceof Error ? err.message : 'Failed to load snapshot detail'
+                            setSnapshotMessage(message)
+                          }
+                        }}
+                      >
+                        <div>
+                          <p className="list__title">{snapshot.id}</p>
+                          <p className="list__meta">{snapshot.reason || 'No reason provided'}</p>
+                        </div>
+                        <div className="list__meta">
+                          <span>{formatBytes(snapshot.size_bytes)}</span>
+                          <span>{formatTimestamp(snapshot.created_at)}</span>
+                        </div>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {snapshotDetail ? (
+                <div className="snapshot-detail">
+                  <h3>Snapshot detail</h3>
+                  <div className="snapshot-meta">
+                    <span>Events: {snapshotDetail.manifest.events}</span>
+                    <span>Artifacts: {snapshotDetail.manifest.artifacts}</span>
+                    <span>Memory docs: {snapshotDetail.manifest.memory_docs}</span>
+                    <span>Bytes: {snapshotDetail.manifest.bytes}</span>
+                  </div>
+                  <pre className="snapshot-content">{snapshotDetail.content}</pre>
+                </div>
+              ) : null}
             </div>
           </div>
 

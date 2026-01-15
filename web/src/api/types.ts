@@ -64,3 +64,33 @@ export type RunControlResponse = {
   status: string
   message: string
 }
+
+export type SnapshotSummary = {
+  id: string
+  run_id: string
+  created_at: string
+  reason: string
+  size_bytes: number
+  content_path: string
+}
+
+export type SnapshotManifest = {
+  events: number
+  artifacts: number
+  memory_docs: number
+  bytes: number
+}
+
+export type SnapshotDetail = {
+  summary: SnapshotSummary
+  manifest: SnapshotManifest
+  content: string
+}
+
+export type SnapshotCreateRequest = {
+  reason?: string
+  include_events?: boolean
+  include_artifacts?: boolean
+  include_memory?: boolean
+  max_bytes?: number
+}
