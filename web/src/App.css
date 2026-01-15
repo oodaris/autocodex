@@ -3,6 +3,23 @@
   padding: 72px 24px 96px;
 }
 
+.skip-link {
+  position: absolute;
+  left: 16px;
+  top: 12px;
+  background: #0f172a;
+  color: #f8fafc;
+  padding: 8px 12px;
+  border-radius: 8px;
+  transform: translateY(-150%);
+  transition: transform 160ms ease;
+  z-index: 10;
+}
+
+.skip-link:focus {
+  transform: translateY(0);
+}
+
 .shell {
   margin: 0 auto;
   max-width: 1120px;
@@ -11,11 +28,19 @@
   gap: 40px;
 }
 
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
 .topbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.25);
 }
 
 .brand {
@@ -54,6 +79,12 @@
 .nav a:hover {
   background: rgba(15, 118, 110, 0.18);
   color: var(--text);
+}
+
+a:focus-visible,
+button:focus-visible {
+  outline: 2px solid rgba(15, 118, 110, 0.6);
+  outline-offset: 3px;
 }
 
 .link {

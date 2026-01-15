@@ -119,8 +119,8 @@ export default function Dashboard() {
           </p>
         </div>
         <div className="hero__status">
-          <div className={`status-card status-card--${health.status}`}>
-            <p className="status-card__label">API status</p>
+            <div className={`status-card status-card--${health.status}`} role="status" aria-live="polite">
+              <p className="status-card__label">API status</p>
             <h2>
               {health.status === 'ok' ? 'Connected' : health.status === 'error' ? 'Disconnected' : 'Checking'}
             </h2>
@@ -130,7 +130,7 @@ export default function Dashboard() {
             {health.status === 'error' && health.message && (
               <p className="status-card__error">{health.message}</p>
             )}
-            <button className="button" onClick={() => void refresh()} disabled={state === 'loading'}>
+            <button className="button" type="button" onClick={() => void refresh()} disabled={state === 'loading'}>
               {state === 'loading' ? 'Refreshing…' : 'Refresh'}
             </button>
           </div>
@@ -180,12 +180,16 @@ export default function Dashboard() {
         </div>
       </section>
 
-      <section className="runs">
+      <section className="runs" aria-live="polite">
         <div className="runs__header">
           <h2>Recent runs</h2>
           <p>Newest first. Click a run to open details.</p>
         </div>
-        {error && <div className="error">{error}</div>}
+        {error && (
+          <div className="error" role="alert">
+            {error}
+          </div>
+        )}
         <div className="runs__grid">
           {sortedRuns.length === 0 ? (
             <div className="empty">

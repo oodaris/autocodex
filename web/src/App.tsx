@@ -6,20 +6,25 @@ import './App.css'
 function Layout() {
   return (
     <div className="app">
+      <a className="skip-link" href="#main-content">
+        Skip to content
+      </a>
       <div className="shell">
         <header className="topbar">
           <div className="brand">
             <Link to="/">Autocodex</Link>
             <span>Control Deck</span>
           </div>
-          <nav className="nav">
+          <nav className="nav" aria-label="Primary">
             <Link to="/">Runs</Link>
             <a href="https://github.com/oodaris/autocodex" target="_blank" rel="noreferrer">
               GitHub
             </a>
           </nav>
         </header>
-        <Outlet />
+        <main id="main-content" className="content">
+          <Outlet />
+        </main>
       </div>
     </div>
   )

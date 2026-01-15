@@ -70,12 +70,16 @@ export default function RunDetail() {
           <h1>Run details</h1>
           <p>Inspect events and artifacts captured during this loop.</p>
         </div>
-        <button className="button" onClick={() => void refresh()} disabled={state === 'loading'}>
+        <button className="button" type="button" onClick={() => void refresh()} disabled={state === 'loading'}>
           {state === 'loading' ? 'Refreshing…' : 'Refresh'}
         </button>
       </header>
 
-      {error && <div className="error">{error}</div>}
+      {error && (
+        <div className="error" role="alert">
+          {error}
+        </div>
+      )}
 
       {run ? (
         <section className="detail-grid">
