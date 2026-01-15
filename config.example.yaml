@@ -50,6 +50,7 @@ logging:
   format: json
 
 loop:
+  mode: bounded
   max_iterations: 50
   phases:
     - ideate
@@ -57,3 +58,17 @@ loop:
     - implement
     - review
     - test
+  stop_conditions:
+    max_duration_seconds: 0
+    max_idle_seconds: 0
+    max_consecutive_failures: 0
+  feedback:
+    mode: off
+    sources:
+      - memory
+      - events
+      - artifacts
+    max_artifacts: 20
+    max_events: 200
+    max_bytes: 0
+    memory_glob: "*.md"

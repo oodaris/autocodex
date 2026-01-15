@@ -101,11 +101,41 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
+        "mode": {
+          "type": "string",
+          "enum": ["bounded", "continuous"],
+          "default": "bounded"
+        },
         "max_iterations": {"type": "integer", "minimum": 1, "default": 50},
         "phases": {
           "type": "array",
           "items": {"type": "string", "enum": ["ideate", "plan", "implement", "review", "test"]},
           "default": ["ideate", "plan", "implement", "review", "test"]
+        },
+        "stop_conditions": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "max_duration_seconds": {"type": "integer", "minimum": 0, "default": 0},
+            "max_idle_seconds": {"type": "integer", "minimum": 0, "default": 0},
+            "max_consecutive_failures": {"type": "integer", "minimum": 0, "default": 0}
+          }
+        },
+        "feedback": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "mode": {"type": "string", "enum": ["off", "on"], "default": "off"},
+            "sources": {
+              "type": "array",
+              "items": {"type": "string", "enum": ["memory", "events", "artifacts"]},
+              "default": ["memory", "events", "artifacts"]
+            },
+            "max_artifacts": {"type": "integer", "minimum": 0, "default": 20},
+            "max_events": {"type": "integer", "minimum": 0, "default": 200},
+            "max_bytes": {"type": "integer", "minimum": 0, "default": 0},
+            "memory_glob": {"type": "string", "default": "*.md"}
+          }
         }
       }
     }

@@ -30,11 +30,38 @@ func TestLoadAppliesDefaults(t *testing.T) {
 	if cfg.Loop.MaxIterations == 0 {
 		t.Fatalf("expected loop max iterations default")
 	}
+	if cfg.Loop.Mode != "bounded" {
+		t.Fatalf("expected loop mode default")
+	}
+	if cfg.Loop.Feedback.Mode != "off" {
+		t.Fatalf("expected loop feedback mode default")
+	}
+	if len(cfg.Loop.Feedback.Sources) == 0 {
+		t.Fatalf("expected loop feedback sources default")
+	}
 }
 
 func TestValidateRejectsInvalidMode(t *testing.T) {
 	cfg := Config{Version: "v1", Mode: "bad"}
 	cfg.ApplyDefaults()
+	if err := cfg.Validate(); err == nil {
+		t.Fatalf("expected validation error")
+	}
+}
+
+func TestValidateRejectsInvalidLoopMode(t *testing.T) {
+	cfg := Config{Version: "v1", Mode: "yolo"}
+	cfg.ApplyDefaults()
+	cfg.Loop.Mode = "bad"
+	if err := cfg.Validate(); err == nil {
+		t.Fatalf("expected validation error")
+	}
+}
+
+func TestValidateRejectsInvalidFeedbackSource(t *testing.T) {
+	cfg := Config{Version: "v1", Mode: "yolo"}
+	cfg.ApplyDefaults()
+	cfg.Loop.Feedback.Sources = []string{"memory", "bad"}
 	if err := cfg.Validate(); err == nil {
 		t.Fatalf("expected validation error")
 	}

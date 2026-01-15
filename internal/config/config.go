@@ -87,8 +87,26 @@ type LoggingConfig struct {
 }
 
 type LoopConfig struct {
-	MaxIterations int      `yaml:"max_iterations"`
-	Phases        []string `yaml:"phases"`
+	Mode           string               `yaml:"mode"`
+	MaxIterations  int                  `yaml:"max_iterations"`
+	Phases         []string             `yaml:"phases"`
+	StopConditions StopConditionsConfig `yaml:"stop_conditions"`
+	Feedback       FeedbackConfig       `yaml:"feedback"`
+}
+
+type StopConditionsConfig struct {
+	MaxDurationSeconds     int `yaml:"max_duration_seconds"`
+	MaxIdleSeconds         int `yaml:"max_idle_seconds"`
+	MaxConsecutiveFailures int `yaml:"max_consecutive_failures"`
+}
+
+type FeedbackConfig struct {
+	Mode         string   `yaml:"mode"`
+	Sources      []string `yaml:"sources"`
+	MaxArtifacts int      `yaml:"max_artifacts"`
+	MaxEvents    int      `yaml:"max_events"`
+	MaxBytes     int      `yaml:"max_bytes"`
+	MemoryGlob   string   `yaml:"memory_glob"`
 }
 
 func Load(path string) (Config, error) {
@@ -186,8 +204,26 @@ func (c *Config) ApplyDefaults() {
 	if c.Loop.MaxIterations == 0 {
 		c.Loop.MaxIterations = 50
 	}
+	if c.Loop.Mode == "" {
+		c.Loop.Mode = "bounded"
+	}
 	if c.Loop.Phases == nil || len(c.Loop.Phases) == 0 {
 		c.Loop.Phases = []string{"ideate", "plan", "implement", "review", "test"}
+	}
+	if c.Loop.Feedback.Mode == "" {
+		c.Loop.Feedback.Mode = "off"
+	}
+	if c.Loop.Feedback.Sources == nil {
+		c.Loop.Feedback.Sources = []string{"memory", "events", "artifacts"}
+	}
+	if c.Loop.Feedback.MaxArtifacts == 0 {
+		c.Loop.Feedback.MaxArtifacts = 20
+	}
+	if c.Loop.Feedback.MaxEvents == 0 {
+		c.Loop.Feedback.MaxEvents = 200
+	}
+	if c.Loop.Feedback.MemoryGlob == "" {
+		c.Loop.Feedback.MemoryGlob = "*.md"
 	}
 }
 
@@ -212,6 +248,39 @@ func (c Config) Validate() error {
 		if !oneOf(c.Codex.ReasoningEffort, []string{"minimal", "low", "medium", "high", "xhigh"}) {
 			return fmt.Errorf("invalid codex.reasoning_effort: %s", c.Codex.ReasoningEffort)
 		}
+	}
+	if c.Loop.Mode != "" {
+		if !oneOf(c.Loop.Mode, []string{"bounded", "continuous"}) {
+			return fmt.Errorf("invalid loop.mode: %s", c.Loop.Mode)
+		}
+	}
+	if c.Loop.StopConditions.MaxDurationSeconds < 0 {
+		return fmt.Errorf("invalid loop.stop_conditions.max_duration_seconds: %d", c.Loop.StopConditions.MaxDurationSeconds)
+	}
+	if c.Loop.StopConditions.MaxIdleSeconds < 0 {
+		return fmt.Errorf("invalid loop.stop_conditions.max_idle_seconds: %d", c.Loop.StopConditions.MaxIdleSeconds)
+	}
+	if c.Loop.StopConditions.MaxConsecutiveFailures < 0 {
+		return fmt.Errorf("invalid loop.stop_conditions.max_consecutive_failures: %d", c.Loop.StopConditions.MaxConsecutiveFailures)
+	}
+	if c.Loop.Feedback.Mode != "" {
+		if !oneOf(c.Loop.Feedback.Mode, []string{"off", "on"}) {
+			return fmt.Errorf("invalid loop.feedback.mode: %s", c.Loop.Feedback.Mode)
+		}
+	}
+	for _, source := range c.Loop.Feedback.Sources {
+		if !oneOf(source, []string{"memory", "events", "artifacts"}) {
+			return fmt.Errorf("invalid loop.feedback.sources entry: %s", source)
+		}
+	}
+	if c.Loop.Feedback.MaxArtifacts < 0 {
+		return fmt.Errorf("invalid loop.feedback.max_artifacts: %d", c.Loop.Feedback.MaxArtifacts)
+	}
+	if c.Loop.Feedback.MaxEvents < 0 {
+		return fmt.Errorf("invalid loop.feedback.max_events: %d", c.Loop.Feedback.MaxEvents)
+	}
+	if c.Loop.Feedback.MaxBytes < 0 {
+		return fmt.Errorf("invalid loop.feedback.max_bytes: %d", c.Loop.Feedback.MaxBytes)
 	}
 	if c.API.Port < 1 || c.API.Port > 65535 {
 		return fmt.Errorf("invalid api.port: %d", c.API.Port)
