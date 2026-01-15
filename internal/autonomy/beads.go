@@ -104,6 +104,16 @@ func addDependency(id, dep string) error {
 	return err
 }
 
+func updateBeadStatus(id, status string) error {
+	id = strings.TrimSpace(id)
+	status = strings.TrimSpace(status)
+	if id == "" || status == "" {
+		return fmt.Errorf("bead id and status required")
+	}
+	_, err := runBD("update", id, "--status", status)
+	return err
+}
+
 func beadExists(id string) bool {
 	cmd := exec.Command("bd", "show", id)
 	cmd.Stdout = &bytes.Buffer{}

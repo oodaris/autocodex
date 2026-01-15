@@ -21,6 +21,10 @@ type Runner struct {
 	Env             map[string]string
 }
 
+type Executor interface {
+	Exec(ctx context.Context, prompt string) (string, error)
+}
+
 func (r Runner) Exec(ctx context.Context, prompt string) (string, error) {
 	if prompt == "" {
 		return "", fmt.Errorf("prompt is empty")

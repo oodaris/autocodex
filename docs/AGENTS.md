@@ -59,6 +59,11 @@ Common start:
 autocodex "Add a quick summary to memory docs."
 ```
 
+## 2.2) Autonomy loop notes
+- Autonomy mode generates spec/plan/tasks and creates beads from the plan.
+- The **test** phase should emit an `ACTIONS` JSON block (per `docs/contracts/autonomy-actions.schema.json`) so autocodex can update bead status and select the next bead.
+- Gate failures stop the loop and auto-create a fix bead when enabled.
+
 ## 3) Commands
 - Go tests: `go test ./...`
 - Go vet: `go vet ./...`

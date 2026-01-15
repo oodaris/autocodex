@@ -69,6 +69,21 @@ autocodex run --config path/to/autocodex.yaml --task "Review backend API and fix
 
 For a longer walkthrough, see `docs/quickstart.md`.
 
+## Autonomy loop
+Autonomy mode generates spec/plan artifacts, creates beads, and advances through beads automatically.
+
+Enable it in `autocodex.yaml`:
+```yaml
+autonomy:
+  enabled: true
+```
+
+When autonomy is enabled:
+- `autocodex "task"` creates spec/plan/tasks artifacts and beads.
+- Beads are selected in dependency order (`bd ready`).
+- The **test** phase should emit an `ACTIONS` JSON block (see `docs/contracts/autonomy-actions.schema.json`) so autocodex can update bead status and choose the next bead.
+- Gate failures stop the loop and auto-create a fix bead (when beads auto-create is enabled).
+
 ## Configuration
 - `autocodex.yaml` controls mode, paths, Codex CLI settings, plugins, and API settings.
 - `mode: yolo` is explicit and must be used intentionally.

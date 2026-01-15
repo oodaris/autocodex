@@ -2,7 +2,9 @@ package autonomy
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
+	"os"
 	"strings"
 
 	"github.com/oodaris/autocodex/internal/codex"
@@ -17,7 +19,7 @@ type Controller struct {
 	Logger *slog.Logger
 	Store  *state.Store
 	Skills skills.Loader
-	Codex  codex.Runner
+	Codex  codex.Executor
 }
 
 type Input struct {
@@ -50,6 +52,7 @@ func (c *Controller) Run(ctx context.Context, input Input) (*state.Run, error) {
 	if c.Logger != nil {
 		c.Logger.Info("autonomy artifacts ready", "spec_path", specPath, "plan_path", planPath, "tasks_path", tasksPath)
 	}
+
 	orch := orchestrator.Orchestrator{
 		Config: c.Config,
 		Logger: c.Logger,
@@ -57,5 +60,106 @@ func (c *Controller) Run(ctx context.Context, input Input) (*state.Run, error) {
 		Skills: c.Skills,
 		Codex:  c.Codex,
 	}
-	return orch.Run(ctx)
+
+	var lastRun *state.Run
+	var nextHint string
+	var fixAttempts int
+	maxBeads := c.Config.Autonomy.StopConditions.MaxBeads
+	maxFixAttempts := c.Config.Autonomy.StopConditions.MaxFixAttempts
+
+	for processed := 0; ; processed++ {
+		if maxBeads > 0 && processed >= maxBeads {
+			if c.Logger != nil {
+				c.Logger.Warn("autonomy stop: max beads reached", "max_beads", maxBeads)
+			}
+			return lastRun, nil
+		}
+		bead, err := c.selectBead(nextHint)
+		nextHint = ""
+		if err != nil {
+			return lastRun, err
+		}
+		if bead == nil {
+			if c.Logger != nil {
+				c.Logger.Info("autonomy complete: no ready beads")
+			}
+			return lastRun, nil
+		}
+
+		restoreEnv := setBeadEnv(bead.ID)
+		run, err := orch.Run(ctx)
+		restoreEnv()
+		if err != nil {
+			if c.Config.Beads.AutoUpdate {
+				_ = updateBeadStatus(bead.ID, "blocked")
+			}
+			return run, err
+		}
+		lastRun = run
+
+		actions, err := c.actionsFromRun(run.ID)
+		if err != nil && c.Logger != nil {
+			c.Logger.Warn("autonomy actions parse failed", "run_id", run.ID, "error", err.Error())
+		}
+
+		stopReason, gateFailure, updatedCurrent, err := c.applyActions(bead.ID, actions)
+		if err != nil {
+			return run, err
+		}
+
+		if actions != nil && actions.Next.Type == "bead" {
+			nextHint = sanitizeBeadID(actions.Next.ID)
+		}
+
+		if gateFailure {
+			fixAttempts++
+			reason := stopReason
+			if strings.TrimSpace(reason) == "" {
+				reason = "gate failure"
+			}
+			if c.Config.Beads.AutoCreate && (actions == nil || len(actions.CreateBeads) == 0) {
+				if err := c.createFixBead(bead.ID, reason); err != nil && c.Logger != nil {
+					c.Logger.Warn("autonomy fix bead create failed", "error", err.Error())
+				}
+			}
+			if maxFixAttempts > 0 && fixAttempts >= maxFixAttempts {
+				return run, fmt.Errorf("autonomy gate failed: max fix attempts reached (%d)", maxFixAttempts)
+			}
+			if c.Config.Autonomy.StopConditions.StopOnGateFailure != nil && *c.Config.Autonomy.StopConditions.StopOnGateFailure {
+				return run, fmt.Errorf("autonomy gate failed: %s", reason)
+			}
+			continue
+		}
+		fixAttempts = 0
+
+		if stopReason != "" {
+			if c.Logger != nil {
+				c.Logger.Warn("autonomy stop requested", "reason", stopReason)
+			}
+			return run, nil
+		}
+
+		if c.Config.Beads.AutoUpdate && !updatedCurrent && !gateFailure {
+			_ = updateBeadStatus(bead.ID, "done")
+		}
+	}
+}
+
+func setBeadEnv(beadID string) func() {
+	prevBead := os.Getenv("AUTOCODEX_BEAD_ID")
+	prevBD := os.Getenv("BD_ISSUE")
+	_ = os.Setenv("AUTOCODEX_BEAD_ID", beadID)
+	_ = os.Setenv("BD_ISSUE", beadID)
+	return func() {
+		if prevBead == "" {
+			_ = os.Unsetenv("AUTOCODEX_BEAD_ID")
+		} else {
+			_ = os.Setenv("AUTOCODEX_BEAD_ID", prevBead)
+		}
+		if prevBD == "" {
+			_ = os.Unsetenv("BD_ISSUE")
+		} else {
+			_ = os.Setenv("BD_ISSUE", prevBD)
+		}
+	}
 }

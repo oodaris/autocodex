@@ -23,7 +23,7 @@ type Orchestrator struct {
 	Logger *slog.Logger
 	Store  *state.Store
 	Skills skills.Loader
-	Codex  codex.Runner
+	Codex  codex.Executor
 }
 
 func (o *Orchestrator) Run(ctx context.Context) (*state.Run, error) {
@@ -254,6 +254,20 @@ func (o *Orchestrator) buildPrompt(phase, runID, feedback string) string {
 		b.WriteString("\n--- Feedback Context ---\n")
 		b.WriteString(feedback)
 		b.WriteString("\n--- End Feedback ---\n")
+	}
+	if o.Config.Autonomy.Enabled && strings.TrimSpace(o.Config.Autonomy.ActionsSchema) != "" {
+		if schemaContent, err := os.ReadFile(filepath.Clean(o.Config.Autonomy.ActionsSchema)); err == nil {
+			b.WriteString("\n--- Autonomy Actions Schema ---\n")
+			b.WriteString(string(schemaContent))
+			b.WriteString("\n--- End Autonomy Actions Schema ---\n")
+		}
+		b.WriteString("\nAutonomy actions:\n")
+		b.WriteString("- Only output an ACTIONS JSON block in the test phase.\n")
+		b.WriteString("- When the phase is test, append the following markers:\n")
+		b.WriteString("ACTIONS_JSON_START\n")
+		b.WriteString("<JSON that conforms to the schema>\n")
+		b.WriteString("ACTIONS_JSON_END\n")
+		b.WriteString("- If tests or acceptance criteria fail, set gates.blocking = true and include a stop.reason.\n")
 	}
 	return b.String()
 }
