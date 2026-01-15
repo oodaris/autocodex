@@ -73,6 +73,7 @@ export default function Hub() {
             <label className="toggle">
               <input
                 type="checkbox"
+                name="hub-auto-refresh"
                 checked={autoRefresh}
                 onChange={(event) => setAutoRefresh(event.target.checked)}
               />

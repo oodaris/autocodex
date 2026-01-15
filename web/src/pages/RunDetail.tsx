@@ -112,6 +112,7 @@ export default function RunDetail() {
             <label className="toggle">
               <input
                 type="checkbox"
+                name="run-detail-auto-refresh"
                 checked={autoRefresh}
                 onChange={(event) => setAutoRefresh(event.target.checked)}
               />
@@ -233,6 +234,7 @@ export default function RunDetail() {
                 <input
                   className="control-input"
                   type="text"
+                  name="run-control-reason"
                   value={controlReason}
                   onChange={(event) => setControlReason(event.target.value)}
                   placeholder="Why should this run stop?"
@@ -266,6 +268,7 @@ export default function RunDetail() {
                 <input
                   className="control-input"
                   type="text"
+                  name="snapshot-reason"
                   value={snapshotReason}
                   onChange={(event) => setSnapshotReason(event.target.value)}
                   placeholder="Why capture this snapshot?"

@@ -5,6 +5,7 @@ import type { TerminalSessionCreateRequest, TerminalSessionSummary } from '../ap
 import { useAsync } from '../hooks/useAsync'
 import { usePolling } from '../hooks/usePolling'
 import { formatTimestamp } from '../utils/format'
+import { normalizeTerminalOutput, stripAnsi } from '../utils/stripAnsi'
 
 type LoadState = 'idle' | 'loading' | 'ready' | 'error'
 
@@ -19,12 +20,28 @@ export default function Terminal() {
   const [error, setError] = useState<string | null>(null)
   const [autoRefresh, setAutoRefresh] = useState(true)
   const socketRef = useRef<WebSocket | null>(null)
+  const autoStartRef = useRef(false)
 
   const pollConfig = {
     intervalMs: 5000,
     maxIntervalMs: 20000,
     backoffFactor: 1.5,
   }
+
+  const handleAutoCreate = useCallback(async () => {
+    if (autoStartRef.current) return
+    autoStartRef.current = true
+    const payload: TerminalSessionCreateRequest = {}
+    if (workspaceId) payload.workspace_id = workspaceId
+    try {
+      const created = await api.createTerminalSession(payload)
+      setSessions((current) => [created, ...current])
+      setActiveId(created.id)
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to create session'
+      setError(message)
+    }
+  }, [workspaceId])
 
   const refresh = useCallback(
     async ({ signal, silent }: { signal?: AbortSignal; silent?: boolean } = {}) => {
@@ -39,6 +56,9 @@ export default function Terminal() {
         if (!activeId && payload.length > 0) {
           setActiveId(payload[0].id)
         }
+        if (payload.length === 0 && !autoStartRef.current) {
+          void handleAutoCreate()
+        }
       } catch (err) {
         if (signal?.aborted) return
         if (err instanceof DOMException && err.name === 'AbortError') return
@@ -47,7 +67,7 @@ export default function Terminal() {
         setState('error')
       }
     },
-    [activeId],
+    [activeId, handleAutoCreate],
   )
 
   useAsync((signal) => refresh({ signal }), [refresh])
@@ -69,11 +89,17 @@ export default function Terminal() {
     socket.binaryType = 'arraybuffer'
     socketRef.current = socket
 
+    socket.onopen = () => {
+      setError(null)
+    }
+
     socket.onmessage = (event) => {
-      const text =
+      const raw =
         typeof event.data === 'string'
           ? event.data
           : new TextDecoder().decode(event.data as ArrayBuffer)
+      const text = stripAnsi(raw)
+      if (!text) return
       setSessionOutputs((current) => ({
         ...current,
         [activeSession.id]: `${current[activeSession.id] ?? ''}${text}`,
@@ -90,6 +116,10 @@ export default function Terminal() {
     }
   }, [activeSession])
 
+  useEffect(() => {
+    autoStartRef.current = false
+  }, [workspaceId])
+
   const handleCreate = useCallback(async () => {
     const payload: TerminalSessionCreateRequest = {}
     if (workspaceId) payload.workspace_id = workspaceId
@@ -104,6 +134,7 @@ export default function Terminal() {
       setError(message)
     }
   }, [command, workspaceId])
+
 
   const handleSend = useCallback(async () => {
     if (!input.trim()) return
@@ -126,6 +157,7 @@ export default function Terminal() {
   }, [])
 
   const output = activeId ? sessionOutputs[activeId] ?? '' : ''
+  const displayOutput = normalizeTerminalOutput(output)
 
   return (
     <div className="page">
@@ -142,6 +174,7 @@ export default function Terminal() {
             <label className="toggle">
               <input
                 type="checkbox"
+                name="terminal-auto-refresh"
                 checked={autoRefresh}
                 onChange={(event) => setAutoRefresh(event.target.checked)}
               />
@@ -173,7 +206,8 @@ export default function Terminal() {
             <input
               className="control-input"
               type="text"
-              placeholder="Command (optional)"
+              name="terminal-command"
+              placeholder="Command (optional, defaults to codex)"
               value={command}
               onChange={(event) => setCommand(event.target.value)}
             />
@@ -220,11 +254,12 @@ export default function Terminal() {
             <h2>Output</h2>
             <span className="panel__meta">{activeSession ? activeSession.id : 'No session selected'}</span>
           </div>
-          <pre className="terminal-screen">{output || 'Connect to a session to stream output.'}</pre>
+          <pre className="terminal-screen">{displayOutput || 'Connect to a session to stream output.'}</pre>
           <div className="terminal-input">
             <input
               className="control-input"
               type="text"
+              name="terminal-input"
               placeholder="Send input"
               value={input}
               onChange={(event) => setInput(event.target.value)}

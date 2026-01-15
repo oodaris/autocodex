@@ -160,6 +160,7 @@ export default function Dashboard() {
               <label className="toggle">
                 <input
                   type="checkbox"
+                  name="dashboard-auto-refresh"
                   checked={autoRefresh}
                   onChange={(event) => setAutoRefresh(event.target.checked)}
                 />

@@ -12,8 +12,10 @@ export default function MemoryDocs() {
   const [docs, setDocs] = useState<MemoryDocSummary[]>([])
   const [selectedName, setSelectedName] = useState<string | null>(null)
   const [activeDoc, setActiveDoc] = useState<MemoryDocDetail | null>(null)
+  const [progressDoc, setProgressDoc] = useState<MemoryDocDetail | null>(null)
   const [listState, setListState] = useState<LoadState>('idle')
   const [detailState, setDetailState] = useState<LoadState>('idle')
+  const [progressState, setProgressState] = useState<LoadState>('idle')
   const [error, setError] = useState<string | null>(null)
 
   const refreshList = useCallback(async ({ signal }: { signal?: AbortSignal } = {}) => {
@@ -69,9 +71,62 @@ export default function MemoryDocs() {
   useAsync((signal) => refreshList({ signal }), [refreshList])
   useAsync((signal) => refreshDetail({ signal }), [refreshDetail])
 
+  const progressName = useMemo(() => {
+    const doc = docs.find((item) => item.name.toLowerCase() === 'progress.md')
+    return doc?.name ?? null
+  }, [docs])
+
+  const refreshProgress = useCallback(
+    async ({ signal }: { signal?: AbortSignal } = {}) => {
+      if (!progressName) {
+        setProgressDoc(null)
+        return
+      }
+      if (signal?.aborted) return
+      setProgressState('loading')
+      try {
+        const workspace = workspaceId?.trim()
+        const payload = workspace
+          ? await api.hubMemoryDoc(workspace, progressName, { signal })
+          : await api.memoryDoc(progressName, { signal })
+        if (signal?.aborted) return
+        setProgressDoc(payload)
+        setProgressState('ready')
+      } catch (err) {
+        if (signal?.aborted) return
+        if (err instanceof DOMException && err.name === 'AbortError') return
+        const message = err instanceof Error ? err.message : 'Unknown error'
+        setError(message)
+        setProgressState('error')
+      }
+    },
+    [progressName, workspaceId],
+  )
+
+  useAsync((signal) => refreshProgress({ signal }), [refreshProgress])
+
   const sortedDocs = useMemo(() => {
     return [...docs].sort((a, b) => a.name.localeCompare(b.name))
   }, [docs])
+
+  const latestSummary = useMemo(() => {
+    if (!progressDoc?.content) {
+      return null
+    }
+    const trimmed = progressDoc.content.trim()
+    if (!trimmed) {
+      return null
+    }
+    const sections = trimmed.split(/\n##\s+/).filter(Boolean)
+    if (sections.length === 0) {
+      return { title: 'Latest summary', body: trimmed }
+    }
+    const last = sections[sections.length - 1]
+    const lines = last.split('\n')
+    const title = lines[0]?.trim() ?? 'Latest summary'
+    const body = lines.slice(1).join('\n').trim()
+    return { title, body: body || 'Summary details will appear here.' }
+  }, [progressDoc])
 
   return (
     <div className="page">
@@ -93,6 +148,27 @@ export default function MemoryDocs() {
           {error}
         </div>
       )}
+
+      <section className="panel memory-summary">
+        <div className="panel__header">
+          <h2>Latest summary</h2>
+          <span className="panel__meta">
+            {progressState === 'loading'
+              ? 'Loading…'
+              : progressDoc
+                ? formatTimestamp(progressDoc.updated_at)
+                : 'No updates yet'}
+          </span>
+        </div>
+        {latestSummary ? (
+          <>
+            <p className="memory-summary__title">{latestSummary.title}</p>
+            <pre className="memory-summary__content">{latestSummary.body}</pre>
+          </>
+        ) : (
+          <p className="empty">No run summaries yet. Run autocodex to populate PROGRESS.md.</p>
+        )}
+      </section>
 
       <section className="memory-grid">
         <div className="panel memory-list">

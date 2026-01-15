@@ -46,13 +46,24 @@ describe('MemoryDocs', () => {
         size_bytes: 20,
       },
     ])
-    mockedApi.memoryDoc.mockImplementation(async () => ({
-      name: 'TODO.md',
-      path: 'TODO.md',
-      updated_at: '2026-01-15T10:00:00Z',
-      size_bytes: 10,
-      content: 'Focus on memory docs.',
-    }))
+    mockedApi.memoryDoc.mockImplementation(async (name: string) => {
+      if (name === 'PROGRESS.md') {
+        return {
+          name: 'PROGRESS.md',
+          path: 'PROGRESS.md',
+          updated_at: '2026-01-15T11:00:00Z',
+          size_bytes: 20,
+          content: '## Latest summary\nSummary details here.',
+        }
+      }
+      return {
+        name: 'TODO.md',
+        path: 'TODO.md',
+        updated_at: '2026-01-15T10:00:00Z',
+        size_bytes: 10,
+        content: 'Focus on memory docs.',
+      }
+    })
 
     const { default: MemoryDocs } = await import('../MemoryDocs')
     render(

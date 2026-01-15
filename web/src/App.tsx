@@ -40,17 +40,30 @@ function Layout() {
               GitHub
             </a>
           </nav>
-          <div className="token">
+          <form
+            className="token"
+            aria-label="API token"
+            onSubmit={(event) => event.preventDefault()}
+          >
             <label htmlFor="api-token">API token</label>
+            <input
+              className="visually-hidden"
+              type="text"
+              name="username"
+              autoComplete="username"
+              tabIndex={-1}
+            />
             <input
               id="api-token"
               type="password"
+              name="api-token"
+              autoComplete="new-password"
               placeholder="optional"
               className="control-input token-input"
               value={token}
               onChange={(event) => setToken(event.target.value)}
             />
-          </div>
+          </form>
         </header>
         <main id="main-content" className="content">
           <Outlet />
