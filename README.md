@@ -17,6 +17,14 @@ autocodex orchestrates a structured loop: ideate → plan → implement → revi
 - Terminal sessions (websocket PTY)
 - Optional token auth for the API/UI
 
+## Install
+Option A: install with Go:
+```bash
+go install github.com/oodaris/autocodex/cmd/autocodex@latest
+```
+
+Option B: download a release binary from GitHub Releases.
+
 ## Quickstart
 1) Install Go and the Codex CLI.
 2) Copy the example config:
@@ -25,8 +33,8 @@ cp config.example.yaml autocodex.yaml
 ```
 3) Run the CLI:
 ```bash
-go run ./cmd/autocodex init --config autocodex.yaml
-go run ./cmd/autocodex run --config autocodex.yaml
+autocodex init --config autocodex.yaml
+autocodex run --config autocodex.yaml
 ```
 4) (Optional) Start the UI:
 ```bash
@@ -34,6 +42,7 @@ cd web
 npm install
 npm run dev
 ```
+For a longer walkthrough, see `docs/quickstart.md`.
 
 ## Configuration
 - `autocodex.yaml` controls mode, paths, Codex CLI settings, plugins, and API settings.
@@ -42,6 +51,7 @@ npm run dev
 - `hub.enabled` adds multi-repo workspace tracking.
 - `auth.enabled` enforces API tokens (see `docs/ui/README.md`).
 - `auth.token_env` can read a token from an environment variable.
+For a full reference, see `docs/config/README.md`.
 
 ## UI usage
 See `docs/ui/README.md` for local usage and Vercel deployment notes.
@@ -85,6 +95,11 @@ go run ./cmd/autocodex snapshot --run <run-id> --reason "handoff"
 - Contracts: `docs/contracts/`
 - Plugins guide: `docs/plugins/README.md`
 - UI guide: `docs/ui/README.md`
+
+## Release
+- Changelog: `CHANGELOG.md`
+- GoReleaser config: `goreleaser.yml`
+- Release process: `docs/release/README.md`
 
 ## License
 MIT — see `LICENSE`.
