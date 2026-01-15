@@ -145,10 +145,11 @@ button:focus-visible {
   position: absolute;
   inset: 0;
   background-image: url('/autocodex-banner.png');
-  background-size: 140% auto;
-  background-position: 115% center;
+  background-size: 110% auto;
+  background-position: right -40px center;
   background-repeat: no-repeat;
-  opacity: 0.2;
+  opacity: 0.28;
+  filter: saturate(1.05);
   pointer-events: none;
   z-index: 0;
 }
