@@ -1,6 +1,7 @@
 package terminal
 
 import (
+	"bytes"
 	"context"
 	"crypto/rand"
 	"encoding/hex"
@@ -18,8 +19,10 @@ import (
 )
 
 const (
-	StatusRunning = "running"
-	StatusClosed  = "closed"
+	StatusRunning  = "running"
+	StatusClosed   = "closed"
+	defaultPTYCols = 120
+	defaultPTYRows = 40
 )
 
 type SessionConfig struct {
@@ -59,6 +62,11 @@ type Session struct {
 	ptyFile  *os.File
 	attached bool
 	mu       sync.Mutex
+
+	outputMu sync.Mutex
+	output   bytes.Buffer
+	subsMu   sync.Mutex
+	subs     map[chan []byte]struct{}
 }
 
 type Manager struct {
@@ -84,7 +92,10 @@ func (m *Manager) Create(ctx context.Context, cfg SessionConfig) (*Session, erro
 		cmd.Env = append(os.Environ(), cfg.Env...)
 	}
 
-	ptyFile, err := pty.Start(cmd)
+	ptyFile, err := pty.StartWithSize(cmd, &pty.Winsize{
+		Cols: defaultPTYCols,
+		Rows: defaultPTYRows,
+	})
 	if err != nil {
 		return nil, fmt.Errorf("start pty: %w", err)
 	}
@@ -103,12 +114,14 @@ func (m *Manager) Create(ctx context.Context, cfg SessionConfig) (*Session, erro
 		Status:      StatusRunning,
 		cmd:         cmd,
 		ptyFile:     ptyFile,
+		subs:        map[chan []byte]struct{}{},
 	}
 
 	m.mu.Lock()
 	m.sessions[id] = session
 	m.mu.Unlock()
 
+	session.startStream(m.logger)
 	go session.wait(m.logger)
 	return session, nil
 }
@@ -171,6 +184,38 @@ func (s *Session) PTY() *os.File {
 	return s.ptyFile
 }
 
+func (s *Session) OutputSnapshot() []byte {
+	s.outputMu.Lock()
+	defer s.outputMu.Unlock()
+	if s.output.Len() == 0 {
+		return nil
+	}
+	data := s.output.Bytes()
+	out := make([]byte, len(data))
+	copy(out, data)
+	return out
+}
+
+func (s *Session) Subscribe() chan []byte {
+	ch := make(chan []byte, 16)
+	s.subsMu.Lock()
+	s.subs[ch] = struct{}{}
+	s.subsMu.Unlock()
+	return ch
+}
+
+func (s *Session) Unsubscribe(ch chan []byte) {
+	if ch == nil {
+		return
+	}
+	s.subsMu.Lock()
+	if _, ok := s.subs[ch]; ok {
+		delete(s.subs, ch)
+		close(ch)
+	}
+	s.subsMu.Unlock()
+}
+
 func (s *Session) TryAttach() bool {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -220,9 +265,83 @@ func (s *Session) wait(logger *slog.Logger) {
 	if s.ptyFile != nil {
 		_ = s.ptyFile.Close()
 	}
+	s.closeSubscribers()
 	if logger != nil {
 		logger.Info("terminal session closed", "session_id", s.ID, "exit_code", exitCode)
 	}
+}
+
+func (s *Session) startStream(logger *slog.Logger) {
+	if s.ptyFile == nil {
+		return
+	}
+	go func() {
+		buf := make([]byte, 4096)
+		filter := &DSRFilter{}
+		for {
+			n, err := s.ptyFile.Read(buf)
+			if err != nil {
+				break
+			}
+			filtered := filter.Filter(s.ptyFile, buf[:n])
+			if len(filtered) == 0 {
+				continue
+			}
+			s.appendOutput(filtered)
+			s.broadcast(filtered)
+		}
+		s.closeSubscribers()
+		if logger != nil {
+			logger.Debug("terminal stream closed", "session_id", s.ID)
+		}
+	}()
+}
+
+func (s *Session) appendOutput(chunk []byte) {
+	const maxOutputBytes = 512 * 1024
+	if len(chunk) == 0 {
+		return
+	}
+	s.outputMu.Lock()
+	defer s.outputMu.Unlock()
+
+	if len(chunk) >= maxOutputBytes {
+		s.output.Reset()
+		s.output.Write(chunk[len(chunk)-maxOutputBytes:])
+		return
+	}
+	if s.output.Len()+len(chunk) > maxOutputBytes {
+		existing := s.output.Bytes()
+		overflow := s.output.Len() + len(chunk) - maxOutputBytes
+		if overflow < len(existing) {
+			existing = existing[overflow:]
+		} else {
+			existing = nil
+		}
+		s.output.Reset()
+		s.output.Write(existing)
+	}
+	s.output.Write(chunk)
+}
+
+func (s *Session) broadcast(chunk []byte) {
+	s.subsMu.Lock()
+	defer s.subsMu.Unlock()
+	for ch := range s.subs {
+		select {
+		case ch <- chunk:
+		default:
+		}
+	}
+}
+
+func (s *Session) closeSubscribers() {
+	s.subsMu.Lock()
+	for ch := range s.subs {
+		close(ch)
+		delete(s.subs, ch)
+	}
+	s.subsMu.Unlock()
 }
 
 func randomID() string {

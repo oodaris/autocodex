@@ -5,8 +5,11 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -54,11 +57,20 @@ func (s *Server) handleTerminalSessions(w http.ResponseWriter, r *http.Request) 
 		if command == "" {
 			command = cfg.Codex.CLIPath
 		}
+		if command == "" {
+			command = defaultShellCommand()
+		}
 		args := req.Args
 		if len(args) == 0 && len(cfg.Codex.ExtraArgs) > 0 {
 			args = append([]string{}, cfg.Codex.ExtraArgs...)
 		}
 		env := appendEnv(cfg.Codex.Env, req.Env)
+		if isCodexCommand(command, cfg.Codex.CLIPath) {
+			env = ensureEnv(env, map[string]string{
+				"CI":   "1",
+				"TERM": "dumb",
+			})
+		}
 		if workspaceID != "" {
 			env = append(env, "AUTOCODEX_WORKSPACE_ID="+workspaceID)
 		}
@@ -171,14 +183,17 @@ func (s *Server) handleTerminalSessionWS(w http.ResponseWriter, r *http.Request,
 	}
 
 	readDone := make(chan struct{})
+	output := session.OutputSnapshot()
+	if len(output) > 0 {
+		_ = conn.WriteMessage(websocket.BinaryMessage, output)
+	}
+	sub := session.Subscribe()
+	var cleanupOnce sync.Once
+	cleanup := func() { cleanupOnce.Do(func() { session.Unsubscribe(sub) }) }
 	go func() {
-		buf := make([]byte, 4096)
-		for {
-			n, err := ptyFile.Read(buf)
-			if err != nil {
-				break
-			}
-			if err := conn.WriteMessage(websocket.BinaryMessage, buf[:n]); err != nil {
+		for chunk := range sub {
+			if err := conn.WriteMessage(websocket.BinaryMessage, chunk); err != nil {
+				cleanup()
 				break
 			}
 		}
@@ -196,6 +211,7 @@ func (s *Server) handleTerminalSessionWS(w http.ResponseWriter, r *http.Request,
 		_, _ = ptyFile.Write(msg)
 	}
 
+	cleanup()
 	<-readDone
 	s.log(r, http.StatusOK, start, nil)
 }
@@ -240,6 +256,52 @@ func appendEnv(env map[string]string, extra []string) []string {
 		result = append(result, value)
 	}
 	return result
+}
+
+func ensureEnv(env []string, overrides map[string]string) []string {
+	if len(overrides) == 0 {
+		return env
+	}
+	filtered := env[:0]
+	for _, entry := range env {
+		key := strings.SplitN(entry, "=", 2)[0]
+		if _, ok := overrides[key]; ok {
+			continue
+		}
+		filtered = append(filtered, entry)
+	}
+	for key, value := range overrides {
+		filtered = append(filtered, key+"="+value)
+	}
+	return filtered
+}
+
+func isCodexCommand(command, cfgPath string) bool {
+	command = strings.TrimSpace(command)
+	if command == "" {
+		return false
+	}
+	base := filepath.Base(command)
+	if base == "codex" {
+		return true
+	}
+	if cfgPath == "" {
+		return false
+	}
+	return base == filepath.Base(cfgPath)
+}
+
+func defaultShellCommand() string {
+	if runtime.GOOS == "windows" {
+		if value := strings.TrimSpace(os.Getenv("COMSPEC")); value != "" {
+			return value
+		}
+		return "cmd.exe"
+	}
+	if value := strings.TrimSpace(os.Getenv("SHELL")); value != "" {
+		return value
+	}
+	return "bash"
 }
 
 func (s *Server) allowOrigin(r *http.Request) bool {
