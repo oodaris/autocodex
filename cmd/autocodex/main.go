@@ -349,6 +349,18 @@ func runAPI(args []string) {
 	if err != nil {
 		rootDir = ""
 	}
+	if cfg.Hub.Enabled && len(cfg.Hub.Workspaces) == 0 && rootDir != "" {
+		wsID := filepath.Base(rootDir)
+		if wsID == "" || wsID == "." || wsID == string(filepath.Separator) {
+			wsID = "local"
+		}
+		cfg.Hub.Workspaces = []config.WorkspaceConfig{{
+			ID:         wsID,
+			Name:       wsID,
+			Root:       rootDir,
+			ConfigPath: *configPath,
+		}}
+	}
 	var hubManager *hub.Manager
 	if cfg.Hub.Enabled {
 		hubManager, err = hub.NewManager(cfg, logger)
@@ -370,6 +382,15 @@ func runAPI(args []string) {
 		Auth:     authConfig,
 		Config:   cfg,
 		RootDir:  rootDir,
+	}
+
+	if cfg.Loop.StopConditions.MaxHeartbeatSeconds > 0 {
+		watchdog := &api.RunWatchdog{
+			Store:               store,
+			Logger:              logger,
+			MaxHeartbeatSeconds: cfg.Loop.StopConditions.MaxHeartbeatSeconds,
+		}
+		go watchdog.Start(context.Background())
 	}
 	addr := net.JoinHostPort(cfg.API.Host, fmt.Sprintf("%d", cfg.API.Port))
 	logger.Info("api server starting", "route", "/", "status", "starting", "latency_ms", 0, "addr", addr)

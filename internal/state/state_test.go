@@ -3,6 +3,7 @@ package state
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 )
@@ -98,6 +99,62 @@ func TestRunControlAndFeedbackPersistence(t *testing.T) {
 	}
 	if len(loadedFeedback.MemoryDocs) != 1 {
 		t.Fatalf("expected memory docs")
+	}
+}
+
+func TestAppendMemoryDoc(t *testing.T) {
+	base := t.TempDir()
+	store := NewStore(
+		filepath.Join(base, "state"),
+		filepath.Join(base, "runs"),
+		filepath.Join(base, "memory"),
+		filepath.Join(base, "logs"),
+		filepath.Join(base, "artifacts"),
+	)
+	if err := store.InitDirs(); err != nil {
+		t.Fatalf("init dirs: %v", err)
+	}
+	if err := store.EnsureMemoryDocs(); err != nil {
+		t.Fatalf("ensure memory docs: %v", err)
+	}
+
+	if err := store.AppendMemoryDoc("PROGRESS.md", "Run summary line"); err != nil {
+		t.Fatalf("append memory doc: %v", err)
+	}
+	doc, err := store.GetMemoryDoc("PROGRESS.md")
+	if err != nil {
+		t.Fatalf("get memory doc: %v", err)
+	}
+	if doc == nil || !strings.Contains(doc.Content, "Run summary line") {
+		t.Fatalf("expected appended content")
+	}
+}
+
+func TestRunHeartbeat(t *testing.T) {
+	base := t.TempDir()
+	store := NewStore(
+		filepath.Join(base, "state"),
+		filepath.Join(base, "runs"),
+		filepath.Join(base, "memory"),
+		filepath.Join(base, "logs"),
+		filepath.Join(base, "artifacts"),
+	)
+	if err := store.InitDirs(); err != nil {
+		t.Fatalf("init dirs: %v", err)
+	}
+	run, err := store.CreateRun()
+	if err != nil {
+		t.Fatalf("create run: %v", err)
+	}
+	if err := store.TouchRunHeartbeat(run.ID, 1234); err != nil {
+		t.Fatalf("touch heartbeat: %v", err)
+	}
+	hb, err := store.GetRunHeartbeat(run.ID)
+	if err != nil {
+		t.Fatalf("get heartbeat: %v", err)
+	}
+	if hb == nil || hb.RunID != run.ID || hb.PID != 1234 {
+		t.Fatalf("unexpected heartbeat")
 	}
 }
 

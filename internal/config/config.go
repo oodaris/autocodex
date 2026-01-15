@@ -119,6 +119,7 @@ type StopConditionsConfig struct {
 	MaxDurationSeconds     int `yaml:"max_duration_seconds"`
 	MaxIdleSeconds         int `yaml:"max_idle_seconds"`
 	MaxConsecutiveFailures int `yaml:"max_consecutive_failures"`
+	MaxHeartbeatSeconds    int `yaml:"max_heartbeat_seconds"`
 }
 
 type FeedbackConfig struct {
@@ -218,6 +219,9 @@ func (c *Config) ApplyDefaults() {
 	}
 	if c.API.Port == 0 {
 		c.API.Port = 7788
+	}
+	if c.Loop.StopConditions.MaxHeartbeatSeconds == 0 {
+		c.Loop.StopConditions.MaxHeartbeatSeconds = 180
 	}
 	if c.API.BasePath == "" {
 		c.API.BasePath = "/"

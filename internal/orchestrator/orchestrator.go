@@ -38,7 +38,8 @@ func (o *Orchestrator) Run(ctx context.Context) (*state.Run, error) {
 	if err != nil {
 		return nil, err
 	}
-	if _, err := o.Store.AcquireRunLock(run.ID); err != nil {
+	lock, err := o.Store.AcquireRunLock(run.ID)
+	if err != nil {
 		run.Status = "failed"
 		finished := time.Now().UTC()
 		run.FinishedAt = &finished
@@ -48,6 +49,13 @@ func (o *Orchestrator) Run(ctx context.Context) (*state.Run, error) {
 	defer func() {
 		_ = o.Store.ReleaseRunLock(run.ID)
 	}()
+	if lock != nil {
+		_ = o.Store.TouchRunHeartbeat(run.ID, lock.PID)
+	}
+
+	heartbeatCtx, heartbeatCancel := context.WithCancel(ctx)
+	defer heartbeatCancel()
+	go o.heartbeatLoop(heartbeatCtx, run.ID, os.Getpid())
 
 	traceID := newTraceID()
 	beadID := os.Getenv("AUTOCODEX_BEAD_ID")
@@ -108,6 +116,7 @@ func (o *Orchestrator) Run(ctx context.Context) (*state.Run, error) {
 			if err := o.Store.SaveRun(run); err != nil {
 				return run, err
 			}
+			_ = o.Store.TouchRunHeartbeat(run.ID, os.Getpid())
 
 			phaseStart := time.Now().UTC()
 			logger.Info("phase start", "phase", phase, "status", "started", "latency_ms", 0)
@@ -170,6 +179,10 @@ func (o *Orchestrator) Run(ctx context.Context) (*state.Run, error) {
 
 			if err := o.writeArtifact(run.ID, phase, output); err != nil {
 				logger.Warn("artifact write failed", "phase", phase, "error", err.Error())
+			}
+			phaseFinished := time.Now().UTC()
+			if err := o.appendPhaseSummary(run.ID, phase, phaseStart, phaseFinished, output); err != nil {
+				logger.Warn("phase summary append failed", "phase", phase, "error", err.Error())
 			}
 			if feedbackMeta.RunID != "" {
 				feedbackMeta.LastOutputSummary = fmt.Sprintf("phase %s output bytes=%d", phase, len(output))
@@ -327,6 +340,124 @@ func (o *Orchestrator) finalizeRun(
 		LastAction: lastAction,
 		UpdatedAt:  time.Now().UTC(),
 	})
+
+	if err := o.appendRunSummary(run, stopReason, lastErr, lastAction); err != nil && o.Logger != nil {
+		o.Logger.Warn("memory summary append failed", "run_id", run.ID, "error", err.Error())
+	}
+}
+
+func (o *Orchestrator) appendRunSummary(
+	run *state.Run,
+	stopReason *string,
+	lastErr error,
+	lastAction *string,
+) error {
+	if o.Store == nil || run == nil {
+		return nil
+	}
+	var b strings.Builder
+	finished := ""
+	if run.FinishedAt != nil {
+		finished = run.FinishedAt.UTC().Format(time.RFC3339)
+	}
+	b.WriteString(fmt.Sprintf("## Run %s — %s\n", run.ID, run.Status))
+	if finished != "" {
+		b.WriteString(fmt.Sprintf("- Finished: %s\n", finished))
+	}
+	if !run.StartedAt.IsZero() {
+		b.WriteString(fmt.Sprintf("- Started: %s\n", run.StartedAt.UTC().Format(time.RFC3339)))
+	}
+	b.WriteString(fmt.Sprintf("- Iterations: %d\n", run.Iterations))
+	if run.CurrentPhase != "" {
+		b.WriteString(fmt.Sprintf("- Last phase: %s\n", run.CurrentPhase))
+	}
+	if stopReason != nil {
+		b.WriteString(fmt.Sprintf("- Stop reason: %s\n", *stopReason))
+	}
+	if lastAction != nil {
+		b.WriteString(fmt.Sprintf("- Last action: %s\n", *lastAction))
+	}
+	if lastErr != nil {
+		b.WriteString(fmt.Sprintf("- Last error: %s\n", lastErr.Error()))
+	}
+
+	if artifacts, err := o.Store.ListArtifacts(run.ID); err == nil && len(artifacts) > 0 {
+		sort.Slice(artifacts, func(i, j int) bool {
+			return artifacts[i].CreatedAt.Before(artifacts[j].CreatedAt)
+		})
+		b.WriteString("- Artifacts:\n")
+		for _, artifact := range artifacts {
+			b.WriteString(fmt.Sprintf("  - %s (%s, %d bytes)\n", artifact.Name, artifact.Type, artifact.SizeBytes))
+		}
+	}
+
+	if events, err := o.Store.ListEvents(run.ID); err == nil && len(events) > 0 {
+		if len(events) > 5 {
+			events = events[len(events)-5:]
+		}
+		b.WriteString("- Recent events:\n")
+		for _, event := range events {
+			b.WriteString(fmt.Sprintf("  - %s [%s] %s %s\n",
+				event.TS.UTC().Format(time.RFC3339),
+				event.Type,
+				event.Phase,
+				event.Message,
+			))
+		}
+	}
+
+	return o.Store.AppendMemoryDoc("PROGRESS.md", b.String())
+}
+
+func (o *Orchestrator) appendPhaseSummary(
+	runID string,
+	phase string,
+	startedAt time.Time,
+	finishedAt time.Time,
+	output string,
+) error {
+	if o.Store == nil {
+		return nil
+	}
+	var b strings.Builder
+	b.WriteString(fmt.Sprintf("## Phase %s — %s\n", phase, runID))
+	if !startedAt.IsZero() {
+		b.WriteString(fmt.Sprintf("- Started: %s\n", startedAt.UTC().Format(time.RFC3339)))
+	}
+	if !finishedAt.IsZero() {
+		b.WriteString(fmt.Sprintf("- Finished: %s\n", finishedAt.UTC().Format(time.RFC3339)))
+	}
+	b.WriteString(fmt.Sprintf("- Output bytes: %d\n", len(output)))
+	if output != "" {
+		b.WriteString(fmt.Sprintf("- Artifact: %s\n", fmt.Sprintf("%s.txt", phase)))
+	}
+	return o.Store.AppendMemoryDoc("PROGRESS.md", b.String())
+}
+
+func (o *Orchestrator) heartbeatLoop(ctx context.Context, runID string, pid int) {
+	if o.Store == nil {
+		return
+	}
+	interval := 30 * time.Second
+	if o.Config.Loop.StopConditions.MaxHeartbeatSeconds > 0 {
+		interval = time.Duration(o.Config.Loop.StopConditions.MaxHeartbeatSeconds/2) * time.Second
+		if interval < 15*time.Second {
+			interval = 15 * time.Second
+		}
+	}
+	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
+
+	for {
+		if err := o.Store.TouchRunHeartbeat(runID, pid); err != nil && o.Logger != nil {
+			o.Logger.Warn("heartbeat update failed", "run_id", runID, "error", err.Error())
+		}
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+		}
+	}
 }
 
 func (o *Orchestrator) gatherFeedback(runID string) (string, state.RunFeedback, error) {

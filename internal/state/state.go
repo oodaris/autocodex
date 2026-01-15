@@ -61,6 +61,12 @@ type RunLock struct {
 	AcquiredAt time.Time `json:"acquired_at"`
 }
 
+type RunHeartbeat struct {
+	RunID     string    `json:"run_id"`
+	PID       int       `json:"pid"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
 var ErrRunLocked = errors.New("run is locked")
 
 type RunEvent struct {
@@ -225,6 +231,33 @@ func (s *Store) GetMemoryDoc(name string) (*MemoryDocDetail, error) {
 		SizeBytes: info.Size(),
 		Content:   string(content),
 	}, nil
+}
+
+func (s *Store) AppendMemoryDoc(name, content string) error {
+	if strings.TrimSpace(content) == "" {
+		return nil
+	}
+	if name == "" {
+		return errors.New("memory doc name required")
+	}
+	if filepath.Base(name) != name || strings.Contains(name, string(filepath.Separator)) {
+		return fmt.Errorf("invalid memory doc name: %s", name)
+	}
+	if err := os.MkdirAll(s.MemoryDir, 0o755); err != nil {
+		return fmt.Errorf("init memory dir: %w", err)
+	}
+	path := filepath.Join(s.MemoryDir, name)
+	payload := strings.TrimRight(content, "\n")
+	payload = "\n" + payload + "\n"
+	file, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644)
+	if err != nil {
+		return fmt.Errorf("open memory doc: %w", err)
+	}
+	defer file.Close()
+	if _, err := file.WriteString(payload); err != nil {
+		return fmt.Errorf("append memory doc: %w", err)
+	}
+	return nil
 }
 
 func (s *Store) CreateRun() (*Run, error) {
@@ -495,6 +528,39 @@ func (s *Store) ReleaseRunLock(runID string) error {
 	return nil
 }
 
+func (s *Store) TouchRunHeartbeat(runID string, pid int) error {
+	if runID == "" {
+		return errors.New("run id required")
+	}
+	path := s.runHeartbeatPath(runID)
+	hb := RunHeartbeat{
+		RunID:     runID,
+		PID:       pid,
+		UpdatedAt: time.Now().UTC(),
+	}
+	data, err := json.Marshal(hb)
+	if err != nil {
+		return fmt.Errorf("marshal run heartbeat: %w", err)
+	}
+	return os.WriteFile(path, data, 0o644)
+}
+
+func (s *Store) GetRunHeartbeat(runID string) (*RunHeartbeat, error) {
+	path := s.runHeartbeatPath(runID)
+	data, err := os.ReadFile(path)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("read run heartbeat: %w", err)
+	}
+	var hb RunHeartbeat
+	if err := json.Unmarshal(data, &hb); err != nil {
+		return nil, fmt.Errorf("parse run heartbeat: %w", err)
+	}
+	return &hb, nil
+}
+
 func (s *Store) GetArtifact(id string) (Artifact, error) {
 	runID, name, err := parseArtifactID(id)
 	if err != nil {
@@ -754,6 +820,10 @@ func (s *Store) runFeedbackPath(runID string) string {
 
 func (s *Store) runLockPath(runID string) string {
 	return filepath.Join(s.RunsDir, runID, "run.lock")
+}
+
+func (s *Store) runHeartbeatPath(runID string) string {
+	return filepath.Join(s.RunsDir, runID, "heartbeat.json")
 }
 
 func (s *Store) snapshotsDir(runID string) string {

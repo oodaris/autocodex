@@ -150,3 +150,71 @@ func TestShouldStopControlAction(t *testing.T) {
 		t.Fatalf("expected last action")
 	}
 }
+
+func TestFinalizeRunAppendsProgress(t *testing.T) {
+	base := t.TempDir()
+	store := state.NewStore(
+		filepath.Join(base, "state"),
+		filepath.Join(base, "runs"),
+		filepath.Join(base, "memory"),
+		filepath.Join(base, "logs"),
+		filepath.Join(base, "artifacts"),
+	)
+	if err := store.InitDirs(); err != nil {
+		t.Fatalf("init dirs: %v", err)
+	}
+	if err := store.EnsureMemoryDocs(); err != nil {
+		t.Fatalf("ensure memory docs: %v", err)
+	}
+	run, err := store.CreateRun()
+	if err != nil {
+		t.Fatalf("create run: %v", err)
+	}
+
+	orch := Orchestrator{Store: store}
+	orch.finalizeRun(run, "completed", nil, nil, nil)
+
+	doc, err := store.GetMemoryDoc("PROGRESS.md")
+	if err != nil {
+		t.Fatalf("get memory doc: %v", err)
+	}
+	if !strings.Contains(doc.Content, run.ID) {
+		t.Fatalf("expected run summary to include run id")
+	}
+}
+
+func TestAppendPhaseSummary(t *testing.T) {
+	base := t.TempDir()
+	store := state.NewStore(
+		filepath.Join(base, "state"),
+		filepath.Join(base, "runs"),
+		filepath.Join(base, "memory"),
+		filepath.Join(base, "logs"),
+		filepath.Join(base, "artifacts"),
+	)
+	if err := store.InitDirs(); err != nil {
+		t.Fatalf("init dirs: %v", err)
+	}
+	if err := store.EnsureMemoryDocs(); err != nil {
+		t.Fatalf("ensure memory docs: %v", err)
+	}
+	run, err := store.CreateRun()
+	if err != nil {
+		t.Fatalf("create run: %v", err)
+	}
+
+	orch := Orchestrator{Store: store}
+	started := time.Now().UTC()
+	finished := started.Add(2 * time.Second)
+	if err := orch.appendPhaseSummary(run.ID, "plan", started, finished, "hello"); err != nil {
+		t.Fatalf("append phase summary: %v", err)
+	}
+
+	doc, err := store.GetMemoryDoc("PROGRESS.md")
+	if err != nil {
+		t.Fatalf("get memory doc: %v", err)
+	}
+	if !strings.Contains(doc.Content, "Phase plan") || !strings.Contains(doc.Content, "Output bytes") {
+		t.Fatalf("expected phase summary content")
+	}
+}
