@@ -132,9 +132,10 @@ button:focus-visible {
   position: absolute;
   inset: 0;
   background-image: url('/autocodex-banner.png');
-  background-size: cover;
-  background-position: center;
-  opacity: 0.18;
+  background-size: 120% auto;
+  background-position: left center;
+  background-repeat: no-repeat;
+  opacity: 0.22;
   pointer-events: none;
 }
 
@@ -942,6 +943,11 @@ button:focus-visible {
 
   .hero__status {
     justify-content: flex-start;
+  }
+
+  .hero__banner {
+    background-size: cover;
+    background-position: center;
   }
 
   .memory-grid {
