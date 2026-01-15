@@ -50,7 +50,7 @@ Use **external process plugins** with a manifest + gRPC (HashiCorp go-plugin) or
 
 ### Phase 0 — Repo bootstrap
 **Goal**: establish docs + Beads workflow.
-- Create docs/AGENTS, Repo-Guidelines, SRED placeholder.
+- Create docs/AGENTS and Repo-Guidelines.
 - Initialize `.beads/` with `bd init`.
 - Create plan and BD tasks.
 
@@ -167,3 +167,17 @@ Use **external process plugins** with a manifest + gRPC (HashiCorp go-plugin) or
 ## Rollout/rollback
 - Release via git tag + goreleaser.
 - Rollback by reverting tag and republishing.
+
+## Next 10 work items (v1 follow-ups)
+Ordered to respect the golden workflow and current dependencies.
+
+1. **autocodex-tju** — Contracts: memory docs API endpoints.
+2. **autocodex-ek0** — API: implement memory docs endpoints (depends on autocodex-tju).
+3. **autocodex-hx2** — UI: memory docs view (depends on autocodex-ek0).
+4. **autocodex-704** — Docs: UI usage + Vercel deploy notes (depends on autocodex-hx2).
+5. **autocodex-0bm** — UI dashboard: close after docs (now depends on autocodex-704).
+6. **autocodex-41y** — UI: add polling/auto-refresh (depends on autocodex-704).
+7. **autocodex-12q** — Integration smoke: autocodex run with Codex CLI.
+8. **autocodex-cdu** — Tooling: add a11y + bundlesize scripts (depends on autocodex-0bm).
+9. **autocodex-llw** — Tests + CI gates.
+10. **autocodex-pzy** — Docs + release packaging.
