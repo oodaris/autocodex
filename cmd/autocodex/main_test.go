@@ -1,7 +1,9 @@
 package main
 
 import (
+	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -118,5 +120,103 @@ func TestLatestRunID(t *testing.T) {
 	}
 	if id == "" {
 		t.Fatalf("expected run id")
+	}
+}
+
+func TestResolveTaskInputStdin(t *testing.T) {
+	payload, err := resolveTaskInput("", "", true, nil, strings.NewReader("  hello world  "))
+	if err != nil {
+		t.Fatalf("resolve task stdin: %v", err)
+	}
+	if payload != "hello world" {
+		t.Fatalf("expected trimmed payload")
+	}
+}
+
+func TestResolveTaskInputStdinEmpty(t *testing.T) {
+	_, err := resolveTaskInput("", "", true, nil, strings.NewReader("   "))
+	if err == nil {
+		t.Fatalf("expected error for empty stdin")
+	}
+}
+
+func TestResolveTaskInputStdinConflict(t *testing.T) {
+	_, err := resolveTaskInput("task", "", true, nil, strings.NewReader("ignored"))
+	if err == nil {
+		t.Fatalf("expected conflict error")
+	}
+}
+
+func TestResolveTaskInputArgsFallback(t *testing.T) {
+	payload, err := resolveTaskInput("", "", false, []string{"hello", "there"}, strings.NewReader(""))
+	if err != nil {
+		t.Fatalf("resolve task args: %v", err)
+	}
+	if payload != "hello there" {
+		t.Fatalf("expected joined args payload")
+	}
+}
+
+func TestSelectRunStatusesLatest(t *testing.T) {
+	base := t.TempDir()
+	store := state.NewStore(
+		filepath.Join(base, "state"),
+		filepath.Join(base, "runs"),
+		filepath.Join(base, "memory"),
+		filepath.Join(base, "logs"),
+		filepath.Join(base, "artifacts"),
+	)
+	if err := store.InitDirs(); err != nil {
+		t.Fatalf("init dirs: %v", err)
+	}
+
+	firstID := "20260101T000000Z-aaaa"
+	secondID := "20260102T000000Z-bbbb"
+	createRunWithID(t, store, firstID)
+	createRunWithID(t, store, secondID)
+
+	statuses, err := selectRunStatuses(store, "", true)
+	if err != nil {
+		t.Fatalf("select run statuses: %v", err)
+	}
+	if len(statuses) != 1 {
+		t.Fatalf("expected one status")
+	}
+	if statuses[0].ID != secondID {
+		t.Fatalf("expected latest status")
+	}
+}
+
+func TestSelectRunStatusesLatestConflict(t *testing.T) {
+	base := t.TempDir()
+	store := state.NewStore(
+		filepath.Join(base, "state"),
+		filepath.Join(base, "runs"),
+		filepath.Join(base, "memory"),
+		filepath.Join(base, "logs"),
+		filepath.Join(base, "artifacts"),
+	)
+	if err := store.InitDirs(); err != nil {
+		t.Fatalf("init dirs: %v", err)
+	}
+	_, err := selectRunStatuses(store, "20260101T000000Z-aaaa", true)
+	if err == nil {
+		t.Fatalf("expected conflict error")
+	}
+}
+
+func createRunWithID(t *testing.T, store *state.Store, id string) {
+	t.Helper()
+	runDir := filepath.Join(store.RunsDir, id)
+	if err := os.MkdirAll(runDir, 0o755); err != nil {
+		t.Fatalf("mkdir run dir: %v", err)
+	}
+	run := &state.Run{
+		ID:        id,
+		Status:    "running",
+		StartedAt: time.Now().UTC(),
+	}
+	if err := store.SaveRun(run); err != nil {
+		t.Fatalf("save run: %v", err)
 	}
 }

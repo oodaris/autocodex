@@ -48,6 +48,9 @@ autocodex once "Run a quick UI a11y review."
 # inspect status
 autocodex status
 
+# inspect latest status
+autocodex status --latest
+
 # start the local API
 autocodex api
 
@@ -65,6 +68,11 @@ npm run dev
 **Custom config path**
 ```bash
 autocodex run --config path/to/autocodex.yaml --task "Review backend API and fix issues."
+```
+
+**Pipe a task from stdin**
+```bash
+echo "Review backend API and fix issues." | autocodex run --task-stdin
 ```
 
 For a longer walkthrough, see `docs/quickstart.md`.

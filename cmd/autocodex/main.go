@@ -6,6 +6,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"os"
@@ -114,10 +115,12 @@ func runRun(args []string) {
 	configPath := fs.String("config", config.ResolveConfigPath(), "Config file path")
 	task := fs.String("task", "", "task text to append to TODO.md before run")
 	taskFile := fs.String("task-file", "", "path to task file (appended to TODO.md before run)")
+	taskStdin := fs.Bool("task-stdin", false, "read task text from stdin")
 	fs.Parse(args)
 
-	if strings.TrimSpace(*task) == "" && strings.TrimSpace(*taskFile) == "" && fs.NArg() > 0 {
-		*task = strings.Join(fs.Args(), " ")
+	taskPayload, err := resolveTaskInput(*task, *taskFile, *taskStdin, fs.Args(), os.Stdin)
+	if err != nil {
+		exitErr(err)
 	}
 
 	cfg, err := config.Load(*configPath)
@@ -125,7 +128,7 @@ func runRun(args []string) {
 		exitErr(err)
 	}
 
-	taskPayload, err := applyTaskInput(&cfg, *task, *taskFile)
+	taskPayload, err = applyTaskInput(&cfg, taskPayload)
 	if err != nil {
 		exitErr(err)
 	}
@@ -138,17 +141,19 @@ func runOnce(args []string) {
 	configPath := fs.String("config", config.ResolveConfigPath(), "Config file path")
 	task := fs.String("task", "", "task text to append to TODO.md before run")
 	taskFile := fs.String("task-file", "", "path to task file (appended to TODO.md before run)")
+	taskStdin := fs.Bool("task-stdin", false, "read task text from stdin")
 	fs.Parse(args)
 
-	if strings.TrimSpace(*task) == "" && strings.TrimSpace(*taskFile) == "" && fs.NArg() > 0 {
-		*task = strings.Join(fs.Args(), " ")
+	taskPayload, err := resolveTaskInput(*task, *taskFile, *taskStdin, fs.Args(), os.Stdin)
+	if err != nil {
+		exitErr(err)
 	}
 
 	cfg, err := config.Load(*configPath)
 	if err != nil {
 		exitErr(err)
 	}
-	taskPayload, err := applyTaskInput(&cfg, *task, *taskFile)
+	taskPayload, err = applyTaskInput(&cfg, taskPayload)
 	if err != nil {
 		exitErr(err)
 	}
@@ -160,6 +165,7 @@ func runStatus(args []string) {
 	fs := flag.NewFlagSet("status", flag.ExitOnError)
 	configPath := fs.String("config", config.ResolveConfigPath(), "Config file path")
 	runID := fs.String("run", "", "run id (optional)")
+	latest := fs.Bool("latest", false, "show latest run only")
 	jsonOut := fs.Bool("json", false, "output JSON")
 	fs.Parse(args)
 
@@ -168,7 +174,7 @@ func runStatus(args []string) {
 		exitErr(err)
 	}
 	store := state.NewStore(cfg.StateDir(), cfg.RunsDir(), cfg.MemoryDir(), cfg.LogsDir(), cfg.ArtifactsDir())
-	statuses, err := collectRunStatuses(store, *runID)
+	statuses, err := selectRunStatuses(store, *runID, *latest)
 	if err != nil {
 		exitErr(err)
 	}
@@ -192,6 +198,27 @@ func runStatus(args []string) {
 			emptyOr(status.LastError),
 		)
 	}
+}
+
+func selectRunStatuses(store *state.Store, runID string, latest bool) ([]RunStatus, error) {
+	if latest && strings.TrimSpace(runID) != "" {
+		return nil, fmt.Errorf("--latest cannot be used with --run")
+	}
+	statuses, err := collectRunStatuses(store, runID)
+	if err != nil {
+		return nil, err
+	}
+	if latest {
+		return filterLatest(statuses), nil
+	}
+	return statuses, nil
+}
+
+func filterLatest(statuses []RunStatus) []RunStatus {
+	if len(statuses) == 0 {
+		return statuses
+	}
+	return statuses[len(statuses)-1:]
 }
 
 func runSnapshot(args []string) {
@@ -673,13 +700,9 @@ func resolveInput(input, inputFile string) (json.RawMessage, error) {
 	return json.RawMessage([]byte(input)), nil
 }
 
-func applyTaskInput(cfg *config.Config, task, taskFile string) (string, error) {
+func applyTaskInput(cfg *config.Config, payload string) (string, error) {
 	if cfg == nil {
 		return "", nil
-	}
-	payload, err := resolveTaskPayload(task, taskFile)
-	if err != nil {
-		return "", err
 	}
 	if strings.TrimSpace(payload) == "" {
 		return "", nil
@@ -736,6 +759,34 @@ func resolveTaskPayload(task, taskFile string) (string, error) {
 		return strings.TrimSpace(string(data)), nil
 	}
 	return strings.TrimSpace(task), nil
+}
+
+func resolveTaskInput(task, taskFile string, taskStdin bool, args []string, stdin io.Reader) (string, error) {
+	if taskStdin {
+		if strings.TrimSpace(task) != "" || strings.TrimSpace(taskFile) != "" || len(args) > 0 {
+			return "", fmt.Errorf("--task-stdin cannot be used with --task, --task-file, or positional args")
+		}
+		return readTaskFromStdin(stdin)
+	}
+	if strings.TrimSpace(task) == "" && strings.TrimSpace(taskFile) == "" && len(args) > 0 {
+		task = strings.Join(args, " ")
+	}
+	return resolveTaskPayload(task, taskFile)
+}
+
+func readTaskFromStdin(stdin io.Reader) (string, error) {
+	if stdin == nil {
+		return "", fmt.Errorf("stdin is nil")
+	}
+	data, err := io.ReadAll(stdin)
+	if err != nil {
+		return "", fmt.Errorf("read stdin: %w", err)
+	}
+	payload := strings.TrimSpace(string(data))
+	if payload == "" {
+		return "", fmt.Errorf("stdin task is empty")
+	}
+	return payload, nil
 }
 
 func findPlugin(pluginsList []plugins.Plugin, name string) (plugins.Plugin, error) {

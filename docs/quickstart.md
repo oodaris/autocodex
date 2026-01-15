@@ -38,6 +38,12 @@ You can also append a task directly:
 autocodex run --config autocodex.yaml --task "Add a memory docs summary card."
 ```
 
+Pipe a task via stdin:
+
+```bash
+echo "Add a memory docs summary card." | autocodex run --task-stdin
+```
+
 Shortcut:
 
 ```bash
