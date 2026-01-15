@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/oodaris/autocodex/internal/api"
+	"github.com/oodaris/autocodex/internal/autonomy"
 	"github.com/oodaris/autocodex/internal/codex"
 	"github.com/oodaris/autocodex/internal/config"
 	"github.com/oodaris/autocodex/internal/hub"
@@ -620,6 +621,19 @@ func runLoop(cfg config.Config) {
 	}
 
 	ctx := context.Background()
+	if cfg.Autonomy.Enabled {
+		controller := autonomy.Controller{
+			Config: cfg,
+			Logger: logger,
+			Store:  store,
+			Skills: loader,
+			Codex:  runner,
+		}
+		if _, err := controller.Run(ctx); err != nil {
+			exitErr(err)
+		}
+		return
+	}
 	if _, err := orch.Run(ctx); err != nil {
 		exitErr(err)
 	}

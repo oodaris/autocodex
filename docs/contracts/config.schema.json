@@ -410,6 +410,56 @@
           }
         }
       }
+    },
+    "autonomy": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": false
+        },
+        "spec_template": {
+          "type": "string",
+          "default": "docs/specs/TEMPLATE.md"
+        },
+        "plan_template": {
+          "type": "string",
+          "default": "docs/plans/TEMPLATE.md"
+        },
+        "tasks_schema": {
+          "type": "string",
+          "default": "docs/contracts/autonomy-tasks.schema.json"
+        },
+        "actions_schema": {
+          "type": "string",
+          "default": "docs/contracts/autonomy-actions.schema.json"
+        },
+        "tasks_output_template": {
+          "type": "string",
+          "default": "docs/plans/%s-tasks.json"
+        },
+        "stop_conditions": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "max_fix_attempts": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 3
+            },
+            "max_beads": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
+            },
+            "stop_on_gate_failure": {
+              "type": "boolean",
+              "default": true
+            }
+          }
+        }
+      }
     }
   }
 }

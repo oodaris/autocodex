@@ -20,19 +20,20 @@ func ResolveConfigPath() string {
 }
 
 type Config struct {
-	Version string        `yaml:"version"`
-	Mode    string        `yaml:"mode"`
-	Codex   CodexConfig   `yaml:"codex"`
-	Paths   PathsConfig   `yaml:"paths"`
-	Skills  SkillsConfig  `yaml:"skills"`
-	Plugins PluginsConfig `yaml:"plugins"`
-	Hub     HubConfig     `yaml:"hub"`
-	API     APIConfig     `yaml:"api"`
-	UI      UIConfig      `yaml:"ui"`
-	Beads   BeadsConfig   `yaml:"beads"`
-	Logging LoggingConfig `yaml:"logging"`
-	Auth    AuthConfig    `yaml:"auth"`
-	Loop    LoopConfig    `yaml:"loop"`
+	Version  string         `yaml:"version"`
+	Mode     string         `yaml:"mode"`
+	Codex    CodexConfig    `yaml:"codex"`
+	Paths    PathsConfig    `yaml:"paths"`
+	Skills   SkillsConfig   `yaml:"skills"`
+	Plugins  PluginsConfig  `yaml:"plugins"`
+	Hub      HubConfig      `yaml:"hub"`
+	API      APIConfig      `yaml:"api"`
+	UI       UIConfig       `yaml:"ui"`
+	Beads    BeadsConfig    `yaml:"beads"`
+	Logging  LoggingConfig  `yaml:"logging"`
+	Auth     AuthConfig     `yaml:"auth"`
+	Loop     LoopConfig     `yaml:"loop"`
+	Autonomy AutonomyConfig `yaml:"autonomy"`
 }
 
 type CodexConfig struct {
@@ -113,6 +114,22 @@ type LoopConfig struct {
 	Phases         []string             `yaml:"phases"`
 	StopConditions StopConditionsConfig `yaml:"stop_conditions"`
 	Feedback       FeedbackConfig       `yaml:"feedback"`
+}
+
+type AutonomyConfig struct {
+	Enabled             bool                   `yaml:"enabled"`
+	SpecTemplate        string                 `yaml:"spec_template"`
+	PlanTemplate        string                 `yaml:"plan_template"`
+	TasksSchema         string                 `yaml:"tasks_schema"`
+	ActionsSchema       string                 `yaml:"actions_schema"`
+	TasksOutputTemplate string                 `yaml:"tasks_output_template"`
+	StopConditions      AutonomyStopConditions `yaml:"stop_conditions"`
+}
+
+type AutonomyStopConditions struct {
+	MaxFixAttempts    int   `yaml:"max_fix_attempts"`
+	MaxBeads          int   `yaml:"max_beads"`
+	StopOnGateFailure *bool `yaml:"stop_on_gate_failure"`
 }
 
 type StopConditionsConfig struct {
@@ -259,6 +276,28 @@ func (c *Config) ApplyDefaults() {
 	if c.Loop.Feedback.MemoryGlob == "" {
 		c.Loop.Feedback.MemoryGlob = "*.md"
 	}
+	if c.Autonomy.SpecTemplate == "" {
+		c.Autonomy.SpecTemplate = "docs/specs/TEMPLATE.md"
+	}
+	if c.Autonomy.PlanTemplate == "" {
+		c.Autonomy.PlanTemplate = "docs/plans/TEMPLATE.md"
+	}
+	if c.Autonomy.TasksSchema == "" {
+		c.Autonomy.TasksSchema = "docs/contracts/autonomy-tasks.schema.json"
+	}
+	if c.Autonomy.ActionsSchema == "" {
+		c.Autonomy.ActionsSchema = "docs/contracts/autonomy-actions.schema.json"
+	}
+	if c.Autonomy.TasksOutputTemplate == "" {
+		c.Autonomy.TasksOutputTemplate = "docs/plans/%s-tasks.json"
+	}
+	if c.Autonomy.StopConditions.MaxFixAttempts == 0 {
+		c.Autonomy.StopConditions.MaxFixAttempts = 3
+	}
+	if c.Autonomy.StopConditions.StopOnGateFailure == nil {
+		enabled := true
+		c.Autonomy.StopConditions.StopOnGateFailure = &enabled
+	}
 }
 
 func (c Config) Validate() error {
@@ -339,6 +378,26 @@ func (c Config) Validate() error {
 	}
 	if len(c.Loop.Phases) == 0 {
 		return errors.New("loop.phases must not be empty")
+	}
+	if c.Autonomy.StopConditions.MaxFixAttempts < 0 {
+		return fmt.Errorf("invalid autonomy.stop_conditions.max_fix_attempts: %d", c.Autonomy.StopConditions.MaxFixAttempts)
+	}
+	if c.Autonomy.StopConditions.MaxBeads < 0 {
+		return fmt.Errorf("invalid autonomy.stop_conditions.max_beads: %d", c.Autonomy.StopConditions.MaxBeads)
+	}
+	if c.Autonomy.Enabled {
+		if strings.TrimSpace(c.Autonomy.SpecTemplate) == "" {
+			return errors.New("autonomy.spec_template is required when autonomy is enabled")
+		}
+		if strings.TrimSpace(c.Autonomy.PlanTemplate) == "" {
+			return errors.New("autonomy.plan_template is required when autonomy is enabled")
+		}
+		if strings.TrimSpace(c.Autonomy.TasksSchema) == "" {
+			return errors.New("autonomy.tasks_schema is required when autonomy is enabled")
+		}
+		if strings.TrimSpace(c.Autonomy.ActionsSchema) == "" {
+			return errors.New("autonomy.actions_schema is required when autonomy is enabled")
+		}
 	}
 	return nil
 }

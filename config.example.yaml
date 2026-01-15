@@ -88,3 +88,15 @@ loop:
     max_events: 200
     max_bytes: 0
     memory_glob: "*.md"
+
+autonomy:
+  enabled: false
+  spec_template: docs/specs/TEMPLATE.md
+  plan_template: docs/plans/TEMPLATE.md
+  tasks_schema: docs/contracts/autonomy-tasks.schema.json
+  actions_schema: docs/contracts/autonomy-actions.schema.json
+  tasks_output_template: docs/plans/%s-tasks.json
+  stop_conditions:
+    max_fix_attempts: 3
+    max_beads: 0
+    stop_on_gate_failure: true

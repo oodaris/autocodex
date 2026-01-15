@@ -88,9 +88,17 @@ Autonomy loop controls.
 - `stop_conditions`: duration, idle, failure, heartbeat
 - `feedback`: controls memory/event/artifact context injection
 
+### `autonomy`
+Spec/plan/bead automation controls (feature-flagged).
+
+- `enabled`: toggle autonomy controller
+- `spec_template`, `plan_template`: template paths for generated docs
+- `tasks_schema`, `actions_schema`: contract paths used by parsers
+- `tasks_output_template`: where `<slug>-tasks.json` is written
+- `stop_conditions`: `max_fix_attempts`, `max_beads`, `stop_on_gate_failure`
+
 ## Safety notes
 
 - `mode: yolo` always runs the Codex CLI with `--yolo`. Use intentionally.
 - If `auth.enabled` is set, configure `auth.token_env` or `auth.tokens`.
 - `hub.enabled` reads other repos locally; ensure you trust those paths.
-
