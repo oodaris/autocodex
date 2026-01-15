@@ -10,7 +10,9 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "a11y": "playwright test tests/a11y.spec.ts",
+    "bundlesize": "node scripts/bundlesize.mjs"
   },
   "dependencies": {
     "react": "^19.2.0",
@@ -18,6 +20,7 @@
     "react-router-dom": "^6.28.0"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.10.1",
     "@playwright/test": "^1.49.1",
     "@eslint/js": "^9.39.1",
     "@types/node": "^24.10.1",
