@@ -9,6 +9,8 @@ import (
 	"strings"
 	"time"
 	"unicode"
+
+	"github.com/oodaris/autocodex/internal/codex"
 )
 
 func (c *Controller) generateSpecAndPlan(ctx context.Context, task string) (string, string, string, error) {
@@ -48,17 +50,26 @@ func (c *Controller) generateSpecAndPlan(ctx context.Context, task string) (stri
 	}
 
 	specCtx, cancel := context.WithTimeout(ctx, time.Duration(c.Config.Codex.TimeoutSeconds)*time.Second)
-	specOutput, err := c.Codex.Exec(specCtx, specPrompt)
+	if c.Config.Codex.OutputLast {
+		specCtx = codex.WithOutputPath(specCtx, specOutputPath)
+	}
+	specResult, err := c.Codex.Exec(specCtx, specPrompt)
 	cancel()
 	if err != nil {
 		return "", "", "", fmt.Errorf("spec generation failed: %w", err)
 	}
 	planOutputCtx, cancelPlan := context.WithTimeout(ctx, time.Duration(c.Config.Codex.TimeoutSeconds)*time.Second)
-	planOutput, err := c.Codex.Exec(planOutputCtx, planPrompt)
+	if c.Config.Codex.OutputLast {
+		planOutputCtx = codex.WithOutputPath(planOutputCtx, planOutputPath)
+	}
+	planResult, err := c.Codex.Exec(planOutputCtx, planPrompt)
 	cancelPlan()
 	if err != nil {
 		return "", "", "", fmt.Errorf("plan generation failed: %w", err)
 	}
+
+	specOutput := resolveOutput(specOutputPath, specResult.Stdout)
+	planOutput := resolveOutput(planOutputPath, planResult.Stdout)
 
 	if err := os.WriteFile(specOutputPath, []byte(strings.TrimSpace(specOutput)+"\n"), 0o644); err != nil {
 		return "", "", "", fmt.Errorf("write spec: %w", err)
@@ -149,6 +160,15 @@ func uniquePath(path string) string {
 			return candidate
 		}
 	}
+}
+
+func resolveOutput(path, fallback string) string {
+	if strings.TrimSpace(path) != "" {
+		if data, err := os.ReadFile(path); err == nil && strings.TrimSpace(string(data)) != "" {
+			return string(data)
+		}
+	}
+	return fallback
 }
 
 func slugify(input string) string {

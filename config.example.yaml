@@ -10,6 +10,9 @@ codex:
   # approval/sandbox are ignored when mode: yolo (yolo uses --yolo)
   approval_policy: on-request
   sandbox_mode: workspace-write
+  json_output: false
+  output_last_message: true
+  prompt_stdin: false
 
 paths:
   state_dir: .autocodex

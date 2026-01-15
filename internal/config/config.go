@@ -44,6 +44,9 @@ type CodexConfig struct {
 	ExtraArgs       []string          `yaml:"extra_args"`
 	ApprovalPolicy  string            `yaml:"approval_policy"`
 	SandboxMode     string            `yaml:"sandbox_mode"`
+	JSONOutput      bool              `yaml:"json_output"`
+	OutputLast      bool              `yaml:"output_last_message"`
+	PromptStdin     bool              `yaml:"prompt_stdin"`
 	Env             map[string]string `yaml:"env"`
 }
 
@@ -321,6 +324,9 @@ func (c Config) Validate() error {
 		if !oneOf(c.Codex.ReasoningEffort, []string{"minimal", "low", "medium", "high", "xhigh"}) {
 			return fmt.Errorf("invalid codex.reasoning_effort: %s", c.Codex.ReasoningEffort)
 		}
+	}
+	if c.Codex.JSONOutput && !c.Codex.OutputLast {
+		return errors.New("codex.output_last_message must be true when codex.json_output is enabled")
 	}
 	if c.Hub.Enabled {
 		seen := map[string]bool{}

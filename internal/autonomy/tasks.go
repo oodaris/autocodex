@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/oodaris/autocodex/internal/codex"
 	"github.com/santhosh-tekuri/jsonschema/v5"
 )
 
@@ -62,13 +63,16 @@ func (c *Controller) generateTasksFile(ctx context.Context, task, slug, planPath
 	}
 
 	outputCtx, cancel := context.WithTimeout(ctx, time.Duration(c.Config.Codex.TimeoutSeconds)*time.Second)
-	output, err := c.Codex.Exec(outputCtx, prompt)
+	if c.Config.Codex.OutputLast {
+		outputCtx = codex.WithOutputPath(outputCtx, tasksPath)
+	}
+	result, err := c.Codex.Exec(outputCtx, prompt)
 	cancel()
 	if err != nil {
 		return "", TasksFile{}, fmt.Errorf("tasks generation failed: %w", err)
 	}
 
-	jsonPayload, err := extractJSON(output)
+	jsonPayload, err := extractJSON(resolveOutput(tasksPath, result.Stdout))
 	if err != nil {
 		return "", TasksFile{}, err
 	}

@@ -22,6 +22,9 @@ Controls the Codex CLI invocation.
 - `timeout_seconds`: per-run timeout
 - `extra_args`: additional CLI flags
 - `approval_policy` and `sandbox_mode`: ignored in `mode: yolo`
+- `json_output`: emit JSONL events from `codex exec` (requires `output_last_message`)
+- `output_last_message`: write the final agent message to an artifact per phase
+- `prompt_stdin`: force prompt to be sent via stdin (useful for multi-line tasks)
 
 ### `paths`
 Local storage locations for run state and artifacts.

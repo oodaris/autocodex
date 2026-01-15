@@ -139,8 +139,30 @@ func (o *Orchestrator) Run(ctx context.Context) (*state.Run, error) {
 
 			prompt := o.buildPrompt(phase, run.ID, feedbackText)
 			phaseCtx, cancel := context.WithTimeout(ctx, time.Duration(o.Config.Codex.TimeoutSeconds)*time.Second)
-			output, execErr := o.Codex.Exec(phaseCtx, prompt)
+			outputPath := ""
+			if o.Config.Codex.OutputLast {
+				outputPath = filepath.Join(o.Store.RunsDir, run.ID, "artifacts", fmt.Sprintf("%s-final.txt", phase))
+				phaseCtx = codex.WithOutputPath(phaseCtx, outputPath)
+			}
+			result, execErr := o.Codex.Exec(phaseCtx, prompt)
 			cancel()
+			if strings.TrimSpace(result.Stderr) != "" {
+				if err := o.writeNamedArtifact(run.ID, fmt.Sprintf("%s-stderr.txt", phase), result.Stderr); err != nil {
+					logger.Warn("stderr artifact write failed", "phase", phase, "error", err.Error())
+				}
+			}
+			rawOutput := result.Stdout
+			finalOutput := rawOutput
+			if outputPath != "" {
+				if data, err := os.ReadFile(outputPath); err == nil && strings.TrimSpace(string(data)) != "" {
+					finalOutput = string(data)
+				}
+			}
+			if o.Config.Codex.JSONOutput && strings.TrimSpace(rawOutput) != "" {
+				if err := o.writeNamedArtifact(run.ID, fmt.Sprintf("%s-jsonl.txt", phase), rawOutput); err != nil {
+					logger.Warn("jsonl artifact write failed", "phase", phase, "error", err.Error())
+				}
+			}
 			if execErr != nil {
 				latency := time.Since(phaseStart).Milliseconds()
 				logger.Error("phase failed", "phase", phase, "error", execErr.Error(), "status", "failed", "latency_ms", latency)
@@ -177,15 +199,15 @@ func (o *Orchestrator) Run(ctx context.Context) (*state.Run, error) {
 			}
 			consecutiveFailures = 0
 
-			if err := o.writeArtifact(run.ID, phase, output); err != nil {
+			if err := o.writeArtifact(run.ID, phase, finalOutput); err != nil {
 				logger.Warn("artifact write failed", "phase", phase, "error", err.Error())
 			}
 			phaseFinished := time.Now().UTC()
-			if err := o.appendPhaseSummary(run.ID, phase, phaseStart, phaseFinished, output); err != nil {
+			if err := o.appendPhaseSummary(run.ID, phase, phaseStart, phaseFinished, finalOutput); err != nil {
 				logger.Warn("phase summary append failed", "phase", phase, "error", err.Error())
 			}
 			if feedbackMeta.RunID != "" {
-				feedbackMeta.LastOutputSummary = fmt.Sprintf("phase %s output bytes=%d", phase, len(output))
+				feedbackMeta.LastOutputSummary = fmt.Sprintf("phase %s output bytes=%d", phase, len(finalOutput))
 				feedbackMeta.UpdatedAt = time.Now().UTC()
 				_ = o.Store.SaveRunFeedback(feedbackMeta)
 			}
@@ -273,12 +295,16 @@ func (o *Orchestrator) buildPrompt(phase, runID, feedback string) string {
 	return b.String()
 }
 
-func (o *Orchestrator) writeArtifact(runID, phase, output string) error {
+func (o *Orchestrator) writeNamedArtifact(runID, name, output string) error {
 	if output == "" {
 		return nil
 	}
-	path := filepath.Join(o.Store.RunsDir, runID, "artifacts", fmt.Sprintf("%s.txt", phase))
+	path := filepath.Join(o.Store.RunsDir, runID, "artifacts", name)
 	return os.WriteFile(path, []byte(output), 0o644)
+}
+
+func (o *Orchestrator) writeArtifact(runID, phase, output string) error {
+	return o.writeNamedArtifact(runID, fmt.Sprintf("%s.txt", phase), output)
 }
 
 func (o *Orchestrator) shouldStop(

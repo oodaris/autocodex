@@ -77,6 +77,18 @@
           ],
           "default": "workspace-write"
         },
+        "json_output": {
+          "type": "boolean",
+          "default": false
+        },
+        "output_last_message": {
+          "type": "boolean",
+          "default": false
+        },
+        "prompt_stdin": {
+          "type": "boolean",
+          "default": false
+        },
         "env": {
           "type": "object",
           "additionalProperties": {

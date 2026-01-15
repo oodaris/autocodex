@@ -637,6 +637,9 @@ func runLoop(cfg config.Config, taskPayload string) {
 		Mode:            cfg.Mode,
 		ApprovalPolicy:  cfg.Codex.ApprovalPolicy,
 		SandboxMode:     cfg.Codex.SandboxMode,
+		JSONOutput:      cfg.Codex.JSONOutput,
+		OutputLast:      cfg.Codex.OutputLast,
+		PromptStdin:     cfg.Codex.PromptStdin,
 		Timeout:         time.Duration(cfg.Codex.TimeoutSeconds) * time.Second,
 		Env:             cfg.Codex.Env,
 	}

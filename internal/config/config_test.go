@@ -66,3 +66,13 @@ func TestValidateRejectsInvalidFeedbackSource(t *testing.T) {
 		t.Fatalf("expected validation error")
 	}
 }
+
+func TestValidateRejectsJSONWithoutOutputLast(t *testing.T) {
+	cfg := Config{Version: "v1", Mode: "yolo"}
+	cfg.ApplyDefaults()
+	cfg.Codex.JSONOutput = true
+	cfg.Codex.OutputLast = false
+	if err := cfg.Validate(); err == nil {
+		t.Fatalf("expected validation error")
+	}
+}

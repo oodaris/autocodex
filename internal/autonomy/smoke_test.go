@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/oodaris/autocodex/internal/codex"
 	"github.com/oodaris/autocodex/internal/config"
 	"github.com/oodaris/autocodex/internal/logging"
 	"github.com/oodaris/autocodex/internal/skills"
@@ -18,16 +19,21 @@ import (
 
 type fakeExecutor struct{}
 
-func (fakeExecutor) Exec(_ context.Context, prompt string) (string, error) {
+func (fakeExecutor) Exec(_ context.Context, prompt string) (codex.ExecResult, error) {
+	result := codex.ExecResult{}
 	switch {
 	case strings.Contains(prompt, "Schema (MUST conform)") && strings.Contains(prompt, "Tasks Schema"):
-		return `{"version":"1.0","generated_at":"2026-01-15T00:00:00Z","source_plan":"plan.md","tasks":[{"id":"autocodex-smoke","title":"Smoke bead","goal":"Verify autonomy loop","files":[],"acceptance_criteria":[]}]}`, nil
+		result.Stdout = `{"version":"1.0","generated_at":"2026-01-15T00:00:00Z","source_plan":"plan.md","tasks":[{"id":"autocodex-smoke","title":"Smoke bead","goal":"Verify autonomy loop","files":[],"acceptance_criteria":[]}]}`
+		return result, nil
 	case strings.Contains(prompt, "Template (fill in"):
-		return "# Spec\n\nok\n", nil
+		result.Stdout = "# Spec\n\nok\n"
+		return result, nil
 	case strings.Contains(prompt, "Phase: test"):
-		return "tests ok\nACTIONS_JSON_START\n{\"version\":\"1.0\",\"summary\":\"done\",\"next\":{\"type\":\"none\"},\"updates\":{\"beads\":[{\"id\":\"autocodex-smoke\",\"status\":\"done\"}]},\"gates\":{\"review_required\":false,\"tests\":[],\"blocking\":false},\"stop\":null}\nACTIONS_JSON_END\n", nil
+		result.Stdout = "tests ok\nACTIONS_JSON_START\n{\"version\":\"1.0\",\"summary\":\"done\",\"next\":{\"type\":\"none\"},\"updates\":{\"beads\":[{\"id\":\"autocodex-smoke\",\"status\":\"done\"}]},\"gates\":{\"review_required\":false,\"tests\":[],\"blocking\":false},\"stop\":null}\nACTIONS_JSON_END\n"
+		return result, nil
 	default:
-		return "ok\n", nil
+		result.Stdout = "ok\n"
+		return result, nil
 	}
 }
 

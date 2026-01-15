@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
+	"strings"
 	"time"
 )
 
@@ -17,25 +19,51 @@ type Runner struct {
 	Mode            string
 	ApprovalPolicy  string
 	SandboxMode     string
+	JSONOutput      bool
+	OutputLast      bool
+	PromptStdin     bool
 	Timeout         time.Duration
 	Env             map[string]string
 }
 
 type Executor interface {
-	Exec(ctx context.Context, prompt string) (string, error)
+	Exec(ctx context.Context, prompt string) (ExecResult, error)
 }
 
-func (r Runner) Exec(ctx context.Context, prompt string) (string, error) {
+type ExecResult struct {
+	Stdout string
+	Stderr string
+}
+
+func (r Runner) Exec(ctx context.Context, prompt string) (ExecResult, error) {
+	result := ExecResult{}
 	if prompt == "" {
-		return "", fmt.Errorf("prompt is empty")
+		return result, fmt.Errorf("prompt is empty")
 	}
 
-	args := []string{"exec", prompt}
+	useStdin := r.PromptStdin || strings.Contains(prompt, "\n") || len(prompt) > 4000
+	args := []string{"exec"}
+	if useStdin {
+		args = append(args, "-")
+	} else {
+		args = append(args, prompt)
+	}
 	if r.Model != "" {
 		args = append(args, "--model", r.Model)
 	}
 	if r.ReasoningEffort != "" {
 		args = append(args, "-c", fmt.Sprintf(`reasoning.effort=%q`, r.ReasoningEffort))
+	}
+	if r.JSONOutput {
+		args = append(args, "--json")
+	}
+
+	outputPath := outputPathFromContext(ctx)
+	if r.OutputLast && strings.TrimSpace(outputPath) != "" {
+		if err := os.MkdirAll(filepath.Dir(outputPath), 0o755); err != nil {
+			return result, fmt.Errorf("create output directory: %w", err)
+		}
+		args = append(args, "--output-last-message", outputPath)
 	}
 
 	args = append(args, modeFlags(r.Mode, r.ApprovalPolicy, r.SandboxMode)...)
@@ -43,6 +71,9 @@ func (r Runner) Exec(ctx context.Context, prompt string) (string, error) {
 
 	cmd := exec.CommandContext(ctx, r.CLIPath, args...)
 	cmd.Env = mergeEnv(os.Environ(), r.Env)
+	if useStdin {
+		cmd.Stdin = strings.NewReader(prompt)
+	}
 
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
@@ -50,9 +81,13 @@ func (r Runner) Exec(ctx context.Context, prompt string) (string, error) {
 	cmd.Stderr = &stderr
 
 	if err := cmd.Run(); err != nil {
-		return stdout.String(), fmt.Errorf("codex exec failed: %w; stderr: %s", err, stderr.String())
+		result.Stdout = stdout.String()
+		result.Stderr = stderr.String()
+		return result, fmt.Errorf("codex exec failed: %w; stderr: %s", err, stderr.String())
 	}
-	return stdout.String(), nil
+	result.Stdout = stdout.String()
+	result.Stderr = stderr.String()
+	return result, nil
 }
 
 func modeFlags(mode, approvalPolicy, sandboxMode string) []string {
