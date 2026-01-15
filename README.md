@@ -5,9 +5,10 @@ Autocodex orchestrates a structured loop: ideate → plan → implement → revi
 ## Features
 - Go CLI with a deterministic, scriptable workflow
 - Beads-first task tracking
-- Local API for runs/events (planned)
+- Local API for runs, events, artifacts, and memory docs
 - External plugin system (JSON‑RPC over stdio)
-- React/Vite UI (planned)
+- React/Vite UI for runs, events, artifacts, and memory docs
+- Optional UI auto‑refresh with backoff
 
 ## Quickstart
 1) Install Go and the Codex CLI.
@@ -20,10 +21,19 @@ cp config.example.yaml autocodex.yaml
 go run ./cmd/autocodex init --config autocodex.yaml
 go run ./cmd/autocodex run --config autocodex.yaml
 ```
+4) (Optional) Start the UI:
+```bash
+cd web
+npm install
+npm run dev
+```
 
 ## Configuration
 - `autocodex.yaml` controls mode, paths, Codex CLI settings, plugins, and API settings.
 - `mode: yolo` is explicit and must be used intentionally.
+
+## UI usage
+See `docs/ui/README.md` for local usage and Vercel deployment notes.
 
 ## Plugins
 Plugins are external processes described by `plugin.yaml`. A sample plugin lives in `plugins/sample-summarizer/`.
@@ -57,6 +67,7 @@ go run ./cmd/autocodex plugins --action run \
 - Plan: `docs/plans/autocodex-v1-plan.md`
 - Contracts: `docs/contracts/`
 - Plugins guide: `docs/plugins/README.md`
+- UI guide: `docs/ui/README.md`
 
 ## License
-TBD
+MIT — see `LICENSE`.
