@@ -1,6 +1,6 @@
 # Web UI Subproject
 
-This folder will contain the React/Vite UI for Autocodex.
+This folder will contain the React/Vite UI for autocodex.
 
 ## Rules
 - Use TypeScript strict mode.

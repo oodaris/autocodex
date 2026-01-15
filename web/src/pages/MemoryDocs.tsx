@@ -72,7 +72,7 @@ export default function MemoryDocs() {
       <header className="detail-header">
         <div>
           <h1>Memory docs</h1>
-          <p>Local markdown notes that Autocodex reads and updates during each loop.</p>
+          <p>Local markdown notes that autocodex reads and updates during each loop.</p>
         </div>
         <button className="button" type="button" onClick={() => void refreshList()}>
           Refresh list

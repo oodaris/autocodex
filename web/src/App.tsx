@@ -13,7 +13,7 @@ function Layout() {
       <div className="shell">
         <header className="topbar">
           <div className="brand">
-            <Link to="/">Autocodex</Link>
+            <Link to="/">autocodex</Link>
             <span>Control Deck</span>
           </div>
           <nav className="nav" aria-label="Primary">

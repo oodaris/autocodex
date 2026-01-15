@@ -1,6 +1,6 @@
 # Plugins
 
-Autocodex plugins are external processes described by a `plugin.yaml` or `plugin.json` manifest. The host launches the plugin, performs a JSON handshake, and then issues capability calls.
+autocodex plugins are external processes described by a `plugin.yaml` or `plugin.json` manifest. The host launches the plugin, performs a JSON handshake, and then issues capability calls.
 
 ## Sample plugin
 A sample plugin lives in `plugins/sample-summarizer/`.

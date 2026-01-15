@@ -122,11 +122,11 @@ export default function Dashboard() {
       <header className="hero hero--banner">
         <div className="hero__banner" aria-hidden="true" />
         <div className="hero__copy">
-          <span className="hero__badge">Autocodex Control Deck</span>
+          <span className="hero__badge">autocodex Control Deck</span>
           <h1>Keep the loop moving. See every run in one place.</h1>
           <p>
-            This dashboard reads from your local Autocodex API and surfaces run history, phases, and
-            artifacts. Keep it open while Autocodex iterates.
+            This dashboard reads from your local autocodex API and surfaces run history, phases, and
+            artifacts. Keep it open while autocodex iterates.
           </p>
         </div>
         <div className="hero__status">

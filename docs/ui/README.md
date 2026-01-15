@@ -20,7 +20,7 @@ export VITE_API_BASE_URL="http://127.0.0.1:7788"
 ## What you can do
 
 - **Runs**: See run status, phases, and artifacts.
-- **Memory**: Review memory docs (`/memory`) that Autocodex uses across loops.
+- **Memory**: Review memory docs (`/memory`) that autocodex uses across loops.
 - **Detail views**: Inspect the event stream for each run.
 
 ## Vercel deploy notes
@@ -30,6 +30,6 @@ Vercel serves a static build of the UI. The API must be reachable from the brows
 - Project root: `web/`
 - Build command: `npm run build`
 - Output directory: `dist`
-- Environment variable: `VITE_API_BASE_URL` (point to a reachable Autocodex API)
+- Environment variable: `VITE_API_BASE_URL` (point to a reachable autocodex API)
 
 > Note: `127.0.0.1` only works for local development. Use a LAN host or a hosted API for remote access.

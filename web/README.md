@@ -1,6 +1,6 @@
-# Autocodex Web Dashboard
+# autocodex Web Dashboard
 
-A lightweight React/Vite dashboard for the local Autocodex API. This UI is read-only in v1 and focuses on run visibility.
+A lightweight React/Vite dashboard for the local autocodex API. This UI is read-only in v1 and focuses on run visibility.
 
 ## Requirements
 - Node.js 18+

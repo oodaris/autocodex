@@ -1,7 +1,7 @@
-# Autocodex Plugin Protocol (v1)
+# autocodex Plugin Protocol (v1)
 
 ## Overview
-Plugins are external processes launched by Autocodex. Communication happens via a versioned RPC protocol to avoid Go native plugin limitations and to allow multi-language plugins.
+Plugins are external processes launched by autocodex. Communication happens via a versioned RPC protocol to avoid Go native plugin limitations and to allow multi-language plugins.
 
 ## Discovery
 A plugin is discovered by scanning configured plugin paths for a manifest file named `plugin.yaml` or `plugin.json`.
@@ -58,5 +58,5 @@ Responses return a JSON payload or error:
 - Each capability call must enforce a per-call timeout.
 
 ## Security
-- Autocodex binds only to localhost.
+- autocodex binds only to localhost.
 - Plugins are untrusted; consider running with minimal OS permissions.

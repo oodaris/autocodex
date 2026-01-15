@@ -221,7 +221,7 @@ func (o *Orchestrator) buildPrompt(phase, runID, feedback string) string {
 	}
 
 	var b strings.Builder
-	b.WriteString("Autocodex run ID: ")
+	b.WriteString("autocodex run ID: ")
 	b.WriteString(runID)
 	b.WriteString("\n")
 	b.WriteString("Phase: ")

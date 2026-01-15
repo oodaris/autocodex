@@ -551,7 +551,7 @@ func (s *Store) CreateSnapshot(runID string, opts SnapshotOptions) (SnapshotDeta
 
 	var b strings.Builder
 	appendWithLimit := newLimitWriter(&b, opts.MaxBytes)
-	appendWithLimit(fmt.Sprintf("# Autocodex Snapshot\nRun: %s\nCreated: %s\n", runID, createdAt.Format(time.RFC3339)))
+	appendWithLimit(fmt.Sprintf("# autocodex Snapshot\nRun: %s\nCreated: %s\n", runID, createdAt.Format(time.RFC3339)))
 	if opts.Reason != "" {
 		appendWithLimit(fmt.Sprintf("Reason: %s\n", opts.Reason))
 	}

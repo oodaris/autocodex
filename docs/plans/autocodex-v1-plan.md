@@ -1,4 +1,4 @@
-# Autocodex v1 Plan
+# autocodex v1 Plan
 
 ## Problem statement
 Create an open-source Codex runner that can autonomously execute a skill-driven workflow: ideate → plan → implement → review → test → iterate. The system should start with a CLI and local API, then add a React/Vite UI (Vercel deployable). It should use Beads for task tracking, default to a configurable “yolo mode,” and support dynamically loaded plugins.

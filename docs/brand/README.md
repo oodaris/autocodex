@@ -1,4 +1,4 @@
-# Autocodex Brand Assets
+# autocodex Brand Assets
 
 This folder documents the currently tracked brand images and their intended usage.
 

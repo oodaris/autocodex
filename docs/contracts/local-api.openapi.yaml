@@ -1,6 +1,6 @@
 openapi: 3.1.0
 info:
-  title: Autocodex Local API
+  title: autocodex Local API
   version: v1
   description: Local API for run status, events, and artifacts.
 servers:

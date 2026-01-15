@@ -87,7 +87,7 @@ func runInit(args []string) {
 		exitErr(err)
 	}
 
-	fmt.Printf("Initialized Autocodex. Config: %s\n", *configPath)
+	fmt.Printf("Initialized autocodex. Config: %s\n", *configPath)
 }
 
 func runRun(args []string) {

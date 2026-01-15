@@ -1,6 +1,6 @@
 # Repository Guidelines
 
-Concise contributor guide for Autocodex. Full workflow: `docs/AGENTS.md`.
+Concise contributor guide for autocodex. Full workflow: `docs/AGENTS.md`.
 
 ## Project overview
 - **CLI + API**: Go.
