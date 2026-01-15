@@ -26,35 +26,23 @@ go install github.com/oodaris/autocodex/cmd/autocodex@latest
 Option B: download a release binary from GitHub Releases.
 
 ## Quickstart
-1) Install Go and the Codex CLI.
-2) Copy the example config:
+1) Initialize (creates `autocodex.yaml` if missing):
 ```bash
-cp config.example.yaml autocodex.yaml
+autocodex init
 ```
-3) Run the CLI:
-```bash
-autocodex init --config autocodex.yaml
-autocodex run --config autocodex.yaml
-```
-Or append a task directly:
-```bash
-autocodex run --config autocodex.yaml --task "Review backend API and fix issues."
-```
-Or use the shortcut:
+2) Run a task with the shortest command:
 ```bash
 autocodex "Review backend API and fix issues."
 ```
-
-You can also run a bounded loop with a positional task:
+3) (Optional) Run a bounded loop:
 ```bash
 autocodex once "Run a quick UI a11y review."
 ```
-
-Snapshot with a positional run id:
+4) (Optional) Snapshot a run:
 ```bash
 autocodex snapshot 20260115T142253Z-4a4ae121 --reason "handoff"
 ```
-4) (Optional) Start the UI:
+5) (Optional) Start the UI:
 ```bash
 cd web
 npm install
@@ -98,7 +86,7 @@ go run ./cmd/autocodex plugins --action run \
 ## Snapshots
 Generate a run snapshot (memory docs + recent events/artifacts) for sharing or continuity:
 ```bash
-go run ./cmd/autocodex snapshot --run <run-id> --reason "handoff"
+autocodex snapshot <run-id> --reason "handoff"
 ```
 
 ## Development
