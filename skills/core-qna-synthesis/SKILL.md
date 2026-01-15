@@ -7,7 +7,7 @@ version: 0.1.0
 # Interpretive Q&A Synthesis
 
 ## Repo anchors (Autocodex)
-- CLI_PATH: `cmd/autorunner/`
+- CLI_PATH: `cmd/autocodex/`
 - INTERNAL_PATH: `internal/`
 - DOCS_PATH: `docs/`
 - SKILLS_PATH: `skills/`

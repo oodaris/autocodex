@@ -9,7 +9,7 @@ Concise contributor guide for Autocodex. Full workflow: `docs/AGENTS.md`.
 - **State**: Repo-local markdown memory and JSONL logs.
 
 ## Project structure (planned)
-- `cmd/autorunner`: CLI entrypoint.
+- `cmd/autocodex`: CLI entrypoint.
 - `internal/orchestrator`: loop engine + scheduling.
 - `internal/skills`: skill loader/selector.
 - `internal/plugins`: plugin protocol + runner.

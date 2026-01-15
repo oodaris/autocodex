@@ -12,7 +12,7 @@ go build -o plugins/sample-summarizer/sample-summarizer ./plugins/sample-summari
 
 Run it via CLI once the plugin host command is wired:
 ```bash
-autorunner plugins run --name sample-summarizer --capability summarize --input '{"text":"hello world"}'
+autocodex plugins run --name sample-summarizer --capability summarize --input '{"text":"hello world"}'
 ```
 
 ## Manifest

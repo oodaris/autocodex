@@ -1,6 +1,6 @@
 # Autocodex
 
-Autocodex is a Codex autorunner that orchestrates a structured loop: ideate → plan → implement → review → test. It uses Beads for task tracking, runs the local Codex CLI, and supports external plugins via JSON‑RPC.
+Autocodex orchestrates a structured loop: ideate → plan → implement → review → test. It uses Beads for task tracking, runs the local Codex CLI, and supports external plugins via JSON‑RPC.
 
 ## Features
 - Go CLI with a deterministic, scriptable workflow
@@ -17,8 +17,8 @@ cp config.example.yaml autocodex.yaml
 ```
 3) Run the CLI:
 ```bash
-go run ./cmd/autorunner init --config autocodex.yaml
-go run ./cmd/autorunner run --config autocodex.yaml
+go run ./cmd/autocodex init --config autocodex.yaml
+go run ./cmd/autocodex run --config autocodex.yaml
 ```
 
 ## Configuration
@@ -35,12 +35,12 @@ go build -o plugins/sample-summarizer/sample-summarizer ./plugins/sample-summari
 
 List plugins:
 ```bash
-go run ./cmd/autorunner plugins --action list
+go run ./cmd/autocodex plugins --action list
 ```
 
 Run the sample plugin:
 ```bash
-go run ./cmd/autorunner plugins --action run \
+go run ./cmd/autocodex plugins --action run \
   --name sample-summarizer \
   --capability summarize \
   --input '{"text":"hello world"}'

@@ -1,7 +1,7 @@
-# Autocodex Autorunner v1 Plan
+# Autocodex v1 Plan
 
 ## Problem statement
-Create an open-source Codex autorunner that can autonomously execute a skill-driven workflow: ideate → plan → implement → review → test → iterate. The system should start with a CLI and local API, then add a React/Vite UI (Vercel deployable). It should use Beads for task tracking, default to a configurable “yolo mode,” and support dynamically loaded plugins.
+Create an open-source Codex runner that can autonomously execute a skill-driven workflow: ideate → plan → implement → review → test → iterate. The system should start with a CLI and local API, then add a React/Vite UI (Vercel deployable). It should use Beads for task tracking, default to a configurable “yolo mode,” and support dynamically loaded plugins.
 
 ## Success criteria
 - CLI can run a full loop using local Codex CLI with skill-scoped prompts.
@@ -79,7 +79,7 @@ Use **external process plugins** with a manifest + gRPC (HashiCorp go-plugin) or
 - State store (JSONL events, run history, memory docs).
 
 **Acceptance**:
-- `autorunner run` produces logs + memory docs.
+- `autocodex run` produces logs + memory docs.
 - Loop respects config and exits cleanly.
 
 **Dependencies**: Phase 1.
@@ -167,4 +167,3 @@ Use **external process plugins** with a manifest + gRPC (HashiCorp go-plugin) or
 ## Rollout/rollback
 - Release via git tag + goreleaser.
 - Rollback by reverting tag and republishing.
-

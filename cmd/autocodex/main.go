@@ -53,7 +53,7 @@ func main() {
 }
 
 func usage() {
-	fmt.Println("Usage: autorunner <command> [args]")
+	fmt.Println("Usage: autocodex <command> [args]")
 	fmt.Println("Commands: init, run, status, beads, plugins, api, config")
 }
 

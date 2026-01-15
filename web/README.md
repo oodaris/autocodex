@@ -28,4 +28,4 @@ npm run build
 
 ## Notes
 - The UI is intentionally read-only for v1.
-- Run the API server via `autorunner api --action serve`.
+- Run the API server via `autocodex api --action serve`.

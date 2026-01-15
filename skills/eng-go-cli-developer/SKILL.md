@@ -7,7 +7,7 @@ version: 0.1.0
 # Go CLI Developer
 
 ## Repo anchors (Autocodex)
-- CLI_PATH: `cmd/autorunner/`
+- CLI_PATH: `cmd/autocodex/`
 - INTERNAL_PATH: `internal/`
 - TEST_COMMANDS
   - `go test ./...`
@@ -50,5 +50,5 @@ version: 0.1.0
 - CLI is deterministic, documented, and tested.
 
 ## Example (minimal)
-- **Command**: `autorunner plugins --action list`
+- **Command**: `autocodex plugins --action list`
 - **Output**: JSON list of plugins.

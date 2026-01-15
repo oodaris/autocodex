@@ -115,7 +115,7 @@ export default function Dashboard() {
           <h1>Keep the loop moving. See every run in one place.</h1>
           <p>
             This dashboard reads from your local Autocodex API and surfaces run history, phases, and
-            artifacts. Keep it open while the autorunner iterates.
+            artifacts. Keep it open while Autocodex iterates.
           </p>
         </div>
         <div className="hero__status">
@@ -191,7 +191,7 @@ export default function Dashboard() {
             <div className="empty">
               <h3>No runs yet</h3>
               <p>
-                Start with <code>autorunner run</code> to populate the timeline.
+                Start with <code>autocodex run</code> to populate the timeline.
               </p>
             </div>
           ) : (

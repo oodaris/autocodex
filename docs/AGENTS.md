@@ -1,6 +1,6 @@
 # Autocodex Engineering Playbook
 
-This repo contains an open-source Codex autorunner with a Go CLI, local API, and a React/Vite UI.
+This repo contains Autocodex: a Codex runner with a Go CLI, local API, and a React/Vite UI.
 
 AGENTS.md is the agent-focused companion to README. Keep it short, prescriptive, and aligned with the golden workflow.
 
