@@ -33,6 +33,12 @@ func main() {
 	}
 
 	cmd := os.Args[1]
+	if !isCommand(cmd) && !strings.HasPrefix(cmd, "-") {
+		task := strings.Join(os.Args[1:], " ")
+		runRun([]string{"-task", task})
+		return
+	}
+
 	switch cmd {
 	case "init":
 		runInit(os.Args[2:])
@@ -65,6 +71,16 @@ func main() {
 func usage() {
 	fmt.Println("Usage: autocodex <command> [args]")
 	fmt.Println("Commands: init, run, once, resume, kill, snapshot, status, beads, plugins, api, config")
+	fmt.Println("Shortcut: autocodex \"<task>\" (implicit run with --task)")
+}
+
+func isCommand(value string) bool {
+	switch value {
+	case "init", "run", "once", "resume", "kill", "snapshot", "status", "beads", "plugins", "api", "config":
+		return true
+	default:
+		return false
+	}
 }
 
 func runInit(args []string) {

@@ -40,6 +40,10 @@ Or append a task directly:
 ```bash
 autocodex run --config autocodex.yaml --task "Review backend API and fix issues."
 ```
+Or use the shortcut:
+```bash
+autocodex "Review backend API and fix issues."
+```
 4) (Optional) Start the UI:
 ```bash
 cd web

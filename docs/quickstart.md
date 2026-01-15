@@ -37,6 +37,12 @@ You can also append a task directly:
 autocodex run --config autocodex.yaml --task "Add a memory docs summary card."
 ```
 
+Shortcut:
+
+```bash
+autocodex "Add a memory docs summary card."
+```
+
 ## Start the API
 
 ```bash
