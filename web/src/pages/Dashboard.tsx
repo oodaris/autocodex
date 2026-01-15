@@ -1,7 +1,9 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { api } from '../api/client'
 import type { Run } from '../api/client'
+import { useAsync } from '../hooks/useAsync'
+import { usePolling } from '../hooks/usePolling'
 import { formatTimestamp, statusLabel } from '../utils/format'
 
 type LoadState = 'idle' | 'loading' | 'ready' | 'error'
@@ -54,40 +56,48 @@ export default function Dashboard() {
   const [health, setHealth] = useState<HealthState>({ status: 'unknown' })
   const [error, setError] = useState<string | null>(null)
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
+  const [autoRefresh, setAutoRefresh] = useState(false)
 
-  const refresh = useCallback(async (signal?: AbortSignal) => {
-    if (signal?.aborted) return
-    setState('loading')
-    setError(null)
+  const pollConfig = {
+    intervalMs: 8000,
+    maxIntervalMs: 30000,
+    backoffFactor: 1.6,
+  }
 
-    try {
-      const [healthPayload, runsPayload] = await Promise.all([
-        api.health({ signal }),
-        api.runs({ signal }),
-      ])
+  const refresh = useCallback(
+    async ({ signal, silent }: { signal?: AbortSignal; silent?: boolean } = {}) => {
       if (signal?.aborted) return
-      setHealth({ status: 'ok', time: healthPayload.time })
-      setRuns(runsPayload)
-      setLastUpdated(new Date())
-      setState('ready')
-    } catch (err) {
-      if (signal?.aborted) return
-      if (err instanceof DOMException && err.name === 'AbortError') return
-      const message = err instanceof Error ? err.message : 'Unknown error'
-      setHealth({ status: 'error', message })
-      setError(message)
-      setState('error')
-    }
-  }, [])
+      if (!silent) setState('loading')
+      setError(null)
 
-  useEffect(() => {
-    const controller = new AbortController()
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- initial data fetch
-    void refresh(controller.signal)
-    return () => {
-      controller.abort()
-    }
-  }, [refresh])
+      try {
+        const [healthPayload, runsPayload] = await Promise.all([
+          api.health({ signal }),
+          api.runs({ signal }),
+        ])
+        if (signal?.aborted) return
+        setHealth({ status: 'ok', time: healthPayload.time })
+        setRuns(runsPayload)
+        setLastUpdated(new Date())
+        setState('ready')
+      } catch (err) {
+        if (signal?.aborted) return
+        if (err instanceof DOMException && err.name === 'AbortError') return
+        const message = err instanceof Error ? err.message : 'Unknown error'
+        setHealth({ status: 'error', message })
+        setError(message)
+        setState('error')
+      }
+    },
+    [],
+  )
+
+  useAsync((signal) => refresh({ signal }), [refresh])
+
+  const pollDelayMs = usePolling(
+    (signal) => refresh({ signal, silent: true }),
+    { enabled: autoRefresh, ...pollConfig },
+  )
 
   const sortedRuns = useMemo(() => {
     return [...runs].sort((a, b) => b.started_at.localeCompare(a.started_at))
@@ -119,8 +129,8 @@ export default function Dashboard() {
           </p>
         </div>
         <div className="hero__status">
-            <div className={`status-card status-card--${health.status}`} role="status" aria-live="polite">
-              <p className="status-card__label">API status</p>
+          <div className={`status-card status-card--${health.status}`} role="status" aria-live="polite">
+            <p className="status-card__label">API status</p>
             <h2>
               {health.status === 'ok' ? 'Connected' : health.status === 'error' ? 'Disconnected' : 'Checking'}
             </h2>
@@ -130,6 +140,19 @@ export default function Dashboard() {
             {health.status === 'error' && health.message && (
               <p className="status-card__error">{health.message}</p>
             )}
+            <div className="refresh-controls">
+              <label className="toggle">
+                <input
+                  type="checkbox"
+                  checked={autoRefresh}
+                  onChange={(event) => setAutoRefresh(event.target.checked)}
+                />
+                <span>Auto-refresh</span>
+              </label>
+              <span className="toggle__meta">
+                {autoRefresh ? `Every ${Math.round(pollDelayMs / 1000)}s` : 'Off'}
+              </span>
+            </div>
             <button className="button" type="button" onClick={() => void refresh()} disabled={state === 'loading'}>
               {state === 'loading' ? 'Refreshing…' : 'Refresh'}
             </button>

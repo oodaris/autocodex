@@ -1,37 +1,14 @@
-export type Run = {
-  id: string
-  status: string
-  current_phase: string
-  started_at: string
-  finished_at?: string | null
-  iterations: number
-}
+import {
+  parseArtifact,
+  parseHealth,
+  parseRun,
+  parseRunArtifacts,
+  parseRunEvents,
+  parseRuns,
+} from './schema'
+import type { Artifact, Health, Run, RunEvent } from './types'
 
-export type RunEvent = {
-  id: string
-  run_id: string
-  ts: string
-  type: string
-  phase: string
-  message: string
-  meta: Record<string, string>
-}
-
-export type Artifact = {
-  id: string
-  run_id: string
-  name: string
-  type: string
-  path: string
-  created_at: string
-  size_bytes: number
-  checksum: string
-}
-
-export type Health = {
-  status: string
-  time: string
-}
+export type { Artifact, Health, Run, RunEvent } from './types'
 
 const DEFAULT_BASE_URL = 'http://127.0.0.1:7788'
 
@@ -54,7 +31,11 @@ function buildUrl(path: string): string {
 
 export type ApiRequestOptions = RequestInit
 
-async function requestJson<T>(path: string, init?: ApiRequestOptions): Promise<T> {
+async function requestJson<T>(
+  path: string,
+  init: ApiRequestOptions | undefined,
+  parse?: (value: unknown) => T,
+): Promise<T> {
   const response = await fetch(buildUrl(path), {
     ...init,
     headers: {
@@ -68,17 +49,19 @@ async function requestJson<T>(path: string, init?: ApiRequestOptions): Promise<T
     throw new Error(text || `Request failed with status ${response.status}`)
   }
 
-  return (await response.json()) as T
+  const payload = (await response.json()) as unknown
+  return parse ? parse(payload) : (payload as T)
 }
 
 export const api = {
   baseUrl: apiBaseUrl,
-  health: (options?: ApiRequestOptions) => requestJson<Health>('/health', options),
-  runs: (options?: ApiRequestOptions) => requestJson<Run[]>('/runs', options),
-  run: (id: string, options?: ApiRequestOptions) => requestJson<Run>(`/runs/${id}`, options),
+  health: (options?: ApiRequestOptions) => requestJson<Health>('/health', options, parseHealth),
+  runs: (options?: ApiRequestOptions) => requestJson<Run[]>('/runs', options, parseRuns),
+  run: (id: string, options?: ApiRequestOptions) => requestJson<Run>(`/runs/${id}`, options, parseRun),
   runEvents: (id: string, options?: ApiRequestOptions) =>
-    requestJson<RunEvent[]>(`/runs/${id}/events`, options),
+    requestJson<RunEvent[]>(`/runs/${id}/events`, options, parseRunEvents),
   runArtifacts: (id: string, options?: ApiRequestOptions) =>
-    requestJson<Artifact[]>(`/runs/${id}/artifacts`, options),
-  artifact: (id: string, options?: ApiRequestOptions) => requestJson<Artifact>(`/artifacts/${id}`, options),
+    requestJson<Artifact[]>(`/runs/${id}/artifacts`, options, parseRunArtifacts),
+  artifact: (id: string, options?: ApiRequestOptions) =>
+    requestJson<Artifact>(`/artifacts/${id}`, options, parseArtifact),
 }
