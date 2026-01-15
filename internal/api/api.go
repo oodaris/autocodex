@@ -48,6 +48,14 @@ type RunControlStatus struct {
 	LastActionAt *time.Time `json:"last_action_at,omitempty"`
 }
 
+type SnapshotCreateRequest struct {
+	Reason           string `json:"reason"`
+	IncludeEvents    *bool  `json:"include_events,omitempty"`
+	IncludeArtifacts *bool  `json:"include_artifacts,omitempty"`
+	IncludeMemory    *bool  `json:"include_memory,omitempty"`
+	MaxBytes         *int   `json:"max_bytes,omitempty"`
+}
+
 func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/health", s.handleHealth)
@@ -228,6 +236,84 @@ func (s *Server) handleRunDetail(w http.ResponseWriter, r *http.Request) {
 		}
 		respondJSON(w, http.StatusOK, artifacts)
 		s.log(r, http.StatusOK, start, nil)
+	case "snapshots":
+		if len(parts) == 2 {
+			switch r.Method {
+			case http.MethodGet:
+				summaries, err := s.Store.ListSnapshots(runID)
+				if err != nil {
+					respondError(w, http.StatusInternalServerError, err.Error())
+					s.log(r, http.StatusInternalServerError, start, err)
+					return
+				}
+				respondJSON(w, http.StatusOK, summaries)
+				s.log(r, http.StatusOK, start, nil)
+				return
+			case http.MethodPost:
+				var req SnapshotCreateRequest
+				if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+					respondError(w, http.StatusBadRequest, "invalid json")
+					s.log(r, http.StatusBadRequest, start, err)
+					return
+				}
+				opts := state.SnapshotOptions{
+					Reason: req.Reason,
+				}
+				if req.MaxBytes != nil {
+					opts.MaxBytes = *req.MaxBytes
+				}
+				if req.IncludeEvents != nil || req.IncludeArtifacts != nil || req.IncludeMemory != nil {
+					includeEvents := req.IncludeEvents == nil || *req.IncludeEvents
+					includeArtifacts := req.IncludeArtifacts == nil || *req.IncludeArtifacts
+					includeMemory := req.IncludeMemory == nil || *req.IncludeMemory
+					sources := make([]string, 0, 3)
+					if includeEvents {
+						sources = append(sources, "events")
+					}
+					if includeArtifacts {
+						sources = append(sources, "artifacts")
+					}
+					if includeMemory {
+						sources = append(sources, "memory")
+					}
+					if len(sources) == 0 {
+						sources = []string{"none"}
+					}
+					opts.Sources = sources
+				}
+				detail, err := s.Store.CreateSnapshot(runID, opts)
+				if err != nil {
+					respondError(w, http.StatusNotFound, err.Error())
+					s.log(r, http.StatusNotFound, start, err)
+					return
+				}
+				respondJSON(w, http.StatusCreated, detail)
+				s.log(r, http.StatusCreated, start, nil)
+				return
+			default:
+				respondError(w, http.StatusMethodNotAllowed, "method not allowed")
+				s.log(r, http.StatusMethodNotAllowed, start, nil)
+				return
+			}
+		}
+		if len(parts) == 3 {
+			if r.Method != http.MethodGet {
+				respondError(w, http.StatusMethodNotAllowed, "method not allowed")
+				s.log(r, http.StatusMethodNotAllowed, start, nil)
+				return
+			}
+			detail, err := s.Store.GetSnapshot(runID, parts[2])
+			if err != nil {
+				respondError(w, http.StatusNotFound, "snapshot not found")
+				s.log(r, http.StatusNotFound, start, err)
+				return
+			}
+			respondJSON(w, http.StatusOK, detail)
+			s.log(r, http.StatusOK, start, nil)
+			return
+		}
+		respondError(w, http.StatusNotFound, "not found")
+		s.log(r, http.StatusNotFound, start, nil)
 	default:
 		respondError(w, http.StatusNotFound, "not found")
 		s.log(r, http.StatusNotFound, start, nil)

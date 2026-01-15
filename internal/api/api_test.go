@@ -158,6 +158,57 @@ func TestRunControlEndpoints(t *testing.T) {
 	}
 }
 
+func TestSnapshotsEndpoints(t *testing.T) {
+	store := newTestStore(t)
+	run, err := store.CreateRun()
+	if err != nil {
+		t.Fatalf("create run: %v", err)
+	}
+
+	srv := &Server{Store: store}
+
+	body := strings.NewReader(`{}`)
+	req := httptest.NewRequest(http.MethodPost, "/runs/"+run.ID+"/snapshots", body)
+	rr := httptest.NewRecorder()
+	srv.Handler().ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusCreated {
+		t.Fatalf("status: %d", rr.Code)
+	}
+
+	var detail state.SnapshotDetail
+	if err := json.Unmarshal(rr.Body.Bytes(), &detail); err != nil {
+		t.Fatalf("decode detail: %v", err)
+	}
+	if detail.Summary.RunID != run.ID {
+		t.Fatalf("unexpected run id")
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/runs/"+run.ID+"/snapshots", nil)
+	rr = httptest.NewRecorder()
+	srv.Handler().ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("status: %d", rr.Code)
+	}
+
+	var summaries []state.SnapshotSummary
+	if err := json.Unmarshal(rr.Body.Bytes(), &summaries); err != nil {
+		t.Fatalf("decode summaries: %v", err)
+	}
+	if len(summaries) == 0 {
+		t.Fatalf("expected snapshots")
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/runs/"+run.ID+"/snapshots/"+detail.Summary.ID, nil)
+	rr = httptest.NewRecorder()
+	srv.Handler().ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("status: %d", rr.Code)
+	}
+}
+
 func newTestStore(t *testing.T) *state.Store {
 	base := t.TempDir()
 	store := state.NewStore(
