@@ -49,6 +49,47 @@ paths:
                 $ref: '#/components/schemas/RunDetail'
         '404':
           description: Not found
+  /runs/{run_id}/control:
+    get:
+      summary: Get run control status
+      parameters:
+        - name: run_id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Run control status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RunControlStatus'
+        '404':
+          description: Not found
+    post:
+      summary: Request run control action
+      parameters:
+        - name: run_id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RunControlRequest'
+      responses:
+        '202':
+          description: Run control accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RunControlResponse'
+        '400':
+          description: Invalid request
+        '404':
+          description: Not found
   /runs/{run_id}/events:
     get:
       summary: List run events
@@ -83,6 +124,68 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/ArtifactSummary'
+  /runs/{run_id}/snapshots:
+    get:
+      summary: List run snapshots
+      parameters:
+        - name: run_id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Run snapshots
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SnapshotSummary'
+    post:
+      summary: Create run snapshot
+      parameters:
+        - name: run_id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SnapshotCreateRequest'
+      responses:
+        '201':
+          description: Snapshot created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SnapshotDetail'
+        '400':
+          description: Invalid request
+        '404':
+          description: Not found
+  /runs/{run_id}/snapshots/{snapshot_id}:
+    get:
+      summary: Get run snapshot detail
+      parameters:
+        - name: run_id
+          in: path
+          required: true
+          schema: { type: string }
+        - name: snapshot_id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Snapshot detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SnapshotDetail'
+        '404':
+          description: Not found
   /artifacts/{artifact_id}:
     get:
       summary: Get artifact detail
@@ -181,6 +284,63 @@ components:
             size_bytes: { type: integer }
             checksum: { type: string }
             content_url: { type: string }
+    RunControlRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        action: { type: string, enum: [resume, stop, cancel, kill] }
+        reason: { type: string }
+        dry_run: { type: boolean }
+    RunControlResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        run_id: { type: string }
+        action: { type: string, enum: [resume, stop, cancel, kill] }
+        accepted: { type: boolean }
+        status: { type: string, enum: [queued, running, completed, failed, canceled] }
+        message: { type: string }
+    RunControlStatus:
+      type: object
+      additionalProperties: false
+      properties:
+        run_id: { type: string }
+        status: { type: string, enum: [queued, running, completed, failed, canceled] }
+        last_action: { type: string, enum: [resume, stop, cancel, kill], nullable: true }
+        last_action_at: { type: string, format: date-time, nullable: true }
+    SnapshotCreateRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        reason: { type: string }
+        include_events: { type: boolean, default: true }
+        include_artifacts: { type: boolean, default: true }
+        include_memory: { type: boolean, default: true }
+        max_bytes: { type: integer, minimum: 0 }
+    SnapshotSummary:
+      type: object
+      additionalProperties: false
+      properties:
+        id: { type: string }
+        run_id: { type: string }
+        created_at: { type: string, format: date-time }
+        reason: { type: string }
+        size_bytes: { type: integer }
+        content_url: { type: string }
+    SnapshotDetail:
+      allOf:
+        - $ref: '#/components/schemas/SnapshotSummary'
+        - type: object
+          additionalProperties: false
+          properties:
+            manifest:
+              type: object
+              additionalProperties: false
+              properties:
+                events: { type: integer }
+                artifacts: { type: integer }
+                memory_docs: { type: integer }
+                bytes: { type: integer }
     MemoryDocSummary:
       type: object
       additionalProperties: false
