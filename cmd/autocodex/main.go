@@ -125,11 +125,12 @@ func runRun(args []string) {
 		exitErr(err)
 	}
 
-	if err := applyTaskInput(&cfg, *task, *taskFile); err != nil {
+	taskPayload, err := applyTaskInput(&cfg, *task, *taskFile)
+	if err != nil {
 		exitErr(err)
 	}
 
-	runLoop(cfg)
+	runLoop(cfg, taskPayload)
 }
 
 func runOnce(args []string) {
@@ -147,11 +148,12 @@ func runOnce(args []string) {
 	if err != nil {
 		exitErr(err)
 	}
-	if err := applyTaskInput(&cfg, *task, *taskFile); err != nil {
+	taskPayload, err := applyTaskInput(&cfg, *task, *taskFile)
+	if err != nil {
 		exitErr(err)
 	}
 	cfg.Loop.Mode = "bounded"
-	runLoop(cfg)
+	runLoop(cfg, taskPayload)
 }
 
 func runStatus(args []string) {
@@ -596,7 +598,7 @@ func runConfig(args []string) {
 	fmt.Printf("Config path: %s\n", *configPath)
 }
 
-func runLoop(cfg config.Config) {
+func runLoop(cfg config.Config, taskPayload string) {
 	logger := logging.NewLogger(cfg.Logging.Level)
 	store := state.NewStore(cfg.StateDir(), cfg.RunsDir(), cfg.MemoryDir(), cfg.LogsDir(), cfg.ArtifactsDir())
 	loader := skills.Loader{Paths: cfg.Skills.Paths}
@@ -629,7 +631,7 @@ func runLoop(cfg config.Config) {
 			Skills: loader,
 			Codex:  runner,
 		}
-		if _, err := controller.Run(ctx); err != nil {
+		if _, err := controller.Run(ctx, autonomy.Input{Task: taskPayload}); err != nil {
 			exitErr(err)
 		}
 		return
@@ -671,45 +673,34 @@ func resolveInput(input, inputFile string) (json.RawMessage, error) {
 	return json.RawMessage([]byte(input)), nil
 }
 
-func applyTaskInput(cfg *config.Config, task, taskFile string) error {
+func applyTaskInput(cfg *config.Config, task, taskFile string) (string, error) {
 	if cfg == nil {
-		return nil
+		return "", nil
 	}
-	if strings.TrimSpace(task) == "" && strings.TrimSpace(taskFile) == "" {
-		return nil
+	payload, err := resolveTaskPayload(task, taskFile)
+	if err != nil {
+		return "", err
 	}
-	if strings.TrimSpace(task) != "" && strings.TrimSpace(taskFile) != "" {
-		return fmt.Errorf("only one of --task or --task-file may be set")
-	}
-	payload := task
-	if strings.TrimSpace(taskFile) != "" {
-		data, err := os.ReadFile(taskFile)
-		if err != nil {
-			return fmt.Errorf("read task file: %w", err)
-		}
-		payload = string(data)
-	}
-	payload = strings.TrimSpace(payload)
-	if payload == "" {
-		return nil
+	if strings.TrimSpace(payload) == "" {
+		return "", nil
 	}
 
 	store := state.NewStore(cfg.StateDir(), cfg.RunsDir(), cfg.MemoryDir(), cfg.LogsDir(), cfg.ArtifactsDir())
 	if err := store.InitDirs(); err != nil {
-		return err
+		return "", err
 	}
 	if err := store.EnsureMemoryDocs(); err != nil {
-		return err
+		return "", err
 	}
 	if err := appendTaskToTodo(cfg.MemoryDir(), payload); err != nil {
-		return err
+		return "", err
 	}
 
 	if cfg.Loop.Feedback.Mode == "" || cfg.Loop.Feedback.Mode == "off" {
 		cfg.Loop.Feedback.Mode = "on"
 	}
 	fmt.Println("Task appended to TODO.md")
-	return nil
+	return payload, nil
 }
 
 func appendTaskToTodo(memoryDir, payload string) error {
@@ -728,6 +719,23 @@ func appendTaskToTodo(memoryDir, payload string) error {
 		return fmt.Errorf("append TODO.md: %w", err)
 	}
 	return nil
+}
+
+func resolveTaskPayload(task, taskFile string) (string, error) {
+	if strings.TrimSpace(task) == "" && strings.TrimSpace(taskFile) == "" {
+		return "", nil
+	}
+	if strings.TrimSpace(task) != "" && strings.TrimSpace(taskFile) != "" {
+		return "", fmt.Errorf("only one of --task or --task-file may be set")
+	}
+	if strings.TrimSpace(taskFile) != "" {
+		data, err := os.ReadFile(taskFile)
+		if err != nil {
+			return "", fmt.Errorf("read task file: %w", err)
+		}
+		return strings.TrimSpace(string(data)), nil
+	}
+	return strings.TrimSpace(task), nil
 }
 
 func findPlugin(pluginsList []plugins.Plugin, name string) (plugins.Plugin, error) {

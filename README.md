@@ -76,6 +76,8 @@ For a longer walkthrough, see `docs/quickstart.md`.
 - `hub.enabled` adds multi-repo workspace tracking.
 - `auth.enabled` enforces API tokens (see `docs/ui/README.md`).
 - `auth.token_env` can read a token from an environment variable.
+- `autonomy.enabled` generates spec + plan artifacts before the loop runs.
+- Templates: `docs/specs/TEMPLATE.md` and `docs/plans/TEMPLATE.md`.
 If the Codex CLI is not on PATH, set `codex.cli_path` in `autocodex.yaml`.
 For a full reference, see `docs/config/README.md`.
 
