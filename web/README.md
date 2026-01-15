@@ -26,6 +26,16 @@ VITE_API_BASE_URL=http://127.0.0.1:7788 npm run dev
 npm run build
 ```
 
+## Accessibility + bundle checks
+```bash
+npm run a11y
+npm run bundlesize
+```
+
+Notes:
+- `npm run a11y` runs Playwright + axe on the core pages.
+- `npm run bundlesize` checks raw JS/CSS output sizes in `dist/` (run `npm run build` first).
+
 ## Notes
 - The UI is intentionally read-only for v1.
 - Run the API server via `autocodex api --action serve`.
