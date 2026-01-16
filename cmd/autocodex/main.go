@@ -659,6 +659,7 @@ func runLoop(cfg config.Config, taskPayload string) {
 		OutputLast:      cfg.Codex.OutputLast,
 		PromptStdin:     cfg.Codex.PromptStdin,
 		Timeout:         time.Duration(cfg.Codex.TimeoutSeconds) * time.Second,
+		IdleTimeout:     time.Duration(cfg.Loop.StopConditions.MaxIdleSeconds) * time.Second,
 		Env:             cfg.Codex.Env,
 	}
 
@@ -671,6 +672,16 @@ func runLoop(cfg config.Config, taskPayload string) {
 	}
 
 	ctx := context.Background()
+	if cfg.Loop.StopConditions.MaxHeartbeatSeconds > 0 {
+		watchdog := &api.RunWatchdog{
+			Store:               store,
+			Logger:              logger,
+			MaxHeartbeatSeconds: cfg.Loop.StopConditions.MaxHeartbeatSeconds,
+		}
+		watchdogCtx, cancelWatchdog := context.WithCancel(context.Background())
+		defer cancelWatchdog()
+		go watchdog.Start(watchdogCtx)
+	}
 	if cfg.Autonomy.Enabled {
 		controller := autonomy.Controller{
 			Config: cfg,

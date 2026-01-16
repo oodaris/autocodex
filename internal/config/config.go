@@ -112,11 +112,13 @@ type AuthConfig struct {
 }
 
 type LoopConfig struct {
-	Mode           string               `yaml:"mode"`
-	MaxIterations  int                  `yaml:"max_iterations"`
-	Phases         []string             `yaml:"phases"`
-	StopConditions StopConditionsConfig `yaml:"stop_conditions"`
-	Feedback       FeedbackConfig       `yaml:"feedback"`
+	Mode             string                 `yaml:"mode"`
+	MaxIterations    int                    `yaml:"max_iterations"`
+	Phases           []string               `yaml:"phases"`
+	StopConditions   StopConditionsConfig   `yaml:"stop_conditions"`
+	PhaseIdleSecs    map[string]int         `yaml:"phase_idle_seconds"`
+	PromptGuardrails PromptGuardrailsConfig `yaml:"prompt_guardrails"`
+	Feedback         FeedbackConfig         `yaml:"feedback"`
 }
 
 type AutonomyConfig struct {
@@ -140,6 +142,10 @@ type StopConditionsConfig struct {
 	MaxIdleSeconds         int `yaml:"max_idle_seconds"`
 	MaxConsecutiveFailures int `yaml:"max_consecutive_failures"`
 	MaxHeartbeatSeconds    int `yaml:"max_heartbeat_seconds"`
+}
+
+type PromptGuardrailsConfig struct {
+	ReviewMaxBytes int `yaml:"review_max_bytes"`
 }
 
 type FeedbackConfig struct {
@@ -264,6 +270,9 @@ func (c *Config) ApplyDefaults() {
 	if c.Loop.Phases == nil || len(c.Loop.Phases) == 0 {
 		c.Loop.Phases = []string{"ideate", "plan", "implement", "review", "test"}
 	}
+	if c.Loop.PhaseIdleSecs == nil {
+		c.Loop.PhaseIdleSecs = map[string]int{}
+	}
 	if c.Loop.Feedback.Mode == "" {
 		c.Loop.Feedback.Mode = "off"
 	}
@@ -360,6 +369,11 @@ func (c Config) Validate() error {
 	if c.Loop.StopConditions.MaxConsecutiveFailures < 0 {
 		return fmt.Errorf("invalid loop.stop_conditions.max_consecutive_failures: %d", c.Loop.StopConditions.MaxConsecutiveFailures)
 	}
+	for phase, seconds := range c.Loop.PhaseIdleSecs {
+		if seconds < 0 {
+			return fmt.Errorf("invalid loop.phase_idle_seconds.%s: %d", phase, seconds)
+		}
+	}
 	if c.Loop.Feedback.Mode != "" {
 		if !oneOf(c.Loop.Feedback.Mode, []string{"off", "on"}) {
 			return fmt.Errorf("invalid loop.feedback.mode: %s", c.Loop.Feedback.Mode)
@@ -378,6 +392,9 @@ func (c Config) Validate() error {
 	}
 	if c.Loop.Feedback.MaxBytes < 0 {
 		return fmt.Errorf("invalid loop.feedback.max_bytes: %d", c.Loop.Feedback.MaxBytes)
+	}
+	if c.Loop.PromptGuardrails.ReviewMaxBytes < 0 {
+		return fmt.Errorf("invalid loop.prompt_guardrails.review_max_bytes: %d", c.Loop.PromptGuardrails.ReviewMaxBytes)
 	}
 	if c.API.Port < 1 || c.API.Port > 65535 {
 		return fmt.Errorf("invalid api.port: %d", c.API.Port)

@@ -138,15 +138,116 @@ func (o *Orchestrator) Run(ctx context.Context) (*state.Run, error) {
 			}
 
 			prompt := o.buildPrompt(phase, run.ID, feedbackText)
+			promptBytes := len(prompt)
+			feedbackBytes := 0
+			feedbackSummaryText := ""
+			if feedbackMeta.RunID != "" {
+				feedbackBytes = feedbackMeta.Bytes
+				feedbackSummaryText = feedbackSummary(feedbackMeta)
+			}
+			metrics := fmt.Sprintf(
+				"prompt_bytes=%d\nfeedback_bytes=%d\nfeedback_summary=%s\n",
+				promptBytes,
+				feedbackBytes,
+				feedbackSummaryText,
+			)
+			if err := o.writeNamedArtifact(run.ID, fmt.Sprintf("%s-prompt-metrics.txt", phase), metrics); err != nil {
+				logger.Warn("prompt metrics write failed", "phase", phase, "error", err.Error())
+			}
+			logger.Info(
+				"phase prompt metrics",
+				"phase", phase,
+				"prompt_bytes", promptBytes,
+				"feedback_bytes", feedbackBytes,
+			)
+			if phase == "review" && o.Config.Loop.PromptGuardrails.ReviewMaxBytes > 0 &&
+				promptBytes > o.Config.Loop.PromptGuardrails.ReviewMaxBytes {
+				skipMsg := fmt.Sprintf(
+					"review skipped: prompt_bytes=%d exceeds review_max_bytes=%d\n",
+					promptBytes,
+					o.Config.Loop.PromptGuardrails.ReviewMaxBytes,
+				)
+				if err := o.writeNamedArtifact(run.ID, "review-skipped.txt", skipMsg); err != nil {
+					logger.Warn("review skipped artifact write failed", "phase", phase, "error", err.Error())
+				}
+				phaseFinished := time.Now().UTC()
+				if err := o.appendPhaseSummary(run.ID, phase, phaseStart, phaseFinished, skipMsg); err != nil {
+					logger.Warn("phase summary append failed", "phase", phase, "error", err.Error())
+				}
+				if feedbackMeta.RunID != "" {
+					feedbackMeta.LastOutputSummary = fmt.Sprintf("phase %s output bytes=%d", phase, len(skipMsg))
+					feedbackMeta.UpdatedAt = time.Now().UTC()
+					_ = o.Store.SaveRunFeedback(feedbackMeta)
+				}
+				latency := time.Since(phaseStart).Milliseconds()
+				logger.Info("phase complete", "phase", phase, "status", "skipped", "latency_ms", latency)
+				_ = o.Store.AppendEvent(state.RunEvent{
+					ID:      eventID("phase-complete"),
+					RunID:   run.ID,
+					TS:      time.Now().UTC(),
+					Type:    "phase_complete",
+					Phase:   phase,
+					Message: "phase skipped",
+					Meta:    map[string]string{"trace_id": traceID, "bead_id": beadID},
+				})
+				lastProgress = time.Now().UTC()
+				continue
+			}
 			phaseCtx, cancel := context.WithTimeout(ctx, time.Duration(o.Config.Codex.TimeoutSeconds)*time.Second)
+			idleSeconds := o.Config.Loop.StopConditions.MaxIdleSeconds
+			if override, ok := o.Config.Loop.PhaseIdleSecs[phase]; ok && override > 0 {
+				idleSeconds = override
+			}
+			if idleSeconds > 0 {
+				phaseCtx = codex.WithIdleTimeout(phaseCtx, time.Duration(idleSeconds)*time.Second)
+			}
 			outputPath := ""
 			if o.Config.Codex.OutputLast {
 				outputPath = filepath.Join(o.Store.RunsDir, run.ID, "artifacts", fmt.Sprintf("%s-final.txt", phase))
 				phaseCtx = codex.WithOutputPath(phaseCtx, outputPath)
 			}
+			artifactsDir := filepath.Join(o.Store.RunsDir, run.ID, "artifacts")
+			_ = os.MkdirAll(artifactsDir, 0o755)
+			stdoutPath := filepath.Join(artifactsDir, fmt.Sprintf("%s-stdout.txt", phase))
+			stderrPath := filepath.Join(artifactsDir, fmt.Sprintf("%s-stderr.txt", phase))
+			var stdoutFile *os.File
+			var stderrFile *os.File
+			streamStderr := false
+			if file, err := os.Create(stdoutPath); err == nil {
+				stdoutFile = file
+			} else {
+				logger.Warn("stdout stream open failed", "phase", phase, "error", err.Error())
+			}
+			if file, err := os.Create(stderrPath); err == nil {
+				stderrFile = file
+				streamStderr = true
+			} else {
+				logger.Warn("stderr stream open failed", "phase", phase, "error", err.Error())
+			}
+			if stdoutFile != nil || stderrFile != nil {
+				phaseCtx = codex.WithOutputSinks(phaseCtx, stdoutFile, stderrFile)
+			}
+			phaseCtx = codex.WithPIDReporter(phaseCtx, func(pid int) {
+				if err := o.Store.SetRunChildPID(run.ID, pid); err != nil && logger != nil {
+					logger.Warn("child pid update failed", "phase", phase, "error", err.Error())
+				}
+			})
 			result, execErr := o.Codex.Exec(phaseCtx, prompt)
 			cancel()
-			if strings.TrimSpace(result.Stderr) != "" {
+			if stdoutFile != nil {
+				_ = stdoutFile.Close()
+			}
+			if stderrFile != nil {
+				_ = stderrFile.Close()
+			}
+			if err := o.Store.ClearRunChildPID(run.ID); err != nil && logger != nil {
+				logger.Warn("child pid clear failed", "phase", phase, "error", err.Error())
+			}
+			if execErr != nil && strings.Contains(execErr.Error(), "requires follow-up") && strings.TrimSpace(result.Stdout) != "" {
+				logger.Warn("phase requested follow-up, using available output", "phase", phase)
+				execErr = nil
+			}
+			if strings.TrimSpace(result.Stderr) != "" && !streamStderr {
 				if err := o.writeNamedArtifact(run.ID, fmt.Sprintf("%s-stderr.txt", phase), result.Stderr); err != nil {
 					logger.Warn("stderr artifact write failed", "phase", phase, "error", err.Error())
 				}
@@ -272,6 +373,15 @@ func (o *Orchestrator) buildPrompt(phase, runID, feedback string) string {
 		b.WriteString(skillPath)
 		b.WriteString("\n")
 		b.WriteString("Read the skill file and follow it before responding.\n")
+	}
+	if o.Config.Autonomy.Enabled {
+		b.WriteString("\nAutonomy mode:\n")
+		b.WriteString("- Do not ask follow-up questions.\n")
+		b.WriteString("- If inputs are missing or ambiguous, make reasonable assumptions and proceed.\n")
+		b.WriteString("- If you cannot proceed, state the blocking issue clearly in the output.\n")
+		b.WriteString("- If skill instructions conflict with autonomy mode, autonomy mode takes precedence.\n")
+		b.WriteString("- This is non-interactive: you must NOT ask questions or request clarification.\n")
+		b.WriteString("- If you would ask a question, instead write a reasonable assumption and continue.\n")
 	}
 	if feedback != "" {
 		b.WriteString("\n--- Feedback Context ---\n")

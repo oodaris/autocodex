@@ -39,6 +39,7 @@ type RunControl struct {
 	LastError    *string    `json:"last_error,omitempty"`
 	LastAction   *string    `json:"last_action,omitempty"`
 	LastActionAt *time.Time `json:"last_action_at,omitempty"`
+	ChildPID     *int       `json:"child_pid,omitempty"`
 	UpdatedAt    time.Time  `json:"updated_at"`
 }
 
@@ -64,6 +65,7 @@ type RunLock struct {
 type RunHeartbeat struct {
 	RunID     string    `json:"run_id"`
 	PID       int       `json:"pid"`
+	ChildPID  *int      `json:"child_pid,omitempty"`
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
@@ -420,6 +422,11 @@ func (s *Store) SaveRunControl(control RunControl) error {
 	if control.UpdatedAt.IsZero() {
 		control.UpdatedAt = time.Now().UTC()
 	}
+	if control.ChildPID == nil {
+		if existing, _ := s.GetRunControl(control.RunID); existing != nil && existing.ChildPID != nil && *existing.ChildPID > 0 {
+			control.ChildPID = existing.ChildPID
+		}
+	}
 	path := s.runControlPath(control.RunID)
 	data, err := json.MarshalIndent(control, "", "  ")
 	if err != nil {
@@ -442,6 +449,53 @@ func (s *Store) GetRunControl(runID string) (*RunControl, error) {
 		return nil, fmt.Errorf("parse run control: %w", err)
 	}
 	return &control, nil
+}
+
+func (s *Store) SetRunChildPID(runID string, childPID int) error {
+	if strings.TrimSpace(runID) == "" {
+		return errors.New("run id required")
+	}
+	if childPID <= 0 {
+		return nil
+	}
+	control, err := s.GetRunControl(runID)
+	if err != nil {
+		return err
+	}
+	now := time.Now().UTC()
+	if control == nil {
+		control = &RunControl{
+			RunID:     runID,
+			Status:    "running",
+			UpdatedAt: now,
+		}
+	}
+	control.ChildPID = &childPID
+	control.UpdatedAt = now
+	if err := s.SaveRunControl(*control); err != nil {
+		return err
+	}
+	return s.setHeartbeatChildPID(runID, &childPID)
+}
+
+func (s *Store) ClearRunChildPID(runID string) error {
+	if strings.TrimSpace(runID) == "" {
+		return errors.New("run id required")
+	}
+	control, err := s.GetRunControl(runID)
+	if err != nil || control == nil {
+		return err
+	}
+	if control.ChildPID == nil {
+		return s.setHeartbeatChildPID(runID, nil)
+	}
+	zero := 0
+	control.ChildPID = &zero
+	control.UpdatedAt = time.Now().UTC()
+	if err := s.SaveRunControl(*control); err != nil {
+		return err
+	}
+	return s.setHeartbeatChildPID(runID, nil)
 }
 
 func (s *Store) SaveRunFeedback(feedback RunFeedback) error {
@@ -538,9 +592,16 @@ func (s *Store) TouchRunHeartbeat(runID string, pid int) error {
 		return errors.New("run id required")
 	}
 	path := s.runHeartbeatPath(runID)
+	var childPID *int
+	if existing, err := s.GetRunHeartbeat(runID); err == nil && existing != nil {
+		if existing.ChildPID != nil && *existing.ChildPID > 0 {
+			childPID = existing.ChildPID
+		}
+	}
 	hb := RunHeartbeat{
 		RunID:     runID,
 		PID:       pid,
+		ChildPID:  childPID,
 		UpdatedAt: time.Now().UTC(),
 	}
 	data, err := json.Marshal(hb)
@@ -564,6 +625,31 @@ func (s *Store) GetRunHeartbeat(runID string) (*RunHeartbeat, error) {
 		return nil, fmt.Errorf("parse run heartbeat: %w", err)
 	}
 	return &hb, nil
+}
+
+func (s *Store) setHeartbeatChildPID(runID string, childPID *int) error {
+	if strings.TrimSpace(runID) == "" {
+		return errors.New("run id required")
+	}
+	hb, err := s.GetRunHeartbeat(runID)
+	if err != nil {
+		return err
+	}
+	if hb == nil {
+		hb = &RunHeartbeat{
+			RunID: runID,
+		}
+	}
+	if childPID != nil && *childPID <= 0 {
+		childPID = nil
+	}
+	hb.ChildPID = childPID
+	hb.UpdatedAt = time.Now().UTC()
+	data, err := json.Marshal(hb)
+	if err != nil {
+		return fmt.Errorf("marshal run heartbeat: %w", err)
+	}
+	return os.WriteFile(s.runHeartbeatPath(runID), data, 0o644)
 }
 
 func (s *Store) FinalizeRun(runID, status, reason, action string) error {
@@ -647,7 +733,14 @@ func (s *Store) FinalizeStaleRuns(maxHeartbeatSeconds int, reasonPrefix string) 
 		if lock != nil && lock.PID > 0 {
 			pidAlive = IsProcessAlive(lock.PID)
 		}
-		if pidAlive {
+		childAlive := false
+		if control != nil && control.ChildPID != nil && *control.ChildPID > 0 {
+			childAlive = IsProcessAlive(*control.ChildPID)
+		}
+		if heartbeat != nil && heartbeat.ChildPID != nil && *heartbeat.ChildPID > 0 {
+			childAlive = childAlive || IsProcessAlive(*heartbeat.ChildPID)
+		}
+		if pidAlive || childAlive {
 			continue
 		}
 

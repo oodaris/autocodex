@@ -2,15 +2,27 @@ package orchestrator
 
 import (
 	"context"
+	"io"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/oodaris/autocodex/internal/codex"
 	"github.com/oodaris/autocodex/internal/config"
 	"github.com/oodaris/autocodex/internal/state"
 )
+
+type fakeExecutor struct {
+	called int
+}
+
+func (f *fakeExecutor) Exec(ctx context.Context, prompt string) (codex.ExecResult, error) {
+	f.called++
+	return codex.ExecResult{Stdout: "ok"}, nil
+}
 
 func TestGatherFeedbackIncludesSources(t *testing.T) {
 	base := t.TempDir()
@@ -216,5 +228,47 @@ func TestAppendPhaseSummary(t *testing.T) {
 	}
 	if !strings.Contains(doc.Content, "Phase plan") || !strings.Contains(doc.Content, "Output bytes") {
 		t.Fatalf("expected phase summary content")
+	}
+}
+
+func TestReviewGuardrailSkipsExec(t *testing.T) {
+	base := t.TempDir()
+	store := state.NewStore(
+		filepath.Join(base, "state"),
+		filepath.Join(base, "runs"),
+		filepath.Join(base, "memory"),
+		filepath.Join(base, "logs"),
+		filepath.Join(base, "artifacts"),
+	)
+	if err := store.InitDirs(); err != nil {
+		t.Fatalf("init dirs: %v", err)
+	}
+	if err := store.EnsureMemoryDocs(); err != nil {
+		t.Fatalf("ensure memory docs: %v", err)
+	}
+
+	var cfg config.Config
+	cfg.ApplyDefaults()
+	cfg.Loop.Phases = []string{"review"}
+	cfg.Loop.PromptGuardrails.ReviewMaxBytes = 1
+	cfg.Loop.Feedback.Mode = "off"
+
+	exec := &fakeExecutor{}
+	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
+	orch := Orchestrator{Config: cfg, Store: store, Logger: logger, Codex: exec}
+	run, err := orch.Run(context.Background())
+	if err != nil {
+		t.Fatalf("run: %v", err)
+	}
+	if exec.called != 0 {
+		t.Fatalf("expected exec to be skipped")
+	}
+	if run.Status != "completed" {
+		t.Fatalf("expected run completed, got %s", run.Status)
+	}
+
+	skippedPath := filepath.Join(store.RunsDir, run.ID, "artifacts", "review-skipped.txt")
+	if _, err := os.Stat(skippedPath); err != nil {
+		t.Fatalf("expected review-skipped.txt: %v", err)
 	}
 }

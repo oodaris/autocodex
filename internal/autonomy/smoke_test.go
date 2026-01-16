@@ -164,6 +164,14 @@ case "$cmd" in
     fi
     exit 0
     ;;
+  close)
+    id="$1"
+    if [ -f "$STATE" ]; then
+      awk -F'|' -v id="$id" 'BEGIN{OFS="|"} $1==id{$2="done"} {print}' "$STATE" > "$STATE.tmp"
+      mv "$STATE.tmp" "$STATE"
+    fi
+    exit 0
+    ;;
   ready)
     if [ "$1" = "--json" ]; then
       if [ ! -f "$STATE" ]; then

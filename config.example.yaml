@@ -10,9 +10,9 @@ codex:
   # approval/sandbox are ignored when mode: yolo (yolo uses --yolo)
   approval_policy: on-request
   sandbox_mode: workspace-write
-  json_output: false
+  json_output: true
   output_last_message: true
-  prompt_stdin: false
+  prompt_stdin: true
 
 paths:
   state_dir: .autocodex
@@ -65,10 +65,15 @@ loop:
     - implement
     - review
     - test
+  phase_idle_seconds:
+    review: 1200
   stop_conditions:
     max_duration_seconds: 0
-    max_idle_seconds: 0
+    max_idle_seconds: 600
     max_consecutive_failures: 0
+    max_heartbeat_seconds: 180
+  prompt_guardrails:
+    review_max_bytes: 200000
   feedback:
     mode: on
     sources:
@@ -81,7 +86,7 @@ loop:
     memory_glob: "*.md"
 
 autonomy:
-  enabled: false
+  enabled: true
   spec_template: docs/specs/TEMPLATE.md
   plan_template: docs/plans/TEMPLATE.md
   tasks_schema: docs/contracts/autonomy-tasks.schema.json

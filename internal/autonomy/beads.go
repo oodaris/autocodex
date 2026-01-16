@@ -21,7 +21,7 @@ func (c *Controller) createBeads(tasksFile TasksFile) error {
 
 	created := map[string]bool{}
 	for _, task := range tasksFile.Tasks {
-		id := strings.TrimSpace(task.ID)
+		id := normalizeBeadID(task.ID)
 		if id == "" {
 			return fmt.Errorf("task id is required")
 		}
@@ -45,12 +45,12 @@ func (c *Controller) createBeads(tasksFile TasksFile) error {
 	}
 
 	for _, task := range tasksFile.Tasks {
-		id := strings.TrimSpace(task.ID)
+		id := normalizeBeadID(task.ID)
 		if id == "" {
 			continue
 		}
 		for _, dep := range task.Dependencies {
-			depID := strings.TrimSpace(dep)
+			depID := normalizeBeadID(dep)
 			if depID == "" || depID == id {
 				continue
 			}
@@ -101,7 +101,20 @@ func updateBead(id string, task Task) error {
 
 func addDependency(id, dep string) error {
 	_, err := runBD("dep", "add", id, dep)
+	if err == nil {
+		return nil
+	}
+	if isDependencyExistsError(err.Error()) {
+		return nil
+	}
 	return err
+}
+
+func isDependencyExistsError(message string) bool {
+	lower := strings.ToLower(message)
+	return strings.Contains(lower, "unique constraint failed") ||
+		strings.Contains(lower, "already exists") ||
+		strings.Contains(lower, "duplicate")
 }
 
 func updateBeadStatus(id, status string) error {
@@ -110,8 +123,14 @@ func updateBeadStatus(id, status string) error {
 	if id == "" || status == "" {
 		return fmt.Errorf("bead id and status required")
 	}
-	_, err := runBD("update", id, "--status", status)
-	return err
+	switch strings.ToLower(status) {
+	case "done", "closed", "complete", "completed":
+		_, err := runBD("close", id)
+		return err
+	default:
+		_, err := runBD("update", id, "--status", status)
+		return err
+	}
 }
 
 func beadExists(id string) bool {

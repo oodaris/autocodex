@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"sort"
-	"strings"
 )
 
 type ReadyBead struct {
@@ -70,5 +69,5 @@ func markBeadInProgress(id string) error {
 }
 
 func sanitizeBeadID(id string) string {
-	return strings.TrimSpace(id)
+	return normalizeBeadID(id)
 }

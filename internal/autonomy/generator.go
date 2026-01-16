@@ -53,19 +53,67 @@ func (c *Controller) generateSpecAndPlan(ctx context.Context, task string) (stri
 	if c.Config.Codex.OutputLast {
 		specCtx = codex.WithOutputPath(specCtx, specOutputPath)
 	}
+	if c.Logger != nil {
+		specCtx = codex.WithPIDReporter(specCtx, func(pid int) {
+			c.Logger.Info("spec codex started", "pid", pid)
+		})
+	}
 	specResult, err := c.Codex.Exec(specCtx, specPrompt)
 	cancel()
 	if err != nil {
-		return "", "", "", fmt.Errorf("spec generation failed: %w", err)
+		if strings.Contains(err.Error(), "requires follow-up") && strings.TrimSpace(specResult.Stdout) != "" {
+			if c.Logger != nil {
+				c.Logger.Warn("spec generation requested follow-up, using available output")
+			}
+			err = nil
+		} else if strings.Contains(err.Error(), "needs_follow_up") {
+			if c.Logger != nil {
+				c.Logger.Warn("spec generation requested follow-up, retrying without skill")
+			}
+			fallbackPrompt := buildFallbackPrompt(task, string(specTemplate), specOutputPath)
+			specCtx, cancel = context.WithTimeout(ctx, time.Duration(c.Config.Codex.TimeoutSeconds)*time.Second)
+			if c.Config.Codex.OutputLast {
+				specCtx = codex.WithOutputPath(specCtx, specOutputPath)
+			}
+			specResult, err = c.Codex.Exec(specCtx, fallbackPrompt)
+			cancel()
+		}
+		if err != nil {
+			return "", "", "", fmt.Errorf("spec generation failed: %w; stderr: %s", err, strings.TrimSpace(specResult.Stderr))
+		}
 	}
 	planOutputCtx, cancelPlan := context.WithTimeout(ctx, time.Duration(c.Config.Codex.TimeoutSeconds)*time.Second)
 	if c.Config.Codex.OutputLast {
 		planOutputCtx = codex.WithOutputPath(planOutputCtx, planOutputPath)
 	}
+	if c.Logger != nil {
+		planOutputCtx = codex.WithPIDReporter(planOutputCtx, func(pid int) {
+			c.Logger.Info("plan codex started", "pid", pid)
+		})
+	}
 	planResult, err := c.Codex.Exec(planOutputCtx, planPrompt)
 	cancelPlan()
 	if err != nil {
-		return "", "", "", fmt.Errorf("plan generation failed: %w", err)
+		if strings.Contains(err.Error(), "requires follow-up") && strings.TrimSpace(planResult.Stdout) != "" {
+			if c.Logger != nil {
+				c.Logger.Warn("plan generation requested follow-up, using available output")
+			}
+			err = nil
+		} else if strings.Contains(err.Error(), "needs_follow_up") {
+			if c.Logger != nil {
+				c.Logger.Warn("plan generation requested follow-up, retrying without skill")
+			}
+			fallbackPrompt := buildFallbackPrompt(task, string(planTemplate), planOutputPath)
+			planOutputCtx, cancelPlan = context.WithTimeout(ctx, time.Duration(c.Config.Codex.TimeoutSeconds)*time.Second)
+			if c.Config.Codex.OutputLast {
+				planOutputCtx = codex.WithOutputPath(planOutputCtx, planOutputPath)
+			}
+			planResult, err = c.Codex.Exec(planOutputCtx, fallbackPrompt)
+			cancelPlan()
+		}
+		if err != nil {
+			return "", "", "", fmt.Errorf("plan generation failed: %w; stderr: %s", err, strings.TrimSpace(planResult.Stderr))
+		}
 	}
 
 	specOutput := resolveOutput(specOutputPath, specResult.Stdout)
@@ -101,6 +149,14 @@ func (c *Controller) buildPrompt(task, skillName, template, outputPath string) (
 	b.WriteString(skill.Path)
 	b.WriteString("\n")
 	b.WriteString("Read the skill file and follow it before responding.\n\n")
+	b.WriteString("Autonomy mode:\n")
+	b.WriteString("- Do not ask follow-up questions.\n")
+	b.WriteString("- If inputs are missing or ambiguous, make reasonable assumptions and proceed.\n")
+	b.WriteString("- If you encounter existing local changes, assume they are intentional and proceed.\n")
+	b.WriteString("- Capture key assumptions in the output.\n\n")
+	b.WriteString("- If skill instructions conflict with autonomy mode, autonomy mode takes precedence.\n\n")
+	b.WriteString("- This is non-interactive: you must NOT ask questions or request clarification.\n")
+	b.WriteString("- If you would ask a question, instead write a reasonable assumption and continue.\n\n")
 	b.WriteString("Template (fill in and return only the completed document):\n")
 	b.WriteString("--- Template ---\n")
 	b.WriteString(template)
@@ -113,6 +169,31 @@ func (c *Controller) buildPrompt(task, skillName, template, outputPath string) (
 	b.WriteString(outputPath)
 	b.WriteString("\n")
 	return b.String(), nil
+}
+
+func buildFallbackPrompt(task, template, outputPath string) string {
+	var b strings.Builder
+	b.WriteString("autocodex autonomy task:\n")
+	b.WriteString(strings.TrimSpace(task))
+	b.WriteString("\n\n")
+	b.WriteString("Autonomy mode:\n")
+	b.WriteString("- Do not ask follow-up questions.\n")
+	b.WriteString("- If inputs are missing or ambiguous, make reasonable assumptions and proceed.\n")
+	b.WriteString("- Capture key assumptions in the output.\n")
+	b.WriteString("- This is non-interactive: you must NOT ask questions or request clarification.\n")
+	b.WriteString("- If you would ask a question, instead write a reasonable assumption and continue.\n\n")
+	b.WriteString("Template (fill in and return only the completed document):\n")
+	b.WriteString("--- Template ---\n")
+	b.WriteString(template)
+	b.WriteString("\n--- End Template ---\n\n")
+	b.WriteString("Output requirements:\n")
+	b.WriteString("- Use Markdown.\n")
+	b.WriteString("- Fill every section; use 'N/A' if a section is not applicable.\n")
+	b.WriteString("- Return only the completed document; no commentary or code fences.\n")
+	b.WriteString("- Target output path: ")
+	b.WriteString(outputPath)
+	b.WriteString("\n")
+	return b.String()
 }
 
 func latestTaskFromTodo(memoryDir string) (string, error) {
