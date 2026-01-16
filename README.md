@@ -27,7 +27,13 @@ Install with Go:
 go install github.com/oodaris/autocodex/cmd/autocodex@latest
 ```
 
-Or download a release binary from GitHub Releases (recommended for non-Go setups).
+Or download a release binary from GitHub Releases (recommended for non-Go setups):
+```bash
+# requires gh (GitHub CLI)
+gh release download -R oodaris/autocodex -p "autocodex_*_darwin_arm64.tar.gz"
+tar -xzf autocodex_*_darwin_arm64.tar.gz
+sudo mv autocodex /usr/local/bin/autocodex
+```
 
 ## Quickstart
 **Prereqs**
