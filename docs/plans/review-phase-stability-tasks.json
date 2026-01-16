@@ -1,0 +1,212 @@
+{
+  "version": "1.0",
+  "generated_at": "2026-01-16T04:02:00Z",
+  "source_plan": "docs/plans/review-phase-stability-plan.md",
+  "tasks": [
+    {
+      "id": "autocodex-rps1",
+      "title": "Draft review phase stability plan + tasks",
+      "goal": "Document the plan and tasks needed to stabilize review phase output and guardrails.",
+      "scope": [
+        "docs/plans",
+        "docs/specs"
+      ],
+      "files": [
+        "docs/plans/review-phase-stability-plan.md",
+        "docs/plans/review-phase-stability-tasks.json",
+        "docs/specs/review-phase-stability.md"
+      ],
+      "dependencies": [],
+      "skills": [
+        "core-holistic-planning-and-tracking"
+      ],
+      "acceptance_criteria": [
+        "Plan references the spec and follows the plan template.",
+        "Tasks JSON validates against autonomy-tasks schema.",
+        "Risks and evidence checklist are documented."
+      ],
+      "tests": [
+        "python -m jsonschema -i docs/plans/review-phase-stability-tasks.json docs/contracts/autonomy-tasks.schema.json"
+      ],
+      "docs": [
+        "docs/plans/review-phase-stability-plan.md",
+        "docs/specs/review-phase-stability.md"
+      ],
+      "rollout": "N/A",
+      "observability": "N/A",
+      "status": "todo",
+      "priority": 1,
+      "owner": "autocodex",
+      "notes": "Keep scope limited to review-phase stability."
+    },
+    {
+      "id": "autocodex-rps2",
+      "title": "Stream codex stdout/stderr to artifacts",
+      "goal": "Persist live stdout/stderr for review phase to avoid silent failures.",
+      "scope": [
+        "internal/codex",
+        "internal/orchestrator",
+        "internal/state"
+      ],
+      "files": [
+        "internal/codex/runner.go",
+        "internal/orchestrator/orchestrator.go",
+        "internal/state/state.go"
+      ],
+      "dependencies": [
+        "autocodex-rps1"
+      ],
+      "skills": [
+        "eng-go-developer",
+        "eng-go-cli-developer"
+      ],
+      "acceptance_criteria": [
+        "Review runs emit review-stdout.txt and/or review-stderr.txt during execution.",
+        "Artifacts remain even if codex exec exits early."
+      ],
+      "tests": [
+        "go test ./..."
+      ],
+      "docs": [
+        "docs/plans/review-phase-stability-plan.md"
+      ],
+      "rollout": "N/A",
+      "observability": "Structured logs include phase output capture events.",
+      "status": "todo",
+      "priority": 2,
+      "owner": "autocodex",
+      "notes": "Use io.MultiWriter to avoid losing final output."
+    },
+    {
+      "id": "autocodex-rps3",
+      "title": "Add prompt size + snapshot size diagnostics",
+      "goal": "Record prompt size and snapshot size to debug review stalls.",
+      "scope": [
+        "internal/orchestrator",
+        "internal/state"
+      ],
+      "files": [
+        "internal/orchestrator/orchestrator.go",
+        "internal/state/state.go"
+      ],
+      "dependencies": [
+        "autocodex-rps2"
+      ],
+      "skills": [
+        "eng-go-developer"
+      ],
+      "acceptance_criteria": [
+        "Review phase writes an artifact with prompt size (bytes).",
+        "Snapshot size is logged or recorded alongside the prompt size."
+      ],
+      "tests": [
+        "go test ./..."
+      ],
+      "docs": [
+        "docs/plans/review-phase-stability-plan.md"
+      ],
+      "rollout": "N/A",
+      "observability": "Prompt size is included in phase logs."
+    },
+    {
+      "id": "autocodex-rps4",
+      "title": "Add per-phase idle timeouts + review guardrail",
+      "goal": "Allow review longer execution with explicit guardrails for oversized prompts.",
+      "scope": [
+        "internal/config",
+        "internal/codex",
+        "internal/orchestrator"
+      ],
+      "files": [
+        "internal/config/config.go",
+        "internal/codex/runner.go",
+        "internal/orchestrator/orchestrator.go",
+        "autocodex.yaml",
+        "config.example.yaml"
+      ],
+      "dependencies": [
+        "autocodex-rps3"
+      ],
+      "skills": [
+        "eng-go-developer",
+        "eng-go-cli-developer"
+      ],
+      "acceptance_criteria": [
+        "Config supports review-specific idle timeout override.",
+        "Review prompt guardrail emits review-skipped.txt when exceeded.",
+        "Existing phases keep defaults if overrides are unset."
+      ],
+      "tests": [
+        "go test ./..."
+      ],
+      "docs": [
+        "autocodex.yaml",
+        "config.example.yaml"
+      ],
+      "rollout": "Document defaults in config example.",
+      "observability": "Guardrail events log reason and prompt size."
+    },
+    {
+      "id": "autocodex-rps5",
+      "title": "Add tests for streaming + guardrails",
+      "goal": "Ensure streaming artifacts and prompt guardrails are covered in tests.",
+      "scope": [
+        "internal/codex",
+        "internal/orchestrator"
+      ],
+      "files": [
+        "internal/codex/runner_test.go",
+        "internal/orchestrator/orchestrator_test.go"
+      ],
+      "dependencies": [
+        "autocodex-rps4"
+      ],
+      "skills": [
+        "eng-go-developer"
+      ],
+      "acceptance_criteria": [
+        "Tests validate streaming artifacts exist mid-flight.",
+        "Tests validate review guardrail skip behavior."
+      ],
+      "tests": [
+        "go test ./..."
+      ],
+      "docs": [
+        "docs/plans/review-phase-stability-plan.md"
+      ],
+      "rollout": "N/A",
+      "observability": "Test logs demonstrate guardrail behavior."
+    },
+    {
+      "id": "autocodex-rps6",
+      "title": "Run loop smoke test and capture evidence",
+      "goal": "Verify review phase completes or skips with artifacts after fixes.",
+      "scope": [
+        ".autocodex",
+        "docs"
+      ],
+      "files": [
+        ".autocodex/runs",
+        "docs/specs/review-phase-stability.md"
+      ],
+      "dependencies": [
+        "autocodex-rps5"
+      ],
+      "skills": [
+        "eng-smart-test-runner"
+      ],
+      "acceptance_criteria": [
+        "Run completes without stale finalization.",
+        "Review artifacts exist and include prompt size diagnostics."
+      ],
+      "tests": [
+        "go run ./cmd/autocodex \"loop smoke test review\""
+      ],
+      "docs": [
+        "docs/specs/review-phase-stability.md"
+      ],
+      "rollout": "N/A",
+      "observability": "Run logs and artifacts captured for evidence."
+    }
+  ]
+}
