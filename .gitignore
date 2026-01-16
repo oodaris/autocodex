@@ -9,7 +9,6 @@ autocodex.yaml
 node_modules/
 web/node_modules/
 web/dist/
-web/package-lock.json
 web/test-results/
 web/playwright-report/
 
