@@ -3,10 +3,10 @@
 # autocodex
 
 [![ci](https://github.com/oodaris/autocodex/actions/workflows/ci.yml/badge.svg)](https://github.com/oodaris/autocodex/actions/workflows/ci.yml)
-[![release](https://img.shields.io/github/v/release/oodaris/autocodex?display_name=tag&sort=semver)](https://github.com/oodaris/autocodex/releases/latest)
-[![license](https://img.shields.io/github/license/oodaris/autocodex)](LICENSE)
-[![go](https://img.shields.io/github/go-mod/go-version/oodaris/autocodex)](go.mod)
-[![Go Report Card](https://goreportcard.com/badge/github.com/oodaris/autocodex)](https://goreportcard.com/report/github.com/oodaris/autocodex)
+[![release](https://img.shields.io/badge/release-v0.1.0-blue)](https://github.com/oodaris/autocodex/releases/latest)
+[![license](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
+[![go](https://img.shields.io/badge/go-1.22%2B-blue)](go.mod)
+[![Go Report Card](https://img.shields.io/badge/go%20report-n%2Fa-lightgrey)](https://goreportcard.com/report/github.com/oodaris/autocodex)
 
 autocodex orchestrates a structured loop: ideate → plan → implement → review → test. It uses Beads for task tracking, runs the local Codex CLI, and supports external plugins via JSON‑RPC.
 
