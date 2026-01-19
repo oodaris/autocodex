@@ -37,6 +37,10 @@ func main() {
 	}
 
 	cmd := os.Args[1]
+	if isVersionArg(cmd) {
+		printVersion()
+		return
+	}
 	if !isCommand(cmd) && !strings.HasPrefix(cmd, "-") {
 		task := strings.Join(os.Args[1:], " ")
 		runRun([]string{"-task", task})
@@ -68,6 +72,8 @@ func main() {
 		runAPI(os.Args[2:])
 	case "ui":
 		runUI(os.Args[2:])
+	case "version":
+		printVersion()
 	case "config":
 		runConfig(os.Args[2:])
 	default:
@@ -78,17 +84,32 @@ func main() {
 
 func usage() {
 	fmt.Println("Usage: autocodex <command> [args]")
-	fmt.Println("Commands: bootstrap, init, run, once, resume, kill, snapshot, status, beads, plugins, api, ui, config")
+	fmt.Println("Commands: bootstrap, init, run, once, resume, kill, snapshot, status, beads, plugins, api, ui, version, config")
 	fmt.Println("Shortcut: autocodex \"<task>\" (implicit run with --task)")
 }
 
 func isCommand(value string) bool {
 	switch value {
-	case "bootstrap", "init", "run", "once", "resume", "kill", "snapshot", "status", "beads", "plugins", "api", "ui", "config":
+	case "bootstrap", "init", "run", "once", "resume", "kill", "snapshot", "status", "beads", "plugins", "api", "ui", "version", "config":
 		return true
 	default:
 		return false
 	}
+}
+
+var version = "dev"
+
+func isVersionArg(arg string) bool {
+	switch arg {
+	case "--version", "-v":
+		return true
+	default:
+		return false
+	}
+}
+
+func printVersion() {
+	fmt.Println(version)
 }
 
 func runInit(args []string) {

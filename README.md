@@ -88,6 +88,9 @@ autocodex api
 # start the embedded UI + API
 autocodex ui
 
+# print version
+autocodex --version
+
 # snapshot a run
 autocodex snapshot 20260115T142253Z-4a4ae121 --reason "handoff"
 ```
