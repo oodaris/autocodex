@@ -198,6 +198,37 @@ func TestRunLockLifecycle(t *testing.T) {
 	}
 }
 
+func TestListRunsEmpty(t *testing.T) {
+	base := t.TempDir()
+	store := NewStore(
+		filepath.Join(base, "state"),
+		filepath.Join(base, "runs"),
+		filepath.Join(base, "memory"),
+		filepath.Join(base, "logs"),
+		filepath.Join(base, "artifacts"),
+	)
+	if err := store.InitDirs(); err != nil {
+		t.Fatalf("init dirs: %v", err)
+	}
+	runs, err := store.ListRuns()
+	if err != nil {
+		t.Fatalf("list runs: %v", err)
+	}
+	if runs == nil {
+		t.Fatalf("expected empty slice, got nil")
+	}
+	if len(runs) != 0 {
+		t.Fatalf("expected zero runs")
+	}
+	data, err := json.Marshal(runs)
+	if err != nil {
+		t.Fatalf("marshal runs: %v", err)
+	}
+	if string(data) != "[]" {
+		t.Fatalf("expected [] payload, got %s", string(data))
+	}
+}
+
 func TestFinalizeStaleRuns(t *testing.T) {
 	base := t.TempDir()
 	store := NewStore(

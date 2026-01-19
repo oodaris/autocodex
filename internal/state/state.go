@@ -330,7 +330,7 @@ func (s *Store) ListRuns() ([]Run, error) {
 		}
 		return nil, fmt.Errorf("read runs dir: %w", err)
 	}
-	var runs []Run
+	runs := make([]Run, 0)
 	for _, entry := range entries {
 		if !entry.IsDir() {
 			continue
