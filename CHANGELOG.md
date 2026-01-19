@@ -7,6 +7,13 @@ Semantic Versioning.
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-01-19
+
+- Embedded production UI and `autocodex ui` command (API + UI served together).
+- Bootstrap now seeds config/templates/skills and supports embedded defaults.
+- Beads integration respects repo issue prefix when generating tasks.
+- Docs + release flow updates for embedded UI builds.
+
 ## [0.1.0] - 2026-01-16
 
 - Initial public preview of autocodex (CLI, API, UI, plugins).

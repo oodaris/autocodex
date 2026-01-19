@@ -1,7 +1,7 @@
 ---
 name: core-ask-questions-if-underspecified
 description: Clarify requirements when inputs are missing or ambiguous.
-version: 0.1.0
+version: 0.2.0
 ---
 
 # Ask Questions If Underspecified

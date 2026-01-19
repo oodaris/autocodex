@@ -3,7 +3,7 @@
 # autocodex
 
 [![ci](https://github.com/oodaris/autocodex/actions/workflows/ci.yml/badge.svg)](https://github.com/oodaris/autocodex/actions/workflows/ci.yml)
-[![release](https://img.shields.io/badge/release-v0.1.0-blue)](https://github.com/oodaris/autocodex/releases/latest)
+[![release](https://img.shields.io/badge/release-v0.2.0-blue)](https://github.com/oodaris/autocodex/releases/latest)
 [![license](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 [![go](https://img.shields.io/badge/go-1.22%2B-blue)](go.mod)
 [![Go Report Card](https://img.shields.io/badge/go%20report-n%2Fa-lightgrey)](https://goreportcard.com/report/github.com/oodaris/autocodex)

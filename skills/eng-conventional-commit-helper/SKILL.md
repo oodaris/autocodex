@@ -1,7 +1,7 @@
 ---
 name: eng-conventional-commit-helper
 description: Create conventional commits with clear scope and intent.
-version: 0.1.0
+version: 0.2.0
 ---
 
 # Conventional Commit Helper

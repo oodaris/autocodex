@@ -1,7 +1,7 @@
 ---
 name: eng-go-developer
 description: Implement Go code with clear errors, tests, and observability.
-version: 0.1.0
+version: 0.2.0
 ---
 
 # Go Developer

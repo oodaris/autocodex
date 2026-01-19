@@ -1,7 +1,7 @@
 ---
 name: eng-ui-vite-react
 description: Build autocodex UI with React + Vite.
-version: 0.1.0
+version: 0.2.0
 ---
 
 # UI: React + Vite

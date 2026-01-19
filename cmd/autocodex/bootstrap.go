@@ -322,7 +322,7 @@ const defaultAutonomyActionsSchema = `{
 const defaultSkillAskQuestions = "---\n" +
 	"name: core-ask-questions-if-underspecified\n" +
 	"description: Clarify requirements when inputs are missing or ambiguous.\n" +
-	"version: 0.1.0\n" +
+	"version: 0.2.0\n" +
 	"---\n" +
 	"\n" +
 	"# Ask Questions If Underspecified\n" +
@@ -380,7 +380,7 @@ const defaultSkillAskQuestions = "---\n" +
 const defaultSkillQnaSynthesis = "---\n" +
 	"name: core-qna-synthesis\n" +
 	"description: Refine multi-part questions and answer them with practical guidance.\n" +
-	"version: 0.1.0\n" +
+	"version: 0.2.0\n" +
 	"---\n" +
 	"\n" +
 	"# Interpretive Q&A Synthesis\n" +
@@ -433,7 +433,7 @@ const defaultSkillQnaSynthesis = "---\n" +
 const defaultSkillHolisticPlanning = "---\n" +
 	"name: core-holistic-planning-and-tracking\n" +
 	"description: Create a plan and Beads tasks with dependencies and acceptance criteria.\n" +
-	"version: 0.1.0\n" +
+	"version: 0.2.0\n" +
 	"---\n" +
 	"\n" +
 	"# Holistic Planning + Beads Tracking\n" +

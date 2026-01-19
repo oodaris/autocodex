@@ -1,7 +1,7 @@
 ---
 name: core-holistic-planning-and-tracking
 description: Create a plan and Beads tasks with dependencies and acceptance criteria.
-version: 0.1.0
+version: 0.2.0
 ---
 
 # Holistic Planning + Beads Tracking

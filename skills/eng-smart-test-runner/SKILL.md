@@ -1,7 +1,7 @@
 ---
 name: eng-smart-test-runner
 description: Run the most relevant tests and report failures precisely.
-version: 0.1.0
+version: 0.2.0
 ---
 
 # Smart Test Runner

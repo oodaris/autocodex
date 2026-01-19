@@ -10,7 +10,7 @@ A plugin is discovered by scanning configured plugin paths for a manifest file n
 Minimal required fields:
 ```yaml
 name: example-plugin
-version: 0.1.0
+version: 0.2.0
 protocol_version: 1
 entrypoint: ./example-plugin
 transport: grpc  # grpc | jsonrpc
