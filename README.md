@@ -123,6 +123,13 @@ When autonomy is enabled:
 - The **test** phase should emit an `ACTIONS` JSON block (see `docs/contracts/autonomy-actions.schema.json`) so autocodex can update bead status and choose the next bead.
 - Gate failures stop the loop and auto-create a fix bead (when beads auto-create is enabled).
 
+### Autonomy checklist
+- `autocodex.yaml` exists and `autonomy.enabled: true`.
+- Templates + schemas exist (run `autocodex bootstrap` to create them): `docs/specs/TEMPLATE.md`, `docs/plans/TEMPLATE.md`, `docs/contracts/autonomy-tasks.schema.json`, `docs/contracts/autonomy-actions.schema.json`.
+- Skills available in `skills/`: `core-qna-synthesis`, `core-holistic-planning-and-tracking`, `core-ask-questions-if-underspecified`.
+- Codex CLI installed and reachable (`codex` on PATH or `codex.cli_path`).
+- `bd` is optional; without it, bead creation/updates are skipped with a warning.
+
 ## Configuration
 - `autocodex.yaml` controls mode, paths, Codex CLI settings, plugins, and API settings.
 - `mode: yolo` is explicit and must be used intentionally.
