@@ -524,12 +524,23 @@ func serveAPI(cfg config.Config, configPath string, uiFS fs.FS) {
 		go watchdog.Start(context.Background())
 	}
 	addr := net.JoinHostPort(cfg.API.Host, fmt.Sprintf("%d", cfg.API.Port))
-	logger.Info("api server starting", "route", "/", "status", "starting", "latency_ms", 0, "addr", addr)
+	baseURL := fmt.Sprintf("http://%s:%d", hostForLog(cfg.API.Host), cfg.API.Port)
+	logger.Info("api server starting", "route", "/", "status", "starting", "latency_ms", 0, "addr", addr, "url", baseURL)
 	if uiFS != nil {
-		logger.Info("ui embedded", "route", "/", "status", "enabled", "latency_ms", 0, "addr", addr)
+		logger.Info("ui embedded", "route", "/", "status", "enabled", "latency_ms", 0, "addr", addr, "url", baseURL)
 	}
 	if err := http.ListenAndServe(addr, server.Handler()); err != nil {
 		exitErr(err)
+	}
+}
+
+func hostForLog(host string) string {
+	trimmed := strings.TrimSpace(host)
+	switch trimmed {
+	case "", "0.0.0.0", "::", "[::]":
+		return "127.0.0.1"
+	default:
+		return trimmed
 	}
 }
 
