@@ -7,6 +7,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"io/fs"
 	"net"
 	"net/http"
 	"os"
@@ -26,6 +27,7 @@ import (
 	"github.com/oodaris/autocodex/internal/skills"
 	"github.com/oodaris/autocodex/internal/state"
 	"github.com/oodaris/autocodex/internal/terminal"
+	"github.com/oodaris/autocodex/web"
 )
 
 func main() {
@@ -64,6 +66,8 @@ func main() {
 		runPlugins(os.Args[2:])
 	case "api":
 		runAPI(os.Args[2:])
+	case "ui":
+		runUI(os.Args[2:])
 	case "config":
 		runConfig(os.Args[2:])
 	default:
@@ -74,13 +78,13 @@ func main() {
 
 func usage() {
 	fmt.Println("Usage: autocodex <command> [args]")
-	fmt.Println("Commands: bootstrap, init, run, once, resume, kill, snapshot, status, beads, plugins, api, config")
+	fmt.Println("Commands: bootstrap, init, run, once, resume, kill, snapshot, status, beads, plugins, api, ui, config")
 	fmt.Println("Shortcut: autocodex \"<task>\" (implicit run with --task)")
 }
 
 func isCommand(value string) bool {
 	switch value {
-	case "bootstrap", "init", "run", "once", "resume", "kill", "snapshot", "status", "beads", "plugins", "api", "config":
+	case "bootstrap", "init", "run", "once", "resume", "kill", "snapshot", "status", "beads", "plugins", "api", "ui", "config":
 		return true
 	default:
 		return false
@@ -396,10 +400,10 @@ func runPlugins(args []string) {
 }
 
 func runAPI(args []string) {
-	fs := flag.NewFlagSet("api", flag.ExitOnError)
-	action := fs.String("action", "serve", "Action: serve")
-	configPath := fs.String("config", config.ResolveConfigPath(), "Config file path")
-	fs.Parse(args)
+	flagSet := flag.NewFlagSet("api", flag.ExitOnError)
+	action := flagSet.String("action", "serve", "Action: serve")
+	configPath := flagSet.String("config", config.ResolveConfigPath(), "Config file path")
+	flagSet.Parse(args)
 
 	if *action != "serve" {
 		exitErr(fmt.Errorf("unknown action: %s", *action))
@@ -412,14 +416,45 @@ func runAPI(args []string) {
 	if !cfg.API.Enabled {
 		exitErr(errors.New("api is disabled in config"))
 	}
+	var uiFS fs.FS
+	if cfg.UI.Enabled {
+		uiFS, err = web.DistFS()
+		if err != nil {
+			exitErr(fmt.Errorf("load embedded ui: %w", err))
+		}
+	}
 
+	serveAPI(cfg, *configPath, uiFS)
+}
+
+func runUI(args []string) {
+	flagSet := flag.NewFlagSet("ui", flag.ExitOnError)
+	configPath := flagSet.String("config", config.ResolveConfigPath(), "Config file path")
+	flagSet.Parse(args)
+
+	cfg, err := config.Load(*configPath)
+	if err != nil {
+		exitErr(err)
+	}
+	cfg.API.Enabled = true
+	cfg.UI.Enabled = true
+
+	uiFS, err := web.DistFS()
+	if err != nil {
+		exitErr(fmt.Errorf("load embedded ui: %w", err))
+	}
+
+	serveAPI(cfg, *configPath, uiFS)
+}
+
+func serveAPI(cfg config.Config, configPath string, uiFS fs.FS) {
 	logger := logging.NewLogger(cfg.Logging.Level)
 	store := state.NewStore(cfg.StateDir(), cfg.RunsDir(), cfg.MemoryDir(), cfg.LogsDir(), cfg.ArtifactsDir())
 	if err := store.InitDirs(); err != nil {
 		exitErr(err)
 	}
 
-	rootDir, err := filepath.Abs(filepath.Dir(*configPath))
+	rootDir, err := filepath.Abs(filepath.Dir(configPath))
 	if err != nil {
 		rootDir = ""
 	}
@@ -432,7 +467,7 @@ func runAPI(args []string) {
 			ID:         wsID,
 			Name:       wsID,
 			Root:       rootDir,
-			ConfigPath: *configPath,
+			ConfigPath: configPath,
 		}}
 	}
 	var hubManager *hub.Manager
@@ -456,6 +491,7 @@ func runAPI(args []string) {
 		Auth:     authConfig,
 		Config:   cfg,
 		RootDir:  rootDir,
+		UIFS:     uiFS,
 	}
 
 	if cfg.Loop.StopConditions.MaxHeartbeatSeconds > 0 {
@@ -468,6 +504,9 @@ func runAPI(args []string) {
 	}
 	addr := net.JoinHostPort(cfg.API.Host, fmt.Sprintf("%d", cfg.API.Port))
 	logger.Info("api server starting", "route", "/", "status", "starting", "latency_ms", 0, "addr", addr)
+	if uiFS != nil {
+		logger.Info("ui embedded", "route", "/", "status", "enabled", "latency_ms", 0, "addr", addr)
+	}
 	if err := http.ListenAndServe(addr, server.Handler()); err != nil {
 		exitErr(err)
 	}

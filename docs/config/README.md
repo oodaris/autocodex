@@ -64,8 +64,8 @@ Local API server configuration.
 ### `ui`
 UI origin and enablement.
 
-- `enabled`: toggle UI integration
-- `origin`: UI base URL (e.g. `http://localhost:5173`)
+- `enabled`: serve the embedded UI when running `autocodex api`
+- `origin`: UI base URL for CORS when running a separate dev server (e.g. `http://localhost:5173`)
 
 ### `beads`
 Beads integration.

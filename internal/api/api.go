@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"io/fs"
 	"log/slog"
 	"net/http"
 	"os"
@@ -25,6 +26,7 @@ type Server struct {
 	Auth     *AuthConfig
 	Config   config.Config
 	RootDir  string
+	UIFS     fs.FS
 }
 
 type RunControlRequest struct {
@@ -68,6 +70,9 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("/hub/workspaces/", s.handleHubWorkspace)
 	mux.HandleFunc("/terminal/sessions", s.handleTerminalSessions)
 	mux.HandleFunc("/terminal/sessions/", s.handleTerminalSession)
+	if s.UIFS != nil {
+		mux.Handle("/", uiHandler(s.UIFS))
+	}
 
 	handler := http.Handler(mux)
 	if s.Auth != nil && s.Auth.Enabled {

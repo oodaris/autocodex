@@ -100,7 +100,15 @@ autocodex snapshot 20260115T142253Z-4a4ae121 --reason "handoff"
 autocodex api --config autocodex.yaml
 ```
 
-## Start the UI (optional)
+## Start the UI (embedded)
+
+```bash
+autocodex ui --config autocodex.yaml
+```
+
+This starts the API server and serves the embedded production UI on the same port.
+
+## Start the UI dev server (optional)
 
 ```bash
 cd web

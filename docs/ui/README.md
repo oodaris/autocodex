@@ -1,5 +1,13 @@
 # UI usage
 
+## Embedded UI
+
+Run the embedded production UI and API together:
+
+```bash
+autocodex ui
+```
+
 ## Local development
 
 1. Start the local API (via `autocodex run` or by running the API command if you prefer).
@@ -67,6 +75,16 @@ Vercel serves a static build of the UI. The API must be reachable from the brows
 - Environment variable: `VITE_API_BASE_URL` (point to a reachable autocodex API)
 
 > Note: `127.0.0.1` only works for local development. Use a LAN host or a hosted API for remote access.
+
+## Embedded UI build
+
+The production UI is embedded into the autocodex binary. When building from source,
+run the UI build first so `web/dist` exists:
+
+```bash
+npm ci --prefix web
+npm run build --prefix web
+```
 
 ## API auth
 

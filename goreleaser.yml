@@ -5,6 +5,8 @@ project_name: autocodex
 before:
   hooks:
     - go mod tidy
+    - npm ci --prefix web
+    - npm run build --prefix web
 
 builds:
   - id: autocodex

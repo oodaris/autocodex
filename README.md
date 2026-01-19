@@ -85,11 +85,19 @@ autocodex status --latest
 # start the local API
 autocodex api
 
+# start the embedded UI + API
+autocodex ui
+
 # snapshot a run
 autocodex snapshot 20260115T142253Z-4a4ae121 --reason "handoff"
 ```
 
-**Optional UI**
+**UI (embedded)**
+```bash
+autocodex ui
+```
+
+**UI dev server (Vite)**
 ```bash
 cd web
 npm install
@@ -150,7 +158,14 @@ To run autocodex in an agent environment:
 - Optional: Beads (`bd`) if you want task tracking
 
 ## UI usage
-See `docs/ui/README.md` for local usage and Vercel deployment notes.
+`autocodex ui` serves the embedded production UI and starts the API server.
+See `docs/ui/README.md` for local dev + Vercel deployment notes.
+
+Building from source requires a UI build before Go compile:
+```bash
+npm ci --prefix web
+npm run build --prefix web
+```
 
 ## Plugins
 Plugins are external processes described by `plugin.yaml`. A sample plugin lives in `plugins/sample-summarizer/`.
