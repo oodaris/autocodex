@@ -40,9 +40,30 @@ sudo mv autocodex /usr/local/bin/autocodex
 - Go 1.22+
 - Codex CLI on PATH (`codex --version`)
 
-**Initialize** (creates `autocodex.yaml` if missing)
+### Choose your setup
+
+We ship two setup commands so open‑source users can choose between a minimal
+footprint and a full autonomy experience.
+
+**Initialize** (minimal setup)
+- Creates `autocodex.yaml` if missing.
+- Creates local state + memory docs under `.autocodex/`.
+- Best when you want to supply your own templates/skills or keep autonomy off.
+
 ```bash
 autocodex init
+```
+
+**Bootstrap** (full autonomy out of the box)
+- Creates `autocodex.yaml` if missing.
+- Writes autonomy templates + schemas into `docs/`.
+- Writes a minimal skill pack into `skills/` so autonomy can run immediately.
+- Does **not** overwrite existing files unless you pass `--force`.
+- If `bd` is missing, bead tracking is skipped with a warning.
+- Best for new contributors or repos that want autonomy by default.
+
+```bash
+autocodex bootstrap
 ```
 
 **Run a task** (shortest command)

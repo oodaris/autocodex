@@ -38,6 +38,10 @@ Skill resolution settings.
 - `paths`: list of skill directories
 - `allowlist`, `denylist`: optional filters
 
+Note: `autocodex bootstrap` writes a minimal skill pack into `skills/` and
+sets `skills.paths` to `["skills"]` in the default config. If you want to use
+shared or external skills, add additional paths here.
+
 ### `plugins`
 External plugin settings.
 

@@ -15,6 +15,12 @@ func (c *Controller) createBeads(tasksFile TasksFile) error {
 		}
 		return nil
 	}
+	if !bdAvailable() {
+		if c.Logger != nil {
+			c.Logger.Warn("bd not found; skipping bead creation")
+		}
+		return nil
+	}
 	if len(tasksFile.Tasks) == 0 {
 		return fmt.Errorf("no tasks to create")
 	}
@@ -153,6 +159,11 @@ func runBD(args ...string) (string, error) {
 		return stdout.String(), fmt.Errorf("bd %s failed: %w; stderr: %s", strings.Join(args, " "), err, stderr.String())
 	}
 	return stdout.String(), nil
+}
+
+func bdAvailable() bool {
+	_, err := exec.LookPath("bd")
+	return err == nil
 }
 
 func writeDescription(task Task) (string, error) {

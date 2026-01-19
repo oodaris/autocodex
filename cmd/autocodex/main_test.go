@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/oodaris/autocodex/internal/config"
 	"github.com/oodaris/autocodex/internal/state"
 )
 
@@ -120,6 +121,154 @@ func TestLatestRunID(t *testing.T) {
 	}
 	if id == "" {
 		t.Fatalf("expected run id")
+	}
+}
+
+func TestBootstrapAutonomyAssets(t *testing.T) {
+	base := t.TempDir()
+	cfg := config.Config{
+		Autonomy: config.AutonomyConfig{
+			Enabled:       true,
+			SpecTemplate:  filepath.Join(base, "docs/specs/TEMPLATE.md"),
+			PlanTemplate:  filepath.Join(base, "docs/plans/TEMPLATE.md"),
+			TasksSchema:   filepath.Join(base, "docs/contracts/autonomy-tasks.schema.json"),
+			ActionsSchema: filepath.Join(base, "docs/contracts/autonomy-actions.schema.json"),
+		},
+	}
+	if err := bootstrapAutonomyAssets(cfg, false); err != nil {
+		t.Fatalf("bootstrap autonomy assets: %v", err)
+	}
+	spec, err := os.ReadFile(cfg.Autonomy.SpecTemplate)
+	if err != nil {
+		t.Fatalf("read spec template: %v", err)
+	}
+	if !strings.Contains(string(spec), "# <spec-title>") {
+		t.Fatalf("unexpected spec template content")
+	}
+	actions, err := os.ReadFile(cfg.Autonomy.ActionsSchema)
+	if err != nil {
+		t.Fatalf("read actions schema: %v", err)
+	}
+	if !strings.Contains(string(actions), "\"autocodex autonomy actions\"") {
+		t.Fatalf("unexpected actions schema content")
+	}
+}
+
+func TestBootstrapSkills(t *testing.T) {
+	base := t.TempDir()
+	root := filepath.Join(base, "skills")
+	if err := bootstrapSkills(root, false); err != nil {
+		t.Fatalf("bootstrap skills: %v", err)
+	}
+	path := filepath.Join(root, "core-qna-synthesis", "SKILL.md")
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read skill: %v", err)
+	}
+	if !strings.Contains(string(data), "core-qna-synthesis") {
+		t.Fatalf("unexpected skill content")
+	}
+}
+
+func TestEnsureConfigEmbeddedFallback(t *testing.T) {
+	base := t.TempDir()
+	cwd, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("get wd: %v", err)
+	}
+	if err := os.Chdir(base); err != nil {
+		t.Fatalf("chdir: %v", err)
+	}
+	defer func() {
+		_ = os.Chdir(cwd)
+	}()
+
+	path := filepath.Join(base, "autocodex.yaml")
+	if err := ensureConfig(path); err != nil {
+		t.Fatalf("ensure config: %v", err)
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read config: %v", err)
+	}
+	if !strings.Contains(string(data), "autonomy:") {
+		t.Fatalf("expected autonomy section in embedded config")
+	}
+	if !strings.Contains(string(data), "skills:") {
+		t.Fatalf("expected skills section in embedded config")
+	}
+}
+
+func TestEmbeddedConfigMatchesExample(t *testing.T) {
+	path := filepath.Clean(filepath.Join("..", "..", "config.example.yaml"))
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read config.example.yaml: %v", err)
+	}
+	if string(data) != string(embeddedConfigExample) {
+		t.Fatalf("embedded config does not match config.example.yaml")
+	}
+}
+
+func TestBootstrapRepoEndToEnd(t *testing.T) {
+	base := t.TempDir()
+	cwd, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("get wd: %v", err)
+	}
+	if err := os.Chdir(base); err != nil {
+		t.Fatalf("chdir: %v", err)
+	}
+	defer func() {
+		_ = os.Chdir(cwd)
+	}()
+
+	if err := bootstrapRepo("autocodex.yaml", false); err != nil {
+		t.Fatalf("bootstrap repo: %v", err)
+	}
+
+	expectedFiles := []string{
+		"autocodex.yaml",
+		filepath.Join("skills", "core-qna-synthesis", "SKILL.md"),
+		filepath.Join("skills", "core-holistic-planning-and-tracking", "SKILL.md"),
+		filepath.Join("skills", "core-ask-questions-if-underspecified", "SKILL.md"),
+		filepath.Join("docs", "specs", "TEMPLATE.md"),
+		filepath.Join("docs", "plans", "TEMPLATE.md"),
+		filepath.Join("docs", "contracts", "autonomy-tasks.schema.json"),
+		filepath.Join("docs", "contracts", "autonomy-actions.schema.json"),
+		filepath.Join(".autocodex", "memory", "TODO.md"),
+	}
+	for _, path := range expectedFiles {
+		if _, err := os.Stat(path); err != nil {
+			t.Fatalf("expected %s to exist: %v", path, err)
+		}
+	}
+}
+
+func TestWriteFileIfMissingForce(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "docs/specs/TEMPLATE.md")
+	if err := writeFileIfMissing(path, []byte("first"), false); err != nil {
+		t.Fatalf("write file: %v", err)
+	}
+	if err := writeFileIfMissing(path, []byte("second"), false); err != nil {
+		t.Fatalf("write file without force: %v", err)
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read file: %v", err)
+	}
+	if string(data) != "first" {
+		t.Fatalf("expected file to remain unchanged")
+	}
+	if err := writeFileIfMissing(path, []byte("third"), true); err != nil {
+		t.Fatalf("write file with force: %v", err)
+	}
+	data, err = os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read file: %v", err)
+	}
+	if string(data) != "third" {
+		t.Fatalf("expected file to be overwritten")
 	}
 }
 

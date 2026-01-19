@@ -101,27 +101,33 @@ func (c *Controller) applyActions(beadID string, actions *Actions) (string, bool
 	}
 
 	if c.Config.Beads.AutoUpdate {
-		if actions.Updates != nil {
-			for _, update := range actions.Updates.Beads {
-				id := sanitizeBeadID(update.ID)
-				if id == "" {
-					continue
-				}
-				if err := updateBeadStatus(id, update.Status); err != nil {
-					return stopReason, gateFailure, updatedCurrent, err
-				}
-				if beadID != "" && id == beadID {
-					updatedCurrent = true
+		if !bdAvailable() {
+			if c.Logger != nil {
+				c.Logger.Warn("bd not found; skipping bead updates")
+			}
+		} else {
+			if actions.Updates != nil {
+				for _, update := range actions.Updates.Beads {
+					id := sanitizeBeadID(update.ID)
+					if id == "" {
+						continue
+					}
+					if err := updateBeadStatus(id, update.Status); err != nil {
+						return stopReason, gateFailure, updatedCurrent, err
+					}
+					if beadID != "" && id == beadID {
+						updatedCurrent = true
+					}
 				}
 			}
-		}
 
-		if gateFailure && beadID != "" {
-			status := "blocked"
-			if actions.Gates != nil && actions.Gates.ReviewRequired {
-				status = "review"
+			if gateFailure && beadID != "" {
+				status := "blocked"
+				if actions.Gates != nil && actions.Gates.ReviewRequired {
+					status = "review"
+				}
+				_ = updateBeadStatus(beadID, status)
 			}
-			_ = updateBeadStatus(beadID, status)
 		}
 	}
 

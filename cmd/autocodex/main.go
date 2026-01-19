@@ -42,6 +42,8 @@ func main() {
 	}
 
 	switch cmd {
+	case "bootstrap":
+		runBootstrap(os.Args[2:])
 	case "init":
 		runInit(os.Args[2:])
 	case "run":
@@ -72,13 +74,13 @@ func main() {
 
 func usage() {
 	fmt.Println("Usage: autocodex <command> [args]")
-	fmt.Println("Commands: init, run, once, resume, kill, snapshot, status, beads, plugins, api, config")
+	fmt.Println("Commands: bootstrap, init, run, once, resume, kill, snapshot, status, beads, plugins, api, config")
 	fmt.Println("Shortcut: autocodex \"<task>\" (implicit run with --task)")
 }
 
 func isCommand(value string) bool {
 	switch value {
-	case "init", "run", "once", "resume", "kill", "snapshot", "status", "beads", "plugins", "api", "config":
+	case "bootstrap", "init", "run", "once", "resume", "kill", "snapshot", "status", "beads", "plugins", "api", "config":
 		return true
 	default:
 		return false
@@ -710,7 +712,11 @@ func ensureConfig(path string) error {
 	examplePath := filepath.Join("config.example.yaml")
 	data, err := os.ReadFile(examplePath)
 	if err != nil {
-		return fmt.Errorf("read config.example.yaml: %w", err)
+		if errors.Is(err, os.ErrNotExist) {
+			data = embeddedConfigExample
+		} else {
+			return fmt.Errorf("read config.example.yaml: %w", err)
+		}
 	}
 	if err := os.WriteFile(path, data, 0o644); err != nil {
 		return fmt.Errorf("write %s: %w", path, err)
