@@ -221,6 +221,9 @@ export function parseMemoryDoc(value: unknown): MemoryDocDetail {
 }
 
 export function parseRuns(value: unknown): Run[] {
+  if (value == null) {
+    return []
+  }
   if (!Array.isArray(value)) {
     throw new Error('Invalid runs payload: expected array')
   }

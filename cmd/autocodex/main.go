@@ -525,11 +525,22 @@ func serveAPI(cfg config.Config, configPath string, uiFS fs.FS) {
 	}
 	addr := net.JoinHostPort(cfg.API.Host, fmt.Sprintf("%d", cfg.API.Port))
 	baseURL := fmt.Sprintf("http://%s:%d", hostForLog(cfg.API.Host), cfg.API.Port)
-	logger.Info("api server starting", "route", "/", "status", "starting", "latency_ms", 0, "addr", addr, "url", baseURL)
+	listener, err := net.Listen("tcp", addr)
+	if err != nil {
+		if isAddrInUse(err) {
+			logger.Error("api bind failed", "addr", addr, "error", err.Error(), "hint", "stop the existing process or change api.port in autocodex.yaml")
+		}
+		exitErr(err)
+	}
+	logger.Info("api server starting", "route", "/", "status", "starting", "latency_ms", 0, "addr", addr, "url", baseURL, "config", configPath)
 	if uiFS != nil {
 		logger.Info("ui embedded", "route", "/", "status", "enabled", "latency_ms", 0, "addr", addr, "url", baseURL)
 	}
-	if err := http.ListenAndServe(addr, server.Handler()); err != nil {
+	logger.Info("api endpoints", "health", baseURL+"/health", "runs", baseURL+"/runs", "memory", baseURL+"/memory")
+	if uiFS != nil {
+		logger.Info("ui ready", "url", baseURL, "hub", baseURL+"/hub")
+	}
+	if err := http.Serve(listener, server.Handler()); err != nil {
 		exitErr(err)
 	}
 }
@@ -542,6 +553,14 @@ func hostForLog(host string) string {
 	default:
 		return trimmed
 	}
+}
+
+func isAddrInUse(err error) bool {
+	if err == nil {
+		return false
+	}
+	lower := strings.ToLower(err.Error())
+	return strings.Contains(lower, "address already in use")
 }
 
 type RunStatus struct {
