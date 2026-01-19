@@ -57,7 +57,8 @@ func (c *Controller) generateTasksFile(ctx context.Context, task, slug, planPath
 		return "", TasksFile{}, fmt.Errorf("create tasks dir: %w", err)
 	}
 
-	prompt, err := c.buildTasksPrompt(task, string(planContent), string(schemaContent), planPath, tasksPath)
+	beadPrefix := resolveBeadPrefix()
+	prompt, err := c.buildTasksPrompt(task, string(planContent), string(schemaContent), planPath, tasksPath, beadPrefix)
 	if err != nil {
 		return "", TasksFile{}, err
 	}
@@ -74,7 +75,7 @@ func (c *Controller) generateTasksFile(ctx context.Context, task, slug, planPath
 			if c.Logger != nil {
 				c.Logger.Warn("tasks generation requested follow-up, retrying without skill")
 			}
-			fallbackPrompt := buildFallbackTasksPrompt(task, string(planContent), string(schemaContent), planPath, tasksPath)
+			fallbackPrompt := buildFallbackTasksPrompt(task, string(planContent), string(schemaContent), planPath, tasksPath, beadPrefix)
 			outputCtx, cancel = context.WithTimeout(ctx, time.Duration(c.Config.Codex.TimeoutSeconds)*time.Second)
 			if c.Config.Codex.OutputLast {
 				outputCtx = codex.WithOutputPath(outputCtx, tasksPath)
@@ -85,7 +86,7 @@ func (c *Controller) generateTasksFile(ctx context.Context, task, slug, planPath
 		}
 		if err != nil {
 			if strings.Contains(err.Error(), "requires follow-up") {
-				return c.writeFallbackTasks(task, planPath, tasksPath)
+				return c.writeFallbackTasks(task, planPath, tasksPath, beadPrefix)
 			}
 			return "", TasksFile{}, fmt.Errorf("tasks generation failed: %w", err)
 		}
@@ -96,7 +97,7 @@ func (c *Controller) generateTasksFile(ctx context.Context, task, slug, planPath
 		if c.Logger != nil {
 			c.Logger.Warn("tasks JSON invalid, retrying without skill")
 		}
-		fallbackPrompt := buildFallbackTasksPrompt(task, string(planContent), string(schemaContent), planPath, tasksPath)
+		fallbackPrompt := buildFallbackTasksPrompt(task, string(planContent), string(schemaContent), planPath, tasksPath, beadPrefix)
 		outputCtx, cancel = context.WithTimeout(ctx, time.Duration(c.Config.Codex.TimeoutSeconds)*time.Second)
 		if c.Config.Codex.OutputLast {
 			outputCtx = codex.WithOutputPath(outputCtx, tasksPath)
@@ -105,7 +106,7 @@ func (c *Controller) generateTasksFile(ctx context.Context, task, slug, planPath
 		cancel()
 		if err != nil {
 			if strings.Contains(err.Error(), "requires follow-up") {
-				return c.writeFallbackTasks(task, planPath, tasksPath)
+				return c.writeFallbackTasks(task, planPath, tasksPath, beadPrefix)
 			}
 			return "", TasksFile{}, fmt.Errorf("tasks generation failed: %w", err)
 		}
@@ -113,7 +114,7 @@ func (c *Controller) generateTasksFile(ctx context.Context, task, slug, planPath
 	}
 	if err != nil {
 		if usedFallback {
-			return c.writeFallbackTasks(task, planPath, tasksPath)
+			return c.writeFallbackTasks(task, planPath, tasksPath, beadPrefix)
 		}
 		return "", TasksFile{}, err
 	}
@@ -129,7 +130,7 @@ func (c *Controller) generateTasksFile(ctx context.Context, task, slug, planPath
 	if len(tasksFile.Tasks) == 0 {
 		return "", TasksFile{}, fmt.Errorf("no tasks returned by generator")
 	}
-	normalizeTasksFile(&tasksFile)
+	normalizeTasksFile(&tasksFile, beadPrefix)
 
 	normalizedPayload, err := json.MarshalIndent(tasksFile, "", "  ")
 	if err != nil {
@@ -146,9 +147,13 @@ func (c *Controller) generateTasksFile(ctx context.Context, task, slug, planPath
 	return tasksPath, tasksFile, nil
 }
 
-func normalizeTasksFile(tasksFile *TasksFile) {
+func normalizeTasksFile(tasksFile *TasksFile, prefix string) {
 	if tasksFile == nil {
 		return
+	}
+	prefix = sanitizeBeadPrefix(prefix)
+	if prefix == "" {
+		prefix = defaultBeadPrefix
 	}
 	idMap := map[string]string{}
 	for i := range tasksFile.Tasks {
@@ -156,7 +161,7 @@ func normalizeTasksFile(tasksFile *TasksFile) {
 		if original == "" {
 			continue
 		}
-		normalized := normalizeBeadID(original)
+		normalized := normalizeTaskID(original, prefix)
 		if normalized != original {
 			idMap[original] = normalized
 			tasksFile.Tasks[i].ID = normalized
@@ -177,7 +182,7 @@ func normalizeTasksFile(tasksFile *TasksFile) {
 			if mapped, ok := idMap[dep]; ok {
 				dep = mapped
 			}
-			dep = normalizeBeadID(dep)
+			dep = normalizeTaskID(dep, prefix)
 			if dep == "" || dep == tasksFile.Tasks[i].ID {
 				continue
 			}
@@ -191,7 +196,7 @@ func normalizeTasksFile(tasksFile *TasksFile) {
 	}
 }
 
-func (c *Controller) buildTasksPrompt(task, planContent, schemaContent, planPath, tasksPath string) (string, error) {
+func (c *Controller) buildTasksPrompt(task, planContent, schemaContent, planPath, tasksPath, beadPrefix string) (string, error) {
 	skill, err := c.Skills.LoadSkill("core-holistic-planning-and-tracking")
 	if err != nil {
 		return "", fmt.Errorf("load skill core-holistic-planning-and-tracking: %w", err)
@@ -225,7 +230,9 @@ func (c *Controller) buildTasksPrompt(task, planContent, schemaContent, planPath
 	b.WriteString("Output requirements:\n")
 	b.WriteString("- Produce JSON that validates against the schema.\n")
 	b.WriteString("- Use version \"1.0\" and RFC3339 timestamps.\n")
-	b.WriteString("- Use bead IDs in the form autocodex-<short> for tasks (no extra dashes in <short>).\n")
+	b.WriteString("- Use bead IDs in the form ")
+	b.WriteString(beadIDPattern(beadPrefix))
+	b.WriteString(" for tasks (no extra dashes in <short>).\n")
 	b.WriteString("- Fill files, dependencies, acceptance_criteria, tests, docs when known.\n")
 	b.WriteString("- Return JSON only (no code fences).\n")
 	b.WriteString("- source_plan should be: ")
@@ -237,7 +244,7 @@ func (c *Controller) buildTasksPrompt(task, planContent, schemaContent, planPath
 	return b.String(), nil
 }
 
-func buildFallbackTasksPrompt(task, planContent, schemaContent, planPath, tasksPath string) string {
+func buildFallbackTasksPrompt(task, planContent, schemaContent, planPath, tasksPath, beadPrefix string) string {
 	var b strings.Builder
 	b.WriteString("autocodex autonomy task:\n")
 	b.WriteString(strings.TrimSpace(task))
@@ -259,7 +266,9 @@ func buildFallbackTasksPrompt(task, planContent, schemaContent, planPath, tasksP
 	b.WriteString("Output requirements:\n")
 	b.WriteString("- Produce JSON that validates against the schema.\n")
 	b.WriteString("- Use version \"1.0\" and RFC3339 timestamps.\n")
-	b.WriteString("- Use bead IDs in the form autocodex-<short> for tasks (no extra dashes in <short>).\n")
+	b.WriteString("- Use bead IDs in the form ")
+	b.WriteString(beadIDPattern(beadPrefix))
+	b.WriteString(" for tasks (no extra dashes in <short>).\n")
 	b.WriteString("- Fill files, dependencies, acceptance_criteria, tests, docs when known.\n")
 	b.WriteString("- Return JSON only (no code fences).\n")
 	b.WriteString("- source_plan should be: ")
@@ -271,14 +280,14 @@ func buildFallbackTasksPrompt(task, planContent, schemaContent, planPath, tasksP
 	return b.String()
 }
 
-func (c *Controller) writeFallbackTasks(task, planPath, tasksPath string) (string, TasksFile, error) {
+func (c *Controller) writeFallbackTasks(task, planPath, tasksPath, beadPrefix string) (string, TasksFile, error) {
 	fallback := TasksFile{
 		Version:     "1.0",
 		GeneratedAt: time.Now().UTC().Format(time.RFC3339),
 		SourcePlan:  planPath,
 		Tasks: []Task{
 			{
-				ID:                 "autocodex-fallback",
+				ID:                 fallbackBeadID(beadPrefix),
 				Title:              fmt.Sprintf("Execute task: %s", strings.TrimSpace(task)),
 				Goal:               "Complete the requested task with available information.",
 				Files:              []string{},
