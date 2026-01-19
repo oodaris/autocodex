@@ -12,6 +12,17 @@ bd close <id>         # Complete work
 bd sync               # Sync with git
 ```
 
+## Autocodex defaults (for agents)
+
+Use `autocodex bootstrap` when you want autonomy ready immediately.
+- Creates `autocodex.yaml` if missing (falls back to the embedded config if `config.example.yaml` is absent).
+- Creates autonomy templates/schemas in `docs/`.
+- Writes a minimal skill pack to `skills/` and expects `skills.paths` to include `skills`.
+- Does not overwrite existing files unless `--force` is provided.
+- If `bd` is missing, bead creation/updates are skipped with a warning.
+
+Use `autocodex init` for a minimal setup (config + `.autocodex/` only).
+
 ## Landing the Plane (Session Completion)
 
 **When ending a work session**, you MUST complete ALL steps below. Work is NOT complete until `git push` succeeds.
@@ -37,4 +48,3 @@ bd sync               # Sync with git
 - NEVER stop before pushing - that leaves work stranded locally
 - NEVER say "ready to push when you are" - YOU must push
 - If push fails, resolve and retry until it succeeds
-

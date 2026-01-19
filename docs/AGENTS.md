@@ -49,10 +49,12 @@ Plan → Contracts → Code → Tests → Docs → Rollout
 - **State**: Repo-local markdown memory + JSONL logs.
 
 ## 2.1) Agent setup (minimum)
-- Ensure `autocodex.yaml` exists (`autocodex init` creates one).
+- For autonomy-ready setup, run `autocodex bootstrap` (creates config, templates/schemas, and a minimal skill pack).
+- For minimal setup, run `autocodex init` (config + `.autocodex/` only).
+- If `config.example.yaml` is missing, bootstrap falls back to the embedded config.
 - Codex CLI available on PATH or set `codex.cli_path` in config.
-- Skill paths configured under `skills.paths`.
-- Optional: `bd` installed for bead tracking.
+- Skill paths configured under `skills.paths` (bootstrap writes skills into `skills/`).
+- Optional: `bd` installed for bead tracking (missing `bd` is a warning; autonomy still runs).
 
 Common start:
 ```bash
