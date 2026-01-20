@@ -11,6 +11,7 @@ permissions: read-all
 
 jobs:
   analysis:
+    if: ${{ github.event.repository.private == false || secrets.SCORECARD_READ_TOKEN != '' }}
     permissions:
       security-events: write
       id-token: write
@@ -28,6 +29,7 @@ jobs:
           results_file: results.sarif
           results_format: sarif
           publish_results: true
+          repo_token: ${{ secrets.SCORECARD_READ_TOKEN || github.token }}
       - name: Upload results
         uses: actions/upload-artifact@v4
         with:
