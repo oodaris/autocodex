@@ -19,7 +19,8 @@ Concise contributor guide for autocodex. Full workflow: `docs/AGENTS.md`.
 
 ## Build & test (planned)
 - Go tests: `go test ./...`
-- Go lint: `golangci-lint run ./...`
+- Go lint: `staticcheck ./...`
+- Go vulns: `govulncheck ./...`
 - UI dev/build: `cd web && npm i && npm run dev|build`
 
 ## Engineering principles
