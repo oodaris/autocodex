@@ -70,8 +70,9 @@ func (o *Orchestrator) Run(ctx context.Context) (*state.Run, error) {
 		"route", "orchestrator.run",
 		"bead_id", beadID,
 	)
+	runLogger := logger.With("stage", "run")
 
-	logger.Info("run started", "status", "started", "latency_ms", 0)
+	runLogger.Info("run started", "status", "started", "latency_ms", 0)
 	_ = o.Store.SaveRunControl(state.RunControl{
 		RunID:     run.ID,
 		Status:    "running",
@@ -96,7 +97,7 @@ func (o *Orchestrator) Run(ctx context.Context) (*state.Run, error) {
 		for _, phase := range phases {
 			if stop, reason, status, action := o.shouldStop(ctx, run, startTime, lastProgress, consecutiveFailures); stop {
 				o.finalizeRun(run, status, &reason, nil, action)
-				logger.Info("run stopped", "status", status, "reason", reason, "latency_ms", 0)
+				runLogger.Info("run stopped", "status", status, "reason", reason, "latency_ms", 0)
 				_ = o.Store.AppendEvent(state.RunEvent{
 					ID:      eventID("run-stopped"),
 					RunID:   run.ID,
@@ -116,7 +117,8 @@ func (o *Orchestrator) Run(ctx context.Context) (*state.Run, error) {
 			_ = o.Store.TouchRunHeartbeat(run.ID, os.Getpid())
 
 			phaseStart := time.Now().UTC()
-			logger.Info("phase start", "phase", phase, "status", "started", "latency_ms", 0)
+			phaseLogger := logger.With("stage", phase)
+			phaseLogger.Info("phase start", "phase", phase, "status", "started", "latency_ms", 0)
 			_ = o.Store.AppendEvent(state.RunEvent{
 				ID:      eventID("phase-start"),
 				RunID:   run.ID,
@@ -129,7 +131,7 @@ func (o *Orchestrator) Run(ctx context.Context) (*state.Run, error) {
 
 			feedbackText, feedbackMeta, err := o.gatherFeedback(run.ID)
 			if err != nil {
-				logger.Warn("feedback gather failed", "phase", phase, "error", err.Error())
+				phaseLogger.Warn("feedback gather failed", "phase", phase, "error", err.Error())
 			} else if feedbackMeta.RunID != "" {
 				_ = o.Store.SaveRunFeedback(feedbackMeta)
 			}
@@ -149,9 +151,9 @@ func (o *Orchestrator) Run(ctx context.Context) (*state.Run, error) {
 				feedbackSummaryText,
 			)
 			if err := o.writeNamedArtifact(run.ID, fmt.Sprintf("%s-prompt-metrics.txt", phase), metrics); err != nil {
-				logger.Warn("prompt metrics write failed", "phase", phase, "error", err.Error())
+				phaseLogger.Warn("prompt metrics write failed", "phase", phase, "error", err.Error())
 			}
-			logger.Info(
+			phaseLogger.Info(
 				"phase prompt metrics",
 				"phase", phase,
 				"prompt_bytes", promptBytes,
@@ -165,11 +167,11 @@ func (o *Orchestrator) Run(ctx context.Context) (*state.Run, error) {
 					o.Config.Loop.PromptGuardrails.ReviewMaxBytes,
 				)
 				if err := o.writeNamedArtifact(run.ID, "review-skipped.txt", skipMsg); err != nil {
-					logger.Warn("review skipped artifact write failed", "phase", phase, "error", err.Error())
+					phaseLogger.Warn("review skipped artifact write failed", "phase", phase, "error", err.Error())
 				}
 				phaseFinished := time.Now().UTC()
 				if err := o.appendPhaseSummary(run.ID, phase, phaseStart, phaseFinished, skipMsg); err != nil {
-					logger.Warn("phase summary append failed", "phase", phase, "error", err.Error())
+					phaseLogger.Warn("phase summary append failed", "phase", phase, "error", err.Error())
 				}
 				if feedbackMeta.RunID != "" {
 					feedbackMeta.LastOutputSummary = fmt.Sprintf("phase %s output bytes=%d", phase, len(skipMsg))
@@ -177,7 +179,7 @@ func (o *Orchestrator) Run(ctx context.Context) (*state.Run, error) {
 					_ = o.Store.SaveRunFeedback(feedbackMeta)
 				}
 				latency := time.Since(phaseStart).Milliseconds()
-				logger.Info("phase complete", "phase", phase, "status", "skipped", "latency_ms", latency)
+				phaseLogger.Info("phase complete", "phase", phase, "status", "skipped", "latency_ms", latency)
 				_ = o.Store.AppendEvent(state.RunEvent{
 					ID:      eventID("phase-complete"),
 					RunID:   run.ID,
@@ -213,20 +215,20 @@ func (o *Orchestrator) Run(ctx context.Context) (*state.Run, error) {
 			if file, err := os.Create(stdoutPath); err == nil {
 				stdoutFile = file
 			} else {
-				logger.Warn("stdout stream open failed", "phase", phase, "error", err.Error())
+				phaseLogger.Warn("stdout stream open failed", "phase", phase, "error", err.Error())
 			}
 			if file, err := os.Create(stderrPath); err == nil {
 				stderrFile = file
 				streamStderr = true
 			} else {
-				logger.Warn("stderr stream open failed", "phase", phase, "error", err.Error())
+				phaseLogger.Warn("stderr stream open failed", "phase", phase, "error", err.Error())
 			}
 			if stdoutFile != nil || stderrFile != nil {
 				phaseCtx = codex.WithOutputSinks(phaseCtx, stdoutFile, stderrFile)
 			}
 			phaseCtx = codex.WithPIDReporter(phaseCtx, func(pid int) {
-				if err := o.Store.SetRunChildPID(run.ID, pid); err != nil && logger != nil {
-					logger.Warn("child pid update failed", "phase", phase, "error", err.Error())
+				if err := o.Store.SetRunChildPID(run.ID, pid); err != nil && phaseLogger != nil {
+					phaseLogger.Warn("child pid update failed", "phase", phase, "error", err.Error())
 				}
 			})
 			result, execErr := o.Codex.Exec(phaseCtx, prompt)
@@ -237,16 +239,16 @@ func (o *Orchestrator) Run(ctx context.Context) (*state.Run, error) {
 			if stderrFile != nil {
 				_ = stderrFile.Close()
 			}
-			if err := o.Store.ClearRunChildPID(run.ID); err != nil && logger != nil {
-				logger.Warn("child pid clear failed", "phase", phase, "error", err.Error())
+			if err := o.Store.ClearRunChildPID(run.ID); err != nil && phaseLogger != nil {
+				phaseLogger.Warn("child pid clear failed", "phase", phase, "error", err.Error())
 			}
 			if execErr != nil && strings.Contains(execErr.Error(), "requires follow-up") && strings.TrimSpace(result.Stdout) != "" {
-				logger.Warn("phase requested follow-up, using available output", "phase", phase)
+				phaseLogger.Warn("phase requested follow-up, using available output", "phase", phase)
 				execErr = nil
 			}
 			if strings.TrimSpace(result.Stderr) != "" && !streamStderr {
 				if err := o.writeNamedArtifact(run.ID, fmt.Sprintf("%s-stderr.txt", phase), result.Stderr); err != nil {
-					logger.Warn("stderr artifact write failed", "phase", phase, "error", err.Error())
+					phaseLogger.Warn("stderr artifact write failed", "phase", phase, "error", err.Error())
 				}
 			}
 			rawOutput := result.Stdout
@@ -258,12 +260,12 @@ func (o *Orchestrator) Run(ctx context.Context) (*state.Run, error) {
 			}
 			if o.Config.Codex.JSONOutput && strings.TrimSpace(rawOutput) != "" {
 				if err := o.writeNamedArtifact(run.ID, fmt.Sprintf("%s-jsonl.txt", phase), rawOutput); err != nil {
-					logger.Warn("jsonl artifact write failed", "phase", phase, "error", err.Error())
+					phaseLogger.Warn("jsonl artifact write failed", "phase", phase, "error", err.Error())
 				}
 			}
 			if execErr != nil {
 				latency := time.Since(phaseStart).Milliseconds()
-				logger.Error("phase failed", "phase", phase, "error", execErr.Error(), "status", "failed", "latency_ms", latency)
+				phaseLogger.Error("phase failed", "phase", phase, "error", execErr.Error(), "status", "failed", "latency_ms", latency)
 				_ = o.Store.AppendEvent(state.RunEvent{
 					ID:      eventID("phase-failed"),
 					RunID:   run.ID,
@@ -302,11 +304,11 @@ func (o *Orchestrator) Run(ctx context.Context) (*state.Run, error) {
 			consecutiveFailures = 0
 
 			if err := o.writeArtifact(run.ID, phase, finalOutput); err != nil {
-				logger.Warn("artifact write failed", "phase", phase, "error", err.Error())
+				phaseLogger.Warn("artifact write failed", "phase", phase, "error", err.Error())
 			}
 			phaseFinished := time.Now().UTC()
 			if err := o.appendPhaseSummary(run.ID, phase, phaseStart, phaseFinished, finalOutput); err != nil {
-				logger.Warn("phase summary append failed", "phase", phase, "error", err.Error())
+				phaseLogger.Warn("phase summary append failed", "phase", phase, "error", err.Error())
 			}
 			if feedbackMeta.RunID != "" {
 				feedbackMeta.LastOutputSummary = fmt.Sprintf("phase %s output bytes=%d", phase, len(finalOutput))
@@ -315,7 +317,7 @@ func (o *Orchestrator) Run(ctx context.Context) (*state.Run, error) {
 			}
 
 			latency := time.Since(phaseStart).Milliseconds()
-			logger.Info("phase complete", "phase", phase, "status", "completed", "latency_ms", latency)
+			phaseLogger.Info("phase complete", "phase", phase, "status", "completed", "latency_ms", latency)
 			_ = o.Store.AppendEvent(state.RunEvent{
 				ID:      eventID("phase-complete"),
 				RunID:   run.ID,
@@ -334,7 +336,7 @@ func (o *Orchestrator) Run(ctx context.Context) (*state.Run, error) {
 	}
 
 	o.finalizeRun(run, "completed", nil, nil, nil)
-	logger.Info("run completed", "status", "completed", "latency_ms", 0)
+	runLogger.Info("run completed", "status", "completed", "latency_ms", 0)
 	_ = o.Store.AppendEvent(state.RunEvent{
 		ID:      eventID("run-complete"),
 		RunID:   run.ID,

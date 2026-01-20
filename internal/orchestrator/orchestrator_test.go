@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -22,6 +23,52 @@ type fakeExecutor struct {
 func (f *fakeExecutor) Exec(ctx context.Context, prompt string) (codex.ExecResult, error) {
 	f.called++
 	return codex.ExecResult{Stdout: "ok"}, nil
+}
+
+type orchestratorLogRecord struct {
+	msg   string
+	attrs map[string]any
+}
+
+type orchestratorLogStore struct {
+	mu      sync.Mutex
+	records []orchestratorLogRecord
+}
+
+type orchestratorCaptureHandler struct {
+	store *orchestratorLogStore
+	base  []slog.Attr
+}
+
+func (h *orchestratorCaptureHandler) Enabled(context.Context, slog.Level) bool {
+	return true
+}
+
+func (h *orchestratorCaptureHandler) Handle(_ context.Context, r slog.Record) error {
+	attrs := map[string]any{}
+	for _, attr := range h.base {
+		attrs[attr.Key] = attr.Value.Any()
+	}
+	r.Attrs(func(a slog.Attr) bool {
+		attrs[a.Key] = a.Value.Any()
+		return true
+	})
+	h.store.mu.Lock()
+	h.store.records = append(h.store.records, orchestratorLogRecord{msg: r.Message, attrs: attrs})
+	h.store.mu.Unlock()
+	return nil
+}
+
+func (h *orchestratorCaptureHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
+	next := make([]slog.Attr, 0, len(h.base)+len(attrs))
+	next = append(next, h.base...)
+	next = append(next, attrs...)
+	return &orchestratorCaptureHandler{store: h.store, base: next}
+}
+
+func (h *orchestratorCaptureHandler) WithGroup(name string) slog.Handler {
+	_ = name
+	return h
 }
 
 func TestGatherFeedbackIncludesSources(t *testing.T) {
@@ -83,6 +130,65 @@ func TestGatherFeedbackIncludesSources(t *testing.T) {
 	}
 	if len(meta.MemoryDocs) == 0 || len(meta.EventIDs) == 0 || len(meta.ArtifactIDs) == 0 {
 		t.Fatalf("expected feedback metadata")
+	}
+}
+
+func TestRunLoggingIncludesRunIDAndStage(t *testing.T) {
+	base := t.TempDir()
+	store := state.NewStore(
+		filepath.Join(base, "state"),
+		filepath.Join(base, "runs"),
+		filepath.Join(base, "memory"),
+		filepath.Join(base, "logs"),
+		filepath.Join(base, "artifacts"),
+	)
+	if err := store.InitDirs(); err != nil {
+		t.Fatalf("init dirs: %v", err)
+	}
+	if err := store.EnsureMemoryDocs(); err != nil {
+		t.Fatalf("ensure memory docs: %v", err)
+	}
+
+	logStore := &orchestratorLogStore{}
+	logger := slog.New(&orchestratorCaptureHandler{store: logStore})
+
+	var cfg config.Config
+	cfg.ApplyDefaults()
+	cfg.Loop.Mode = "single"
+	cfg.Loop.Phases = []string{"ideate"}
+	cfg.Codex.TimeoutSeconds = 1
+
+	exec := &fakeExecutor{}
+	orch := Orchestrator{Config: cfg, Store: store, Logger: logger, Codex: exec}
+	run, err := orch.Run(context.Background())
+	if err != nil {
+		t.Fatalf("run: %v", err)
+	}
+
+	var runStart, phaseStart *orchestratorLogRecord
+	for i := range logStore.records {
+		rec := logStore.records[i]
+		switch rec.msg {
+		case "run started":
+			runStart = &logStore.records[i]
+		case "phase start":
+			phaseStart = &logStore.records[i]
+		}
+	}
+	if runStart == nil || phaseStart == nil {
+		t.Fatalf("expected run and phase log records")
+	}
+	if runStart.attrs["run_id"] != run.ID {
+		t.Fatalf("expected run_id %s, got %v", run.ID, runStart.attrs["run_id"])
+	}
+	if runStart.attrs["stage"] != "run" {
+		t.Fatalf("expected stage run, got %v", runStart.attrs["stage"])
+	}
+	if phaseStart.attrs["run_id"] != run.ID {
+		t.Fatalf("expected phase run_id %s, got %v", run.ID, phaseStart.attrs["run_id"])
+	}
+	if phaseStart.attrs["stage"] != "ideate" {
+		t.Fatalf("expected stage ideate, got %v", phaseStart.attrs["stage"])
 	}
 }
 

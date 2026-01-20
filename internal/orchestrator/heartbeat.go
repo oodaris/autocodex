@@ -21,7 +21,7 @@ func (o *Orchestrator) heartbeatLoop(ctx context.Context, runID string, pid int)
 
 	for {
 		if err := o.Store.TouchRunHeartbeat(runID, pid); err != nil && o.Logger != nil {
-			o.Logger.Warn("heartbeat update failed", "run_id", runID, "error", err.Error())
+			o.Logger.Warn("heartbeat update failed", "stage", "heartbeat", "run_id", runID, "error", err.Error())
 		}
 		select {
 		case <-ctx.Done():

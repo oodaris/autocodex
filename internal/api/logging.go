@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -19,6 +20,10 @@ func (s *Server) log(r *http.Request, status int, start time.Time, err error) {
 		"route", r.URL.Path,
 		"status", status,
 		"latency_ms", latency,
+		"stage", "api",
+	}
+	if runID := runIDFromRequest(r); runID != "" {
+		attrs = append(attrs, "run_id", runID)
 	}
 	if workspaceID := workspaceIDFromRequest(r); workspaceID != "" {
 		attrs = append(attrs, "workspace_id", workspaceID)
@@ -27,6 +32,19 @@ func (s *Server) log(r *http.Request, status int, start time.Time, err error) {
 		attrs = append(attrs, "error", err.Error())
 	}
 	s.Logger.Info("api request", attrs...)
+}
+
+func runIDFromRequest(r *http.Request) string {
+	parts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
+	if len(parts) < 2 {
+		return ""
+	}
+	switch parts[0] {
+	case "runs", "artifacts":
+		return parts[1]
+	default:
+		return ""
+	}
 }
 
 func respondJSON(w http.ResponseWriter, status int, v interface{}) {

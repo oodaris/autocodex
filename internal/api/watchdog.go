@@ -47,6 +47,6 @@ func (w *RunWatchdog) scanOnce() {
 
 func (w *RunWatchdog) warn(msg string, args ...any) {
 	if w.Logger != nil {
-		w.Logger.Warn(msg, args...)
+		w.Logger.Warn(msg, append([]any{"stage", "watchdog"}, args...)...)
 	}
 }

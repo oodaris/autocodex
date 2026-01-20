@@ -94,6 +94,6 @@ func (o *Orchestrator) finalizeRun(
 	})
 
 	if err := o.appendRunSummary(run, stopReason, lastErr, lastAction); err != nil && o.Logger != nil {
-		o.Logger.Warn("memory summary append failed", "run_id", run.ID, "error", err.Error())
+		o.Logger.Warn("memory summary append failed", "stage", "finalize", "run_id", run.ID, "error", err.Error())
 	}
 }

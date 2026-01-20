@@ -75,7 +75,7 @@ autocodex "Add a quick summary to memory docs."
 - UI build: `cd web && npm run build`
 
 ## 4) Observability
-- Structured JSON logs with: `trace_id, tenant_id, route, status, latency_ms`.
+- Structured JSON logs with: `trace_id, tenant_id, run_id, stage, route, status, latency_ms`.
 - Log to stderr for diagnostics; stdout reserved for primary command output.
 
 ## 5) Safety
