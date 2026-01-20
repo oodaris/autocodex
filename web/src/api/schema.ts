@@ -225,6 +225,11 @@ export function parseRuns(value: unknown): Run[] {
     return []
   }
   if (!Array.isArray(value)) {
+    if (isRecord(value) && Array.isArray((value as { runs?: unknown }).runs)) {
+      const runsValue = (value as { runs: unknown }).runs
+      runsValue.forEach((entry, index) => assertRun(entry, `runs[${index}]`))
+      return runsValue as Run[]
+    }
     throw new Error('Invalid runs payload: expected array')
   }
   value.forEach((entry, index) => assertRun(entry, `runs[${index}]`))
