@@ -78,6 +78,7 @@ autocodex run --config /tmp/autocodex-low.yaml --task "Live smoke: verify strict
 Results:
 - Run ID: `20260120T011444Z-907ebbe2` (completed; 5 phases).
 - ACTIONS JSON emitted at `.autocodex/runs/20260120T011444Z-907ebbe2/artifacts/test-final.txt` with `next.type=none` and `gates.blocking=false`.
+- Verified `bd show autocodex-e36` reports status `CLOSED`.
 - Generated artifacts:
   - `docs/specs/live-smoke-verify-strict-autonomy-generate-spec.md`
   - `docs/plans/live-smoke-verify-strict-autonomy-generate-spec-plan.md`
