@@ -65,6 +65,7 @@ Extend autocodex to run a fully autonomous, bead‑driven loop: given a single t
 ### Phase F — Docs + smoke tests
 - Document autonomy mode in README + AGENTS.
 - Add smoke test for autonomy run (dry‑run mode).
+- Loop smoke test 4 harness + schema validation: `docs/plans/loop-smoke-test-4.md`.
 
 ## Risks & mitigations
 - **LLM output drift** → enforce strict `ACTIONS` schema; validate before applying.
@@ -80,3 +81,4 @@ Extend autocodex to run a fully autonomous, bead‑driven loop: given a single t
 ## Rollout/rollback
 - Feature‑flag autonomy mode (config).
 - Roll back by disabling autonomy block and using legacy run loop.
+- Rollout hook: run the loop smoke tests in `docs/plans/loop-smoke-test-4.md` before release.
