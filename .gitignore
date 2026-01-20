@@ -8,7 +8,8 @@ autocodex.yaml
 # Node
 node_modules/
 web/node_modules/
-web/dist/
+web/dist/*
+!web/dist/.gitkeep
 web/test-results/
 web/playwright-report/
 
