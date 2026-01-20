@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	"encoding/json"
 	"errors"
@@ -13,7 +14,9 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
+	"text/tabwriter"
 	"time"
 
 	"github.com/oodaris/autocodex/internal/api"
@@ -64,6 +67,8 @@ func main() {
 		runKill(os.Args[2:])
 	case "snapshot":
 		runSnapshot(os.Args[2:])
+	case "runs":
+		runRuns(os.Args[2:])
 	case "status":
 		runStatus(os.Args[2:])
 	case "beads":
@@ -86,13 +91,13 @@ func main() {
 
 func usage() {
 	fmt.Println("Usage: autocodex <command> [args]")
-	fmt.Println("Commands: bootstrap, init, run, once, resume, kill, snapshot, cleanup, status, beads, plugins, api, ui, version, config")
+	fmt.Println("Commands: bootstrap, init, run, once, resume, kill, snapshot, runs, cleanup, status, beads, plugins, api, ui, version, config")
 	fmt.Println("Shortcut: autocodex \"<task>\" (implicit run with --task)")
 }
 
 func isCommand(value string) bool {
 	switch value {
-	case "bootstrap", "init", "run", "once", "resume", "kill", "snapshot", "cleanup", "status", "beads", "plugins", "api", "ui", "version", "config":
+	case "bootstrap", "init", "run", "once", "resume", "kill", "snapshot", "runs", "cleanup", "status", "beads", "plugins", "api", "ui", "version", "config":
 		return true
 	default:
 		return false
@@ -196,6 +201,9 @@ func runStatus(args []string) {
 	runID := fs.String("run", "", "run id (optional)")
 	latest := fs.Bool("latest", false, "show latest run only")
 	jsonOut := fs.Bool("json", false, "output JSON")
+	table := fs.Bool("table", false, "output table with headers")
+	statusFilter := fs.String("status", "", "comma-separated status filter (running, completed, failed, canceled)")
+	limit := fs.Int("limit", 0, "limit number of runs shown (0 = all)")
 	fs.Parse(args)
 
 	cfg, err := config.Load(*configPath)
@@ -210,6 +218,8 @@ func runStatus(args []string) {
 	if err != nil {
 		exitErr(err)
 	}
+	statuses = filterRunStatuses(statuses, parseList(*statusFilter))
+	statuses = limitRunStatuses(statuses, *limit)
 	if len(statuses) == 0 {
 		fmt.Println("No runs found")
 		return
@@ -218,18 +228,15 @@ func runStatus(args []string) {
 		writeJSON(statuses)
 		return
 	}
-	for _, status := range statuses {
-		fmt.Printf(
-			"%s\t%s\t%s\t%d\t%s\t%s\t%s\n",
-			status.ID,
-			status.Status,
-			status.CurrentPhase,
-			status.Iterations,
-			emptyOr(status.LastAction),
-			emptyOr(status.StopReason),
-			emptyOr(status.LastError),
-		)
+	if *table {
+		printRunTable(statuses)
+		return
 	}
+	printRunRows(statuses)
+}
+
+func runRuns(args []string) {
+	runStatus(append([]string{"--table"}, args...))
 }
 
 func selectRunStatuses(store *state.Store, runID string, latest bool) ([]RunStatus, error) {
@@ -322,16 +329,16 @@ func runResume(args []string) {
 	taskFile := fs.String("task-file", "", "path to task file (appended to TODO.md before resume)")
 	taskStdin := fs.Bool("task-stdin", false, "read task text from stdin")
 	force := fs.Bool("force", false, "resume even if the run is still running")
+	list := fs.Bool("list", false, "list runs and exit")
 	fs.Parse(args)
 
+	extraArgs := fs.Args()
 	if *runID == "" && fs.NArg() > 0 {
 		*runID = strings.TrimSpace(fs.Arg(0))
-	}
-	if *runID == "" {
-		exitErr(fmt.Errorf("run id is required"))
+		extraArgs = extraArgs[1:]
 	}
 
-	taskPayload, err := resolveTaskInput(*task, *taskFile, *taskStdin, fs.Args(), os.Stdin)
+	taskPayload, err := resolveTaskInput(*task, *taskFile, *taskStdin, extraArgs, os.Stdin)
 	if err != nil {
 		exitErr(err)
 	}
@@ -343,6 +350,27 @@ func runResume(args []string) {
 	store := state.NewStore(cfg.StateDir(), cfg.RunsDir(), cfg.MemoryDir(), cfg.LogsDir(), cfg.ArtifactsDir())
 	if err := store.InitDirs(); err != nil {
 		exitErr(err)
+	}
+	if *runID == "" || *list {
+		statuses, err := collectRunStatuses(store, "")
+		if err != nil {
+			exitErr(err)
+		}
+		if len(statuses) == 0 {
+			exitErr(fmt.Errorf("no runs found"))
+		}
+		printRunTable(statuses)
+		if *list {
+			return
+		}
+		if !isInteractiveTerminal(os.Stdin) {
+			exitErr(fmt.Errorf("run id is required; use --run or --list"))
+		}
+		selected, err := promptRunSelection(statuses, os.Stdin, os.Stdout)
+		if err != nil {
+			exitErr(err)
+		}
+		*runID = selected
 	}
 	run, err := store.GetRun(*runID)
 	if err != nil {
@@ -842,6 +870,149 @@ func emptyOr(value *string) string {
 		return "—"
 	}
 	return *value
+}
+
+func filterRunStatuses(statuses []RunStatus, filters []string) []RunStatus {
+	if len(filters) == 0 {
+		return statuses
+	}
+	allowed := map[string]bool{}
+	for _, item := range filters {
+		if item == "" {
+			continue
+		}
+		allowed[strings.ToLower(item)] = true
+	}
+	if len(allowed) == 0 {
+		return statuses
+	}
+	filtered := make([]RunStatus, 0, len(statuses))
+	for _, status := range statuses {
+		if allowed[strings.ToLower(status.Status)] {
+			filtered = append(filtered, status)
+		}
+	}
+	return filtered
+}
+
+func limitRunStatuses(statuses []RunStatus, limit int) []RunStatus {
+	if limit <= 0 || len(statuses) <= limit {
+		return statuses
+	}
+	return statuses[len(statuses)-limit:]
+}
+
+func parseList(input string) []string {
+	if strings.TrimSpace(input) == "" {
+		return nil
+	}
+	parts := strings.Split(input, ",")
+	out := make([]string, 0, len(parts))
+	for _, part := range parts {
+		item := strings.TrimSpace(part)
+		if item == "" {
+			continue
+		}
+		out = append(out, item)
+	}
+	return out
+}
+
+func printRunRows(statuses []RunStatus) {
+	for _, status := range statuses {
+		fmt.Printf(
+			"%s\t%s\t%s\t%d\t%s\t%s\t%s\n",
+			status.ID,
+			status.Status,
+			status.CurrentPhase,
+			status.Iterations,
+			emptyOr(status.LastAction),
+			emptyOr(status.StopReason),
+			emptyOr(status.LastError),
+		)
+	}
+}
+
+func printRunTable(statuses []RunStatus) {
+	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
+	fmt.Fprintln(w, "#\tRUN ID\tSTATUS\tPHASE\tITERS\tSTARTED\tFINISHED\tLAST ACTION\tSTOP REASON\tLAST ERROR")
+	for idx, status := range statuses {
+		started := formatTime(status.StartedAt)
+		finished := formatTimePtr(status.FinishedAt)
+		fmt.Fprintf(
+			w,
+			"%d\t%s\t%s\t%s\t%d\t%s\t%s\t%s\t%s\t%s\n",
+			idx+1,
+			status.ID,
+			status.Status,
+			status.CurrentPhase,
+			status.Iterations,
+			started,
+			finished,
+			truncate(emptyOr(status.LastAction), 20),
+			truncate(emptyOr(status.StopReason), 40),
+			truncate(emptyOr(status.LastError), 40),
+		)
+	}
+	_ = w.Flush()
+}
+
+func formatTime(value time.Time) string {
+	if value.IsZero() {
+		return "—"
+	}
+	return value.UTC().Format("2006-01-02 15:04")
+}
+
+func formatTimePtr(value *time.Time) string {
+	if value == nil || value.IsZero() {
+		return "—"
+	}
+	return value.UTC().Format("2006-01-02 15:04")
+}
+
+func truncate(value string, max int) string {
+	if max <= 0 || len(value) <= max {
+		return value
+	}
+	return value[:max-1] + "…"
+}
+
+func isInteractiveTerminal(file *os.File) bool {
+	if file == nil {
+		return false
+	}
+	info, err := file.Stat()
+	if err != nil {
+		return false
+	}
+	return (info.Mode() & os.ModeCharDevice) != 0
+}
+
+func promptRunSelection(statuses []RunStatus, input io.Reader, output io.Writer) (string, error) {
+	if len(statuses) == 0 {
+		return "", fmt.Errorf("no runs available")
+	}
+	fmt.Fprint(output, "Select run by number or id: ")
+	reader := bufio.NewReader(input)
+	line, err := reader.ReadString('\n')
+	if err != nil && err != io.EOF {
+		return "", fmt.Errorf("read selection: %w", err)
+	}
+	selection := strings.TrimSpace(line)
+	if selection == "" {
+		return "", fmt.Errorf("selection is empty")
+	}
+	for _, status := range statuses {
+		if status.ID == selection {
+			return selection, nil
+		}
+	}
+	index, err := strconv.Atoi(selection)
+	if err == nil && index > 0 && index <= len(statuses) {
+		return statuses[index-1].ID, nil
+	}
+	return "", fmt.Errorf("invalid selection: %s", selection)
 }
 
 func runConfig(args []string) {

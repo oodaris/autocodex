@@ -79,8 +79,17 @@ autocodex once "Run a quick UI a11y review."
 # inspect status
 autocodex status
 
+# inspect status as a table (with filters)
+autocodex status --table --status failed --limit 10
+
+# list runs (table)
+autocodex runs
+
 # inspect latest status
 autocodex status --latest
+
+# resume a run using snapshot context (starts a new run)
+autocodex resume --run <run-id> --task "Continue from the previous run"
 
 # start the local API
 autocodex api
@@ -93,6 +102,9 @@ autocodex --version
 
 # snapshot a run
 autocodex snapshot 20260115T142253Z-4a4ae121 --reason "handoff"
+
+# clean up old runs (14 days by default)
+autocodex cleanup --dry-run
 ```
 
 **UI (embedded)**
