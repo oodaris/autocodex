@@ -58,6 +58,8 @@ func main() {
 		runOnce(os.Args[2:])
 	case "resume":
 		runResume(os.Args[2:])
+	case "cleanup":
+		runCleanup(os.Args[2:])
 	case "kill":
 		runKill(os.Args[2:])
 	case "snapshot":
@@ -84,13 +86,13 @@ func main() {
 
 func usage() {
 	fmt.Println("Usage: autocodex <command> [args]")
-	fmt.Println("Commands: bootstrap, init, run, once, resume, kill, snapshot, status, beads, plugins, api, ui, version, config")
+	fmt.Println("Commands: bootstrap, init, run, once, resume, kill, snapshot, cleanup, status, beads, plugins, api, ui, version, config")
 	fmt.Println("Shortcut: autocodex \"<task>\" (implicit run with --task)")
 }
 
 func isCommand(value string) bool {
 	switch value {
-	case "bootstrap", "init", "run", "once", "resume", "kill", "snapshot", "status", "beads", "plugins", "api", "ui", "version", "config":
+	case "bootstrap", "init", "run", "once", "resume", "kill", "snapshot", "cleanup", "status", "beads", "plugins", "api", "ui", "version", "config":
 		return true
 	default:
 		return false
@@ -313,11 +315,125 @@ func runSnapshot(args []string) {
 }
 
 func runResume(args []string) {
-	runControlAction(args, "resume")
+	fs := flag.NewFlagSet("resume", flag.ExitOnError)
+	configPath := fs.String("config", config.ResolveConfigPath(), "Config file path")
+	runID := fs.String("run", "", "run id to resume from")
+	task := fs.String("task", "", "optional task text to append to TODO.md before resume")
+	taskFile := fs.String("task-file", "", "path to task file (appended to TODO.md before resume)")
+	taskStdin := fs.Bool("task-stdin", false, "read task text from stdin")
+	force := fs.Bool("force", false, "resume even if the run is still running")
+	fs.Parse(args)
+
+	if *runID == "" && fs.NArg() > 0 {
+		*runID = strings.TrimSpace(fs.Arg(0))
+	}
+	if *runID == "" {
+		exitErr(fmt.Errorf("run id is required"))
+	}
+
+	taskPayload, err := resolveTaskInput(*task, *taskFile, *taskStdin, fs.Args(), os.Stdin)
+	if err != nil {
+		exitErr(err)
+	}
+
+	cfg, err := config.Load(*configPath)
+	if err != nil {
+		exitErr(err)
+	}
+	store := state.NewStore(cfg.StateDir(), cfg.RunsDir(), cfg.MemoryDir(), cfg.LogsDir(), cfg.ArtifactsDir())
+	if err := store.InitDirs(); err != nil {
+		exitErr(err)
+	}
+	run, err := store.GetRun(*runID)
+	if err != nil {
+		exitErr(err)
+	}
+	if run.Status == "running" && !*force {
+		exitErr(fmt.Errorf("run %s is still running; use --force to resume anyway", run.ID))
+	}
+	if run.Status != "running" {
+		fmt.Printf("Run %s is %s; starting a new run with snapshot context.\n", run.ID, run.Status)
+	} else {
+		fmt.Printf("Run %s is still running; resuming with a snapshot context due to --force.\n", run.ID)
+	}
+
+	sourceList := cfg.Loop.Feedback.Sources
+	options := state.SnapshotOptions{
+		Reason:       "resume",
+		Sources:      parseSources("", sourceList),
+		MaxBytes:     cfg.Loop.Feedback.MaxBytes,
+		MaxEvents:    cfg.Loop.Feedback.MaxEvents,
+		MaxArtifacts: cfg.Loop.Feedback.MaxArtifacts,
+		MemoryGlob:   cfg.Loop.Feedback.MemoryGlob,
+	}
+	snapshot, err := store.CreateSnapshot(run.ID, options)
+	if err != nil {
+		exitErr(err)
+	}
+
+	if strings.TrimSpace(taskPayload) != "" {
+		taskPayload, err = applyTaskInput(&cfg, taskPayload)
+		if err != nil {
+			exitErr(err)
+		}
+	}
+
+	if cfg.Loop.Feedback.Mode == "" || cfg.Loop.Feedback.Mode == "off" {
+		cfg.Loop.Feedback.Mode = "on"
+	}
+	cfg.Loop.Feedback.Sources = ensureSource(cfg.Loop.Feedback.Sources, "snapshot")
+	cfg.Loop.Feedback.SnapshotPath = snapshot.Summary.ContentPath
+
+	fmt.Printf("Resume snapshot %s created for run %s\nPath: %s\n", snapshot.Summary.ID, run.ID, snapshot.Summary.ContentPath)
+	runLoop(cfg, taskPayload)
 }
 
 func runKill(args []string) {
 	runControlAction(args, "kill")
+}
+
+func runCleanup(args []string) {
+	fs := flag.NewFlagSet("cleanup", flag.ExitOnError)
+	configPath := fs.String("config", config.ResolveConfigPath(), "Config file path")
+	retentionDays := fs.Int("retention-days", 0, "remove completed runs older than N days (0 = use config)")
+	dryRun := fs.Bool("dry-run", false, "list runs to be removed without deleting")
+	jsonOut := fs.Bool("json", false, "output JSON")
+	fs.Parse(args)
+
+	cfg, err := config.Load(*configPath)
+	if err != nil {
+		exitErr(err)
+	}
+	if *retentionDays == 0 {
+		*retentionDays = cfg.Cleanup.RetentionDays
+	}
+	if *retentionDays <= 0 {
+		exitErr(fmt.Errorf("retention days must be > 0"))
+	}
+	store := state.NewStore(cfg.StateDir(), cfg.RunsDir(), cfg.MemoryDir(), cfg.LogsDir(), cfg.ArtifactsDir())
+	if err := store.InitDirs(); err != nil {
+		exitErr(err)
+	}
+
+	result, err := store.CleanupRuns(state.CleanupOptions{
+		OlderThan: time.Duration(*retentionDays) * 24 * time.Hour,
+		DryRun:    *dryRun,
+	})
+	if err != nil {
+		exitErr(err)
+	}
+	if *jsonOut {
+		writeJSON(result)
+		return
+	}
+	action := "Removed"
+	if *dryRun {
+		action = "Would remove"
+	}
+	fmt.Printf("%s %d run(s). Skipped %d run(s).\n", action, len(result.Deleted), len(result.Skipped))
+	if len(result.Deleted) > 0 {
+		fmt.Printf("Runs: %s\n", strings.Join(result.Deleted, ", "))
+	}
 }
 
 func runBeads(args []string) {
@@ -952,6 +1068,15 @@ func parseSources(input string, fallback []string) []string {
 		return append([]string{}, fallback...)
 	}
 	return sources
+}
+
+func ensureSource(sources []string, name string) []string {
+	for _, item := range sources {
+		if item == name {
+			return sources
+		}
+	}
+	return append(sources, name)
 }
 
 func latestRunID(store *state.Store) (string, error) {

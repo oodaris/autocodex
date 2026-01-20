@@ -656,6 +656,20 @@ func (o *Orchestrator) gatherFeedback(runID string) (string, state.RunFeedback, 
 		return false
 	}
 
+	if sourceEnabled("snapshot") && strings.TrimSpace(cfg.SnapshotPath) != "" {
+		content, err := os.ReadFile(cfg.SnapshotPath)
+		if err == nil {
+			meta.SnapshotPath = cfg.SnapshotPath
+			if !appendWithLimit("## Resume Snapshot\n") {
+				return b.String(), meta, nil
+			}
+			if !appendWithLimit(string(content)) {
+				return b.String(), meta, nil
+			}
+			appendWithLimit("\n")
+		}
+	}
+
 	if sourceEnabled("memory") {
 		docs, err := o.Store.ListMemoryDocs()
 		if err != nil {

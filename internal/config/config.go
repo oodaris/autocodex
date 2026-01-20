@@ -30,6 +30,7 @@ type Config struct {
 	API      APIConfig      `yaml:"api"`
 	UI       UIConfig       `yaml:"ui"`
 	Beads    BeadsConfig    `yaml:"beads"`
+	Cleanup  CleanupConfig  `yaml:"cleanup"`
 	Logging  LoggingConfig  `yaml:"logging"`
 	Auth     AuthConfig     `yaml:"auth"`
 	Loop     LoopConfig     `yaml:"loop"`
@@ -100,6 +101,10 @@ type BeadsConfig struct {
 	AutoUpdate bool `yaml:"auto_update"`
 }
 
+type CleanupConfig struct {
+	RetentionDays int `yaml:"retention_days"`
+}
+
 type LoggingConfig struct {
 	Level  string `yaml:"level"`
 	Format string `yaml:"format"`
@@ -158,6 +163,7 @@ type FeedbackConfig struct {
 	MaxEvents    int      `yaml:"max_events"`
 	MaxBytes     int      `yaml:"max_bytes"`
 	MemoryGlob   string   `yaml:"memory_glob"`
+	SnapshotPath string   `yaml:"snapshot_path"`
 }
 
 func Load(path string) (Config, error) {
@@ -224,6 +230,9 @@ func (c *Config) ApplyDefaults() {
 	}
 	if c.Paths.RunsDir == "" {
 		c.Paths.RunsDir = "runs"
+	}
+	if c.Cleanup.RetentionDays == 0 {
+		c.Cleanup.RetentionDays = 14
 	}
 	if c.Skills.Paths == nil {
 		c.Skills.Paths = []string{}
@@ -355,6 +364,9 @@ func (c Config) Validate() error {
 	}
 	if c.Codex.JSONOutput && !c.Codex.OutputLast {
 		return errors.New("codex.output_last_message must be true when codex.json_output is enabled")
+	}
+	if c.Cleanup.RetentionDays < 0 {
+		return fmt.Errorf("invalid cleanup.retention_days: %d", c.Cleanup.RetentionDays)
 	}
 	if c.Hub.Enabled {
 		seen := map[string]bool{}

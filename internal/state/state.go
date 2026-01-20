@@ -52,6 +52,7 @@ type RunFeedback struct {
 	MemoryDocs        []string  `json:"memory_docs,omitempty"`
 	ArtifactIDs       []string  `json:"artifact_ids,omitempty"`
 	EventIDs          []string  `json:"event_ids,omitempty"`
+	SnapshotPath      string    `json:"snapshot_path,omitempty"`
 	Bytes             int       `json:"bytes,omitempty"`
 }
 
@@ -136,6 +137,17 @@ type SnapshotOptions struct {
 	MaxEvents    int
 	MaxArtifacts int
 	MemoryGlob   string
+}
+
+type CleanupOptions struct {
+	OlderThan time.Duration
+	DryRun    bool
+	Now       time.Time
+}
+
+type CleanupResult struct {
+	Deleted []string
+	Skipped []string
 }
 
 type FinalizedRun struct {
@@ -1000,6 +1012,49 @@ func (s *Store) GetSnapshot(runID, snapshotID string) (SnapshotDetail, error) {
 		Manifest: record.Manifest,
 		Content:  string(content),
 	}, nil
+}
+
+func (s *Store) CleanupRuns(opts CleanupOptions) (CleanupResult, error) {
+	result := CleanupResult{}
+	if opts.OlderThan < 0 {
+		return result, errors.New("older than must be >= 0")
+	}
+	now := opts.Now
+	if now.IsZero() {
+		now = time.Now().UTC()
+	}
+	runs, err := s.ListRuns()
+	if err != nil {
+		return result, err
+	}
+	if len(runs) == 0 {
+		return result, nil
+	}
+
+	cutoff := now.Add(-opts.OlderThan)
+	for _, run := range runs {
+		if run.FinishedAt == nil {
+			result.Skipped = append(result.Skipped, run.ID)
+			continue
+		}
+		if run.FinishedAt.After(cutoff) {
+			result.Skipped = append(result.Skipped, run.ID)
+			continue
+		}
+		result.Deleted = append(result.Deleted, run.ID)
+		if opts.DryRun {
+			continue
+		}
+		runDir := filepath.Join(s.RunsDir, run.ID)
+		if err := os.RemoveAll(runDir); err != nil {
+			return result, fmt.Errorf("remove run dir %s: %w", runDir, err)
+		}
+		logPath := filepath.Join(s.LogsDir, run.ID+".jsonl")
+		if err := os.Remove(logPath); err != nil && !errors.Is(err, os.ErrNotExist) {
+			return result, fmt.Errorf("remove run log %s: %w", logPath, err)
+		}
+	}
+	return result, nil
 }
 
 func (s *Store) eventsPath(runID string) string {

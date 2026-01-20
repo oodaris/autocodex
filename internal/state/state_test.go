@@ -2,6 +2,7 @@ package state
 
 import (
 	"encoding/json"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -128,6 +129,76 @@ func TestAppendMemoryDoc(t *testing.T) {
 	}
 	if doc == nil || !strings.Contains(doc.Content, "Run summary line") {
 		t.Fatalf("expected appended content")
+	}
+}
+
+func TestCleanupRuns(t *testing.T) {
+	base := t.TempDir()
+	store := NewStore(
+		filepath.Join(base, "state"),
+		filepath.Join(base, "runs"),
+		filepath.Join(base, "memory"),
+		filepath.Join(base, "logs"),
+		filepath.Join(base, "artifacts"),
+	)
+	if err := store.InitDirs(); err != nil {
+		t.Fatalf("init dirs: %v", err)
+	}
+
+	oldRun, err := store.CreateRun()
+	if err != nil {
+		t.Fatalf("create run: %v", err)
+	}
+	oldFinished := time.Now().UTC().Add(-48 * time.Hour)
+	oldRun.FinishedAt = &oldFinished
+	oldRun.Status = "completed"
+	if err := store.SaveRun(oldRun); err != nil {
+		t.Fatalf("save run: %v", err)
+	}
+
+	recentRun, err := store.CreateRun()
+	if err != nil {
+		t.Fatalf("create run: %v", err)
+	}
+	recentFinished := time.Now().UTC().Add(-2 * time.Hour)
+	recentRun.FinishedAt = &recentFinished
+	recentRun.Status = "completed"
+	if err := store.SaveRun(recentRun); err != nil {
+		t.Fatalf("save run: %v", err)
+	}
+
+	oldLog := filepath.Join(store.LogsDir, oldRun.ID+".jsonl")
+	if err := os.WriteFile(oldLog, []byte("log"), 0o644); err != nil {
+		t.Fatalf("write log: %v", err)
+	}
+	recentLog := filepath.Join(store.LogsDir, recentRun.ID+".jsonl")
+	if err := os.WriteFile(recentLog, []byte("log"), 0o644); err != nil {
+		t.Fatalf("write log: %v", err)
+	}
+
+	opts := CleanupOptions{
+		OlderThan: 24 * time.Hour,
+		Now:       time.Now().UTC(),
+	}
+	result, err := store.CleanupRuns(opts)
+	if err != nil {
+		t.Fatalf("cleanup runs: %v", err)
+	}
+	if len(result.Deleted) != 1 {
+		t.Fatalf("expected 1 run deleted, got %d", len(result.Deleted))
+	}
+
+	if _, err := os.Stat(filepath.Join(store.RunsDir, oldRun.ID)); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("expected old run dir removed, err=%v", err)
+	}
+	if _, err := os.Stat(oldLog); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("expected old log removed, err=%v", err)
+	}
+	if _, err := os.Stat(filepath.Join(store.RunsDir, recentRun.ID)); err != nil {
+		t.Fatalf("expected recent run dir kept, err=%v", err)
+	}
+	if _, err := os.Stat(recentLog); err != nil {
+		t.Fatalf("expected recent log kept, err=%v", err)
 	}
 }
 

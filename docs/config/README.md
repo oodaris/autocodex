@@ -73,6 +73,11 @@ Beads integration.
 - `enabled`: toggle bead updates
 - `auto_create`, `auto_update`
 
+### `cleanup`
+Local retention for run artifacts and logs.
+
+- `retention_days`: remove completed runs older than this many days when running `autocodex cleanup`
+
 ### `logging`
 Logging behavior.
 
@@ -95,6 +100,8 @@ Autonomy loop controls.
 - `stop_conditions`: duration, idle, failure, heartbeat
 - `feedback`: controls memory/event/artifact context injection
   - Defaults to `on` when `autonomy.enabled: true`
+  - `sources` may include `snapshot` (used by `autocodex resume` to inject snapshot context)
+  - `snapshot_path` is set automatically by `autocodex resume` (usually leave empty)
 
 ### `autonomy`
 Spec/plan/bead automation controls (feature-flagged).
