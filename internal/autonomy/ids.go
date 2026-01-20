@@ -12,7 +12,7 @@ func normalizeBeadID(id string) string {
 		return id
 	}
 	prefix := strings.TrimSpace(parts[0])
-	suffix := strings.Trim(strings.Join(parts[1:], ""), "-")
+	suffix := strings.Trim(strings.Join(parts[1:], "-"), "-")
 	if prefix == "" || suffix == "" {
 		return id
 	}

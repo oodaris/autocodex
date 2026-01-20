@@ -144,6 +144,9 @@ func applyBeadPrefix(id, prefix string) string {
 	if prefix == "" {
 		return id
 	}
+	if strings.HasPrefix(id, prefix+"-") {
+		return id
+	}
 	parts := strings.SplitN(id, "-", 2)
 	suffix := ""
 	if len(parts) == 1 {

@@ -90,10 +90,10 @@ func TestAutonomyStopsOnMaxBeads(t *testing.T) {
 		t.Fatalf("read bd state: %v", err)
 	}
 	stateText := string(content)
-	if !strings.Contains(stateText, "autocodex-smokea|done") {
+	if !strings.Contains(stateText, "autocodex-smoke-a|done") {
 		t.Fatalf("expected first bead done, got: %s", stateText)
 	}
-	if !strings.Contains(stateText, "autocodex-smokeb|todo") {
+	if !strings.Contains(stateText, "autocodex-smoke-b|todo") {
 		t.Fatalf("expected second bead todo when max_beads=1, got: %s", stateText)
 	}
 }
