@@ -2,6 +2,7 @@ package autonomy
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"sort"
@@ -47,6 +48,11 @@ type ActionStop struct {
 	Details string `json:"details,omitempty"`
 }
 
+var (
+	ErrActionsJSONMissing = errors.New("no actions json found")
+	ErrActionsJSONInvalid = errors.New("invalid actions json")
+)
+
 func (c *Controller) actionsFromRun(runID string) (*Actions, error) {
 	if strings.TrimSpace(c.Config.Autonomy.ActionsSchema) == "" {
 		return nil, nil
@@ -62,6 +68,7 @@ func (c *Controller) actionsFromRun(runID string) (*Actions, error) {
 		return artifacts[i].CreatedAt.After(artifacts[j].CreatedAt)
 	})
 
+	var parseErr error
 	for _, artifact := range artifacts {
 		content, err := os.ReadFile(artifact.Path)
 		if err != nil {
@@ -69,16 +76,25 @@ func (c *Controller) actionsFromRun(runID string) (*Actions, error) {
 		}
 		payload, err := extractJSONBlock(string(content))
 		if err != nil {
+			if errors.Is(err, ErrActionsJSONMissing) {
+				continue
+			}
+			parseErr = err
 			continue
 		}
 		if err := validateJSONSchema(c.Config.Autonomy.ActionsSchema, payload); err != nil {
+			parseErr = fmt.Errorf("%w: schema validation failed: %v", ErrActionsJSONInvalid, err)
 			continue
 		}
 		var actions Actions
 		if err := json.Unmarshal([]byte(payload), &actions); err != nil {
-			return nil, fmt.Errorf("parse actions json: %w", err)
+			parseErr = fmt.Errorf("%w: parse error: %v", ErrActionsJSONInvalid, err)
+			continue
 		}
 		return &actions, nil
+	}
+	if parseErr != nil {
+		return nil, parseErr
 	}
 	return nil, nil
 }
@@ -146,6 +162,10 @@ func extractJSONBlock(output string) (string, error) {
 	const startMarker = "ACTIONS_JSON_START"
 	const endMarker = "ACTIONS_JSON_END"
 
+	trimmed := strings.TrimSpace(output)
+	if trimmed == "" {
+		return "", ErrActionsJSONMissing
+	}
 	if idx := strings.Index(output, startMarker); idx != -1 {
 		rest := output[idx+len(startMarker):]
 		if end := strings.Index(rest, endMarker); end != -1 {
@@ -153,6 +173,7 @@ func extractJSONBlock(output string) (string, error) {
 			if json.Valid([]byte(payload)) {
 				return payload, nil
 			}
+			return "", fmt.Errorf("%w: invalid json in markers", ErrActionsJSONInvalid)
 		}
 	}
 
@@ -161,14 +182,20 @@ func extractJSONBlock(output string) (string, error) {
 		block := strings.TrimSpace(fences[i])
 		block = strings.TrimPrefix(block, "json")
 		block = strings.TrimSpace(block)
+		if block == "" {
+			continue
+		}
 		if json.Valid([]byte(block)) {
 			return block, nil
 		}
+		return "", fmt.Errorf("%w: invalid json in fenced block", ErrActionsJSONInvalid)
 	}
 
-	trimmed := strings.TrimSpace(output)
 	if json.Valid([]byte(trimmed)) {
 		return trimmed, nil
+	}
+	if strings.HasPrefix(trimmed, "{") || strings.HasPrefix(trimmed, "[") {
+		return "", fmt.Errorf("%w: invalid json in output", ErrActionsJSONInvalid)
 	}
 
 	if start := strings.Index(trimmed, "{"); start != -1 {
@@ -178,7 +205,8 @@ func extractJSONBlock(output string) (string, error) {
 				return candidate, nil
 			}
 		}
+		return "", fmt.Errorf("%w: invalid json in output", ErrActionsJSONInvalid)
 	}
 
-	return "", fmt.Errorf("no JSON block found")
+	return "", ErrActionsJSONMissing
 }
