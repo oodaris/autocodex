@@ -1,7 +1,7 @@
 # autocodex autonomy strictness plan
 
 status: draft
-owner: fatih
+owner: maintainer
 created: 2026-01-20
 
 ## Problem statement

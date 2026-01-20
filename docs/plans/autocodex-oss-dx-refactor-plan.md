@@ -3,7 +3,7 @@
 ## Metadata
 ```yaml
 id: autocodex-oss-dx-refactor
-owner: fatih
+owner: maintainer
 status: draft
 created: 2026-01-20
 updated: 2026-01-20
