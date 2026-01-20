@@ -169,12 +169,19 @@ func resumeMessage(run state.Run, taskPayload string, force bool) (string, error
 	if run.Status == "running" && !force {
 		return "", fmt.Errorf("run %s is still running; use --force to resume anyway", run.ID)
 	}
+	if run.Status == "completed" && !force {
+		return "", fmt.Errorf("run %s is completed; use --force to resume a completed run", run.ID)
+	}
 	if run.Status != "running" && !hasTask && !force {
 		return "", fmt.Errorf("run %s is %s; provide --task/--task-file/--task-stdin or use --force to resume without a new task", run.ID, run.Status)
 	}
 	switch {
 	case run.Status == "running":
 		return fmt.Sprintf("Run %s is still running; resuming with a snapshot context due to --force.", run.ID), nil
+	case run.Status == "completed" && !hasTask:
+		return fmt.Sprintf("Run %s is completed; resuming without a new task due to --force.", run.ID), nil
+	case run.Status == "completed" && hasTask:
+		return fmt.Sprintf("Run %s is completed; starting a new run with snapshot context due to --force.", run.ID), nil
 	case !hasTask:
 		return fmt.Sprintf("Run %s is %s; resuming without a new task due to --force.", run.ID, run.Status), nil
 	default:

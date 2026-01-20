@@ -59,7 +59,7 @@ Flags:
 - `--task`: optional task text to append before resume
 - `--task-file`: task text from file
 - `--task-stdin`: task text from stdin
-- `--force`: resume even if run is still running or without a new task
+- `--force`: resume even if run is still running, or to resume a completed run
 - `--list`: list runs and exit (TTY selection if run id not provided)
 
 ### status

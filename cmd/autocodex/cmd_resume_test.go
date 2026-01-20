@@ -35,7 +35,7 @@ func TestResumeMessage(t *testing.T) {
 			run:      state.Run{ID: "run3", Status: "completed"},
 			force:    false,
 			wantErr:  true,
-			contains: "provide --task",
+			contains: "completed; use --force",
 		},
 		{
 			name:     "completed without task and force allows",
@@ -45,10 +45,18 @@ func TestResumeMessage(t *testing.T) {
 			contains: "resuming without a new task",
 		},
 		{
-			name:     "completed with task allows",
+			name:     "completed with task blocks",
 			run:      state.Run{ID: "run5", Status: "completed"},
 			task:     "do more",
 			force:    false,
+			wantErr:  true,
+			contains: "completed; use --force",
+		},
+		{
+			name:     "completed with task and force allows",
+			run:      state.Run{ID: "run6", Status: "completed"},
+			task:     "do more",
+			force:    true,
 			wantErr:  false,
 			contains: "starting a new run",
 		},
