@@ -7,6 +7,15 @@ Semantic Versioning.
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-01-20
+
+- Autonomy hardening: strict ACTIONS validation, schema policy flags, and run-tagged artifact paths.
+- Run registry metadata enrichment and resume safety guardrails.
+- Added `autocodex doctor` preflight checks.
+- Structured logs now include `run_id` and `stage`.
+- Autonomy smoke harness + schema validation tests.
+- UI: tolerate wrapped runs payloads.
+
 ## [0.2.2] - 2026-01-20
 
 - Fix bead ID normalization to avoid duplicate prefixes.
