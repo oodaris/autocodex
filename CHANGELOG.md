@@ -7,6 +7,10 @@ Semantic Versioning.
 
 ## [Unreleased]
 
+## [0.2.2] - 2026-01-20
+
+- Fix bead ID normalization to avoid duplicate prefixes.
+
 ## [0.2.1] - 2026-01-20
 
 - Added CLI task-input and API middleware tests to improve coverage.
