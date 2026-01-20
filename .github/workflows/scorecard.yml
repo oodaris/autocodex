@@ -10,15 +10,7 @@ on:
 permissions: read-all
 
 jobs:
-  noop:
-    if: ${{ github.event.repository.private == true && secrets.SCORECARD_READ_TOKEN == '' }}
-    runs-on: ubuntu-latest
-    steps:
-      - name: Skip scorecard (private repo without token)
-        run: echo "Scorecard skipped: private repo without SCORECARD_READ_TOKEN."
-
   analysis:
-    if: ${{ github.event.repository.private == false || secrets.SCORECARD_READ_TOKEN != '' }}
     permissions:
       security-events: write
       id-token: write
@@ -26,11 +18,16 @@ jobs:
       actions: read
     runs-on: ubuntu-latest
     steps:
+      - name: Skip scorecard (private repo without token)
+        if: ${{ github.event.repository.private == true && secrets.SCORECARD_READ_TOKEN == '' }}
+        run: echo "Scorecard skipped: private repo without SCORECARD_READ_TOKEN."
       - name: Checkout
+        if: ${{ github.event.repository.private == false || secrets.SCORECARD_READ_TOKEN != '' }}
         uses: actions/checkout@v4
         with:
           persist-credentials: false
       - name: Scorecard analysis
+        if: ${{ github.event.repository.private == false || secrets.SCORECARD_READ_TOKEN != '' }}
         uses: ossf/scorecard-action@v2.4.3
         with:
           results_file: results.sarif
@@ -38,12 +35,14 @@ jobs:
           publish_results: true
           repo_token: ${{ secrets.SCORECARD_READ_TOKEN || github.token }}
       - name: Upload results
+        if: ${{ github.event.repository.private == false || secrets.SCORECARD_READ_TOKEN != '' }}
         uses: actions/upload-artifact@v4
         with:
           name: scorecard-results
           path: results.sarif
           if-no-files-found: error
       - name: Upload SARIF
+        if: ${{ github.event.repository.private == false || secrets.SCORECARD_READ_TOKEN != '' }}
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: results.sarif
