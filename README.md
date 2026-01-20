@@ -6,7 +6,7 @@
 [![coverage](https://codecov.io/gh/oodaris/autocodex/branch/main/graph/badge.svg)](https://codecov.io/gh/oodaris/autocodex)
 [![Go Report Card](https://goreportcard.com/badge/github.com/oodaris/autocodex)](https://goreportcard.com/report/github.com/oodaris/autocodex)
 [![Scorecard](https://api.securityscorecards.dev/projects/github.com/oodaris/autocodex/badge)](https://securityscorecards.dev/viewer/?uri=github.com/oodaris/autocodex)
-[![release](https://img.shields.io/badge/release-v0.2.0-blue)](https://github.com/oodaris/autocodex/releases/latest)
+[![release](https://img.shields.io/github/v/release/oodaris/autocodex?display_name=tag&sort=semver)](https://github.com/oodaris/autocodex/releases/latest)
 [![license](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 [![go](https://img.shields.io/badge/go-1.22%2B-blue)](go.mod)
 
