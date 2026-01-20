@@ -128,6 +128,11 @@ npm install
 npm run dev
 ```
 
+## Troubleshooting
+- **Address already in use (API/UI won't start)**: stop the existing process listening on the port or change `api.port` in `autocodex.yaml`.
+- **Auth enabled but no tokens resolved**: set `auth.tokens` in `autocodex.yaml` or provide `AUTH_TOKEN` via `auth.token_env`.
+- **`bd` not installed**: install Beads (`bd`) or disable Beads features in config (`beads.enabled: false`).
+
 **Custom config path**
 ```bash
 autocodex run --config path/to/autocodex.yaml --task "Review backend API and fix issues."
