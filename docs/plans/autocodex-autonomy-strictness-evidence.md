@@ -32,3 +32,56 @@ go test ./internal/autonomy -run TestAutonomyRequireBDFailsFast
 ## Notes
 - These tests use a fake codex executor and bd stub to keep the smoke run deterministic and offline.
 - For a full live run with real `codex`, use `autocodex "<task>"` with `autocodex.yaml` configured, after ensuring required ACTIONS output is emitted.
+
+## Live smoke ACTIONS (2026-01-20)
+```json
+{
+  "version": "1.0",
+  "summary": "Live smoke autonomy evidence for autocodex-e36.",
+  "next": {
+    "type": "none",
+    "reason": "Single-bead smoke complete."
+  },
+  "updates": {
+    "beads": [
+      {
+        "id": "autocodex-e36",
+        "status": "done",
+        "note": "Spec/plan/tasks artifacts and evidence captured."
+      }
+    ]
+  },
+  "gates": {
+    "blocking": false,
+    "tests": [
+      "ACTIONS JSON emitted in evidence doc."
+    ],
+    "evidence": [
+      "docs/plans/autocodex-autonomy-strictness-evidence.md"
+    ],
+    "verification": [
+      "bd show autocodex-e36 reports status done."
+    ]
+  }
+}
+```
+
+## Live smoke run (reasoning_effort=low) — 2026-01-20
+Config:
+- Temporary config used: `/tmp/autocodex-low.yaml` (copied from `autocodex.yaml` with `codex.reasoning_effort: low`).
+
+Command:
+```bash
+autocodex run --config /tmp/autocodex-low.yaml --task "Live smoke: verify strict autonomy. Generate spec/plan/tasks for a single bead. In the test phase, emit ACTIONS JSON with next.type=none, updates current bead to done, and gates.blocking=false. Capture evidence in docs/plans/autocodex-autonomy-strictness-evidence.md."
+```
+
+Results:
+- Run ID: `20260120T011444Z-907ebbe2` (completed; 5 phases).
+- ACTIONS JSON emitted at `.autocodex/runs/20260120T011444Z-907ebbe2/artifacts/test-final.txt` with `next.type=none` and `gates.blocking=false`.
+- Generated artifacts:
+  - `docs/specs/live-smoke-verify-strict-autonomy-generate-spec.md`
+  - `docs/plans/live-smoke-verify-strict-autonomy-generate-spec-plan.md`
+  - `docs/plans/live-smoke-verify-strict-autonomy-generate-spec-tasks.json`
+
+Notes:
+- Autonomy attempted to continue to another ready bead and started run `20260120T012535Z-6e2cb715`; it was stopped to keep the smoke scoped.
