@@ -94,7 +94,7 @@ func (c *Config) ApplyDefaults() {
 	if c.Loop.Mode == "" {
 		c.Loop.Mode = "bounded"
 	}
-	if c.Loop.Phases == nil || len(c.Loop.Phases) == 0 {
+	if len(c.Loop.Phases) == 0 {
 		c.Loop.Phases = []string{"ideate", "plan", "implement", "review", "test"}
 	}
 	if c.Loop.PhaseIdleSecs == nil {
