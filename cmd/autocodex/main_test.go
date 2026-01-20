@@ -100,6 +100,48 @@ func TestParseSources(t *testing.T) {
 	}
 }
 
+func TestParseList(t *testing.T) {
+	items := parseList(" running,completed ,, failed ")
+	if len(items) != 3 {
+		t.Fatalf("expected 3 items")
+	}
+	if items[0] != "running" || items[1] != "completed" || items[2] != "failed" {
+		t.Fatalf("unexpected parseList output: %v", items)
+	}
+	if parseList("") != nil {
+		t.Fatalf("expected nil for empty input")
+	}
+}
+
+func TestFilterRunStatuses(t *testing.T) {
+	statuses := []RunStatus{{Status: "running"}, {Status: "completed"}, {Status: "failed"}}
+	filtered := filterRunStatuses(statuses, []string{"running", "failed"})
+	if len(filtered) != 2 {
+		t.Fatalf("expected 2 statuses")
+	}
+	if filtered[0].Status != "running" || filtered[1].Status != "failed" {
+		t.Fatalf("unexpected filter result: %v", filtered)
+	}
+	if len(filterRunStatuses(statuses, nil)) != 3 {
+		t.Fatalf("expected no filtering when filters empty")
+	}
+}
+
+func TestLimitRunStatuses(t *testing.T) {
+	statuses := []RunStatus{{ID: "a"}, {ID: "b"}, {ID: "c"}}
+	limited := limitRunStatuses(statuses, 2)
+	if len(limited) != 2 {
+		t.Fatalf("expected 2 statuses")
+	}
+	if limited[0].ID != "b" || limited[1].ID != "c" {
+		t.Fatalf("unexpected limit result: %v", limited)
+	}
+	if len(limitRunStatuses(statuses, 0)) != 3 {
+		t.Fatalf("expected no limit when <=0")
+	}
+}
+
+
 func TestLatestRunID(t *testing.T) {
 	base := t.TempDir()
 	store := state.NewStore(
