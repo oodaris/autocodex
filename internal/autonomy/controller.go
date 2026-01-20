@@ -103,19 +103,25 @@ func (c *Controller) Run(ctx context.Context, input Input) (*state.Run, error) {
 		}
 		lastRun = run
 
-		actions, err := c.actionsFromRun(run.ID)
-		if err != nil {
-			if requireActions {
-				return run, err
-			}
-			if c.Logger != nil {
-				c.Logger.Warn("autonomy actions parse failed", "run_id", run.ID, "error", err.Error())
-			}
+		actions, actionsErr := c.actionsFromRun(run.ID)
+		if actionsErr != nil && !requireActions && c.Logger != nil {
+			c.Logger.Warn("autonomy actions parse failed", "run_id", run.ID, "error", actionsErr.Error())
 		}
 
 		stopReason, gateFailure, updatedCurrent, err := c.applyActions(bead.ID, actions)
 		if err != nil {
 			return run, err
+		}
+
+		if actionsErr != nil && requireActions {
+			gateFailure = true
+			if stopReason == "" {
+				stopReason = fmt.Sprintf("invalid ACTIONS output: %v", actionsErr)
+			}
+			if c.Config.Beads.AutoUpdate && bdAvailable() {
+				_ = updateBeadStatus(bead.ID, "blocked")
+				updatedCurrent = true
+			}
 		}
 
 		if requireActions && actions == nil {
