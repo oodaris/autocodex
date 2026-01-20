@@ -30,6 +30,12 @@ func (c *Controller) Run(ctx context.Context, input Input) (*state.Run, error) {
 	if c.Logger != nil {
 		c.Logger.Info("autonomy enabled", "mode", c.Config.Mode, "task_provided", input.Task != "")
 	}
+	requireActions := c.Config.Autonomy.RequireActions != nil && *c.Config.Autonomy.RequireActions
+	requireNext := c.Config.Autonomy.RequireNext != nil && *c.Config.Autonomy.RequireNext
+	requireBD := c.Config.Autonomy.RequireBD != nil && *c.Config.Autonomy.RequireBD
+	if requireBD && !bdAvailable() {
+		return nil, fmt.Errorf("bd is required for autonomy runs (autonomy.require_bd: true)")
+	}
 	task := strings.TrimSpace(input.Task)
 	if task == "" {
 		var err error
@@ -98,8 +104,13 @@ func (c *Controller) Run(ctx context.Context, input Input) (*state.Run, error) {
 		lastRun = run
 
 		actions, err := c.actionsFromRun(run.ID)
-		if err != nil && c.Logger != nil {
-			c.Logger.Warn("autonomy actions parse failed", "run_id", run.ID, "error", err.Error())
+		if err != nil {
+			if requireActions {
+				return run, err
+			}
+			if c.Logger != nil {
+				c.Logger.Warn("autonomy actions parse failed", "run_id", run.ID, "error", err.Error())
+			}
 		}
 
 		stopReason, gateFailure, updatedCurrent, err := c.applyActions(bead.ID, actions)
@@ -107,8 +118,36 @@ func (c *Controller) Run(ctx context.Context, input Input) (*state.Run, error) {
 			return run, err
 		}
 
+		if requireActions && actions == nil {
+			gateFailure = true
+			if stopReason == "" {
+				stopReason = "missing required ACTIONS output"
+			}
+			if c.Config.Beads.AutoUpdate && bdAvailable() {
+				_ = updateBeadStatus(bead.ID, "blocked")
+				updatedCurrent = true
+			}
+		}
+
 		if actions != nil && actions.Next.Type == "bead" {
 			nextHint = sanitizeBeadID(actions.Next.ID)
+		}
+
+		if !gateFailure && requireNext && actions != nil && actions.Next.Type != "bead" {
+			ready, err := listReadyBeads()
+			if err != nil {
+				return run, err
+			}
+			if len(ready) > 1 {
+				gateFailure = true
+				if stopReason == "" {
+					stopReason = "explicit next bead required when multiple beads are ready"
+				}
+				if c.Config.Beads.AutoUpdate && bdAvailable() {
+					_ = updateBeadStatus(bead.ID, "blocked")
+					updatedCurrent = true
+				}
+			}
 		}
 
 		if gateFailure {

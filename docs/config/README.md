@@ -94,11 +94,15 @@ Autonomy loop controls.
 - `phases`: default `ideate → plan → implement → review → test`
 - `stop_conditions`: duration, idle, failure, heartbeat
 - `feedback`: controls memory/event/artifact context injection
+  - Defaults to `on` when `autonomy.enabled: true`
 
 ### `autonomy`
 Spec/plan/bead automation controls (feature-flagged).
 
 - `enabled`: toggle autonomy controller
+- `require_actions`: require a valid ACTIONS payload for autonomy runs (defaults to true when autonomy enabled)
+- `require_next`: require `next` to be explicit when multiple beads are ready (defaults to true when autonomy enabled)
+- `require_bd`: require `bd` to be installed when autonomy is enabled (defaults to true when autonomy enabled)
 - `spec_template`, `plan_template`: template paths for generated docs
 - `tasks_schema`, `actions_schema`: contract paths used by parsers
 - `tasks_output_template`: where `<slug>-tasks.json` is written

@@ -39,6 +39,15 @@ func TestLoadAppliesDefaults(t *testing.T) {
 	if len(cfg.Loop.Feedback.Sources) == 0 {
 		t.Fatalf("expected loop feedback sources default")
 	}
+	if cfg.Autonomy.RequireActions == nil || *cfg.Autonomy.RequireActions {
+		t.Fatalf("expected autonomy require_actions default false when autonomy disabled")
+	}
+	if cfg.Autonomy.RequireNext == nil || *cfg.Autonomy.RequireNext {
+		t.Fatalf("expected autonomy require_next default false when autonomy disabled")
+	}
+	if cfg.Autonomy.RequireBD == nil || *cfg.Autonomy.RequireBD {
+		t.Fatalf("expected autonomy require_bd default false when autonomy disabled")
+	}
 }
 
 func TestValidateRejectsInvalidMode(t *testing.T) {
@@ -74,5 +83,31 @@ func TestValidateRejectsJSONWithoutOutputLast(t *testing.T) {
 	cfg.Codex.OutputLast = false
 	if err := cfg.Validate(); err == nil {
 		t.Fatalf("expected validation error")
+	}
+}
+
+func TestAutonomyDefaultsEnableFeedback(t *testing.T) {
+	tmp := t.TempDir()
+	path := filepath.Join(tmp, "config.yaml")
+	data := []byte("version: v1\nmode: yolo\nautonomy:\n  enabled: true\n")
+	if err := os.WriteFile(path, data, 0o644); err != nil {
+		t.Fatalf("write config: %v", err)
+	}
+
+	cfg, err := Load(path)
+	if err != nil {
+		t.Fatalf("load: %v", err)
+	}
+	if cfg.Loop.Feedback.Mode != "on" {
+		t.Fatalf("expected loop feedback mode on when autonomy enabled")
+	}
+	if cfg.Autonomy.RequireActions == nil || !*cfg.Autonomy.RequireActions {
+		t.Fatalf("expected autonomy require_actions default true when autonomy enabled")
+	}
+	if cfg.Autonomy.RequireNext == nil || !*cfg.Autonomy.RequireNext {
+		t.Fatalf("expected autonomy require_next default true when autonomy enabled")
+	}
+	if cfg.Autonomy.RequireBD == nil || !*cfg.Autonomy.RequireBD {
+		t.Fatalf("expected autonomy require_bd default true when autonomy enabled")
 	}
 }

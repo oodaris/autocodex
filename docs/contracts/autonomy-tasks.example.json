@@ -20,6 +20,11 @@
         "Templates exist and are referenced in docs.",
         "ACTIONS schema validates against example payloads."
       ],
+      "gates": {
+        "tests": ["go test ./internal/contracts -run TestAutonomySchemas"],
+        "evidence": ["docs/contracts/README.md"],
+        "verification": ["Schema examples validate successfully."]
+      },
       "tests": ["go test ./internal/contracts -run TestAutonomySchemas"],
       "docs": ["docs/contracts/README.md"],
       "rollout": "N/A",

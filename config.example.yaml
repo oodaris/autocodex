@@ -87,6 +87,9 @@ loop:
 
 autonomy:
   enabled: true
+  require_actions: true
+  require_next: true
+  require_bd: true
   spec_template: docs/specs/TEMPLATE.md
   plan_template: docs/plans/TEMPLATE.md
   tasks_schema: docs/contracts/autonomy-tasks.schema.json

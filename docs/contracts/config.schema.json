@@ -431,6 +431,21 @@
           "type": "boolean",
           "default": false
         },
+        "require_actions": {
+          "type": "boolean",
+          "description": "Require a valid ACTIONS payload for autonomy runs (defaults to true when autonomy is enabled).",
+          "default": true
+        },
+        "require_next": {
+          "type": "boolean",
+          "description": "Require explicit next bead selection when multiple beads are ready (defaults to true when autonomy is enabled).",
+          "default": true
+        },
+        "require_bd": {
+          "type": "boolean",
+          "description": "Require bd to be installed for autonomy runs (defaults to true when autonomy is enabled).",
+          "default": true
+        },
         "spec_template": {
           "type": "string",
           "default": "docs/specs/TEMPLATE.md"

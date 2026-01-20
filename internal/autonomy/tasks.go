@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -21,22 +22,29 @@ type TasksFile struct {
 }
 
 type Task struct {
-	ID                 string   `json:"id"`
-	Title              string   `json:"title"`
-	Goal               string   `json:"goal"`
-	Scope              []string `json:"scope"`
-	Files              []string `json:"files"`
-	Dependencies       []string `json:"dependencies"`
-	Skills             []string `json:"skills"`
-	AcceptanceCriteria []string `json:"acceptance_criteria"`
-	Tests              []string `json:"tests"`
-	Docs               []string `json:"docs"`
-	Rollout            string   `json:"rollout"`
-	Observability      string   `json:"observability"`
-	Status             string   `json:"status"`
-	Priority           int      `json:"priority"`
-	Owner              string   `json:"owner"`
-	Notes              string   `json:"notes"`
+	ID                 string     `json:"id"`
+	Title              string     `json:"title"`
+	Goal               string     `json:"goal"`
+	Scope              []string   `json:"scope"`
+	Files              []string   `json:"files"`
+	Dependencies       []string   `json:"dependencies"`
+	Skills             []string   `json:"skills"`
+	AcceptanceCriteria []string   `json:"acceptance_criteria"`
+	Gates              *TaskGates `json:"gates,omitempty"`
+	Tests              []string   `json:"tests"`
+	Docs               []string   `json:"docs"`
+	Rollout            string     `json:"rollout"`
+	Observability      string     `json:"observability"`
+	Status             string     `json:"status"`
+	Priority           int        `json:"priority"`
+	Owner              string     `json:"owner"`
+	Notes              string     `json:"notes"`
+}
+
+type TaskGates struct {
+	Tests        []string `json:"tests,omitempty"`
+	Evidence     []string `json:"evidence,omitempty"`
+	Verification []string `json:"verification,omitempty"`
 }
 
 func (c *Controller) generateTasksFile(ctx context.Context, task, slug, planPath string) (string, TasksFile, error) {
@@ -339,7 +347,21 @@ func validateJSONSchema(schemaPath, payload string) error {
 	if err != nil {
 		return fmt.Errorf("abs schema path: %w", err)
 	}
-	schema, err := jsonschema.Compile("file://" + filepath.ToSlash(absPath))
+	baseDir := filepath.Dir(absPath)
+	tasksPath := filepath.Join(baseDir, "autonomy-tasks.schema.json")
+	actionsPath := filepath.Join(baseDir, "autonomy-actions.schema.json")
+	compiler := jsonschema.NewCompiler()
+	compiler.LoadURL = func(url string) (io.ReadCloser, error) {
+		switch url {
+		case "https://autocodex.dev/contracts/autonomy-tasks.schema.json":
+			return os.Open(tasksPath)
+		case "https://autocodex.dev/contracts/autonomy-actions.schema.json":
+			return os.Open(actionsPath)
+		default:
+			return jsonschema.LoadURL(url)
+		}
+	}
+	schema, err := compiler.Compile("file://" + filepath.ToSlash(absPath))
 	if err != nil {
 		return fmt.Errorf("compile schema: %w", err)
 	}

@@ -16,6 +16,14 @@ updated: YYYY-MM-DD
 ## Tasks (machine-readable)
 - `docs/plans/<slug>-tasks.json` must conform to `docs/contracts/autonomy-tasks.schema.json`.
 
+## Must-have gates (autonomy)
+- Tests required:
+  - 
+- Runtime verification required:
+  - 
+- Evidence required (paths):
+  - 
+
 ## Task list (human summary)
 | id | title | deps | status | notes |
 | --- | --- | --- | --- | --- |

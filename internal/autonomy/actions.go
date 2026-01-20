@@ -37,6 +37,8 @@ type ActionBeadUpdate struct {
 type ActionGates struct {
 	ReviewRequired bool     `json:"review_required"`
 	Tests          []string `json:"tests,omitempty"`
+	Evidence       []string `json:"evidence,omitempty"`
+	Verification   []string `json:"verification,omitempty"`
 	Blocking       bool     `json:"blocking"`
 }
 

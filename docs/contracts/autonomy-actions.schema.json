@@ -90,6 +90,18 @@
             "type": "string"
           }
         },
+        "evidence": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "verification": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
         "blocking": {
           "type": "boolean"
         }

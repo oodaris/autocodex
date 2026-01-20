@@ -19,6 +19,8 @@
   "gates": {
     "review_required": true,
     "tests": ["go test ./internal/contracts -run TestAutonomySchemas"],
+    "evidence": ["docs/contracts/README.md"],
+    "verification": ["Schema example payloads validate."],
     "blocking": true
   },
   "stop": null

@@ -73,6 +73,30 @@
             "type": "string"
           }
         },
+        "gates": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "tests": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "evidence": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "verification": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
         "tests": {
           "type": "array",
           "items": {

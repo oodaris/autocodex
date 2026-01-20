@@ -133,6 +133,7 @@ When autonomy is enabled:
 - Beads are selected in dependency order (`bd ready`).
 - The **test** phase should emit an `ACTIONS` JSON block (see `docs/contracts/autonomy-actions.schema.json`) so autocodex can update bead status and choose the next bead.
 - Gate failures stop the loop and auto-create a fix bead (when beads auto-create is enabled).
+ - Plans should include explicit must-have gates (tests, runtime verification, evidence paths) so autonomy can enforce completion.
 
 ### Autonomy checklist
 - `autocodex.yaml` exists and `autonomy.enabled: true`.

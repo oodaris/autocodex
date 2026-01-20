@@ -123,6 +123,9 @@ type LoopConfig struct {
 
 type AutonomyConfig struct {
 	Enabled             bool                   `yaml:"enabled"`
+	RequireActions      *bool                  `yaml:"require_actions"`
+	RequireNext         *bool                  `yaml:"require_next"`
+	RequireBD           *bool                  `yaml:"require_bd"`
 	SpecTemplate        string                 `yaml:"spec_template"`
 	PlanTemplate        string                 `yaml:"plan_template"`
 	TasksSchema         string                 `yaml:"tasks_schema"`
@@ -274,7 +277,11 @@ func (c *Config) ApplyDefaults() {
 		c.Loop.PhaseIdleSecs = map[string]int{}
 	}
 	if c.Loop.Feedback.Mode == "" {
-		c.Loop.Feedback.Mode = "off"
+		if c.Autonomy.Enabled {
+			c.Loop.Feedback.Mode = "on"
+		} else {
+			c.Loop.Feedback.Mode = "off"
+		}
 	}
 	if c.Loop.Feedback.Sources == nil {
 		c.Loop.Feedback.Sources = []string{"memory", "events", "artifacts"}
@@ -287,6 +294,18 @@ func (c *Config) ApplyDefaults() {
 	}
 	if c.Loop.Feedback.MemoryGlob == "" {
 		c.Loop.Feedback.MemoryGlob = "*.md"
+	}
+	if c.Autonomy.RequireActions == nil {
+		enabled := c.Autonomy.Enabled
+		c.Autonomy.RequireActions = &enabled
+	}
+	if c.Autonomy.RequireNext == nil {
+		enabled := c.Autonomy.Enabled
+		c.Autonomy.RequireNext = &enabled
+	}
+	if c.Autonomy.RequireBD == nil {
+		enabled := c.Autonomy.Enabled
+		c.Autonomy.RequireBD = &enabled
 	}
 	if c.Autonomy.SpecTemplate == "" {
 		c.Autonomy.SpecTemplate = "docs/specs/TEMPLATE.md"
