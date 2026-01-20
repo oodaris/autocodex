@@ -122,10 +122,19 @@ func (c *Controller) generateTasksFile(ctx context.Context, task, slug, planPath
 		jsonPayload, err = extractJSON(resolveOutput(tasksPath, result.Stdout))
 	}
 	if err != nil {
+		if c.Config.Autonomy.AllowFallbackTasks != nil && !*c.Config.Autonomy.AllowFallbackTasks {
+			return "", TasksFile{}, fmt.Errorf("tasks JSON invalid: %w", err)
+		}
 		return c.writeFallbackTasks(task, planPath, tasksPath, beadPrefix)
 	}
 
 	if err := validateJSONSchema(c.Config.Autonomy.TasksSchema, jsonPayload); err != nil {
+		if c.Config.Autonomy.FailOnSchemaError != nil && !*c.Config.Autonomy.FailOnSchemaError {
+			if c.Config.Autonomy.AllowFallbackTasks != nil && !*c.Config.Autonomy.AllowFallbackTasks {
+				return "", TasksFile{}, fmt.Errorf("tasks schema validation failed: %w", err)
+			}
+			return c.writeFallbackTasks(task, planPath, tasksPath, beadPrefix)
+		}
 		return "", TasksFile{}, fmt.Errorf("tasks schema validation failed: %w", err)
 	}
 

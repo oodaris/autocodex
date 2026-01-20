@@ -94,6 +94,8 @@ autonomy:
   require_actions: true
   require_next: true
   require_bd: true
+  fail_on_schema_error: true
+  allow_fallback_tasks: true
   spec_template: docs/specs/TEMPLATE.md
   plan_template: docs/plans/TEMPLATE.md
   tasks_schema: docs/contracts/autonomy-tasks.schema.json

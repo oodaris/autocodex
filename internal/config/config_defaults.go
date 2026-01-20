@@ -131,6 +131,14 @@ func (c *Config) ApplyDefaults() {
 		enabled := c.Autonomy.Enabled
 		c.Autonomy.RequireBD = &enabled
 	}
+	if c.Autonomy.FailOnSchemaError == nil {
+		enabled := true
+		c.Autonomy.FailOnSchemaError = &enabled
+	}
+	if c.Autonomy.AllowFallbackTasks == nil {
+		enabled := true
+		c.Autonomy.AllowFallbackTasks = &enabled
+	}
 	if c.Autonomy.SpecTemplate == "" {
 		c.Autonomy.SpecTemplate = "docs/specs/TEMPLATE.md"
 	}

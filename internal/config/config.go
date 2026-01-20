@@ -123,6 +123,8 @@ type AutonomyConfig struct {
 	RequireActions      *bool                  `yaml:"require_actions"`
 	RequireNext         *bool                  `yaml:"require_next"`
 	RequireBD           *bool                  `yaml:"require_bd"`
+	FailOnSchemaError   *bool                  `yaml:"fail_on_schema_error"`
+	AllowFallbackTasks  *bool                  `yaml:"allow_fallback_tasks"`
 	SpecTemplate        string                 `yaml:"spec_template"`
 	PlanTemplate        string                 `yaml:"plan_template"`
 	TasksSchema         string                 `yaml:"tasks_schema"`

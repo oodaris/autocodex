@@ -48,6 +48,12 @@ func TestLoadAppliesDefaults(t *testing.T) {
 	if cfg.Autonomy.RequireBD == nil || *cfg.Autonomy.RequireBD {
 		t.Fatalf("expected autonomy require_bd default false when autonomy disabled")
 	}
+	if cfg.Autonomy.FailOnSchemaError == nil || !*cfg.Autonomy.FailOnSchemaError {
+		t.Fatalf("expected autonomy fail_on_schema_error default true")
+	}
+	if cfg.Autonomy.AllowFallbackTasks == nil || !*cfg.Autonomy.AllowFallbackTasks {
+		t.Fatalf("expected autonomy allow_fallback_tasks default true")
+	}
 }
 
 func TestValidateRejectsInvalidMode(t *testing.T) {
@@ -109,5 +115,11 @@ func TestAutonomyDefaultsEnableFeedback(t *testing.T) {
 	}
 	if cfg.Autonomy.RequireBD == nil || !*cfg.Autonomy.RequireBD {
 		t.Fatalf("expected autonomy require_bd default true when autonomy enabled")
+	}
+	if cfg.Autonomy.FailOnSchemaError == nil || !*cfg.Autonomy.FailOnSchemaError {
+		t.Fatalf("expected autonomy fail_on_schema_error default true when autonomy enabled")
+	}
+	if cfg.Autonomy.AllowFallbackTasks == nil || !*cfg.Autonomy.AllowFallbackTasks {
+		t.Fatalf("expected autonomy allow_fallback_tasks default true when autonomy enabled")
 	}
 }

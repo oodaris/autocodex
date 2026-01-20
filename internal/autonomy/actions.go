@@ -79,10 +79,16 @@ func (c *Controller) actionsFromRun(runID string) (*Actions, error) {
 			if errors.Is(err, ErrActionsJSONMissing) {
 				continue
 			}
+			if c.Config.Autonomy.FailOnSchemaError != nil && !*c.Config.Autonomy.FailOnSchemaError {
+				return nil, nil
+			}
 			parseErr = err
 			continue
 		}
 		if err := validateJSONSchema(c.Config.Autonomy.ActionsSchema, payload); err != nil {
+			if c.Config.Autonomy.FailOnSchemaError != nil && !*c.Config.Autonomy.FailOnSchemaError {
+				return nil, nil
+			}
 			parseErr = fmt.Errorf("%w: schema validation failed: %v", ErrActionsJSONInvalid, err)
 			continue
 		}
