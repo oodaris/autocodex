@@ -10,6 +10,13 @@ on:
 permissions: read-all
 
 jobs:
+  noop:
+    if: ${{ github.event.repository.private == true && secrets.SCORECARD_READ_TOKEN == '' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Skip scorecard (private repo without token)
+        run: echo "Scorecard skipped: private repo without SCORECARD_READ_TOKEN."
+
   analysis:
     if: ${{ github.event.repository.private == false || secrets.SCORECARD_READ_TOKEN != '' }}
     permissions:
