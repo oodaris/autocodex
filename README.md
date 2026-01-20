@@ -38,6 +38,8 @@ sudo mv autocodex /usr/local/bin/autocodex
 ## Quickstart
 **Prereqs**
 - Go 1.22+
+
+CLI reference: `docs/CLI.md`
 - Codex CLI on PATH (`codex --version`)
 
 ### Choose your setup
