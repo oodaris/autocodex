@@ -65,6 +65,17 @@ func (o *Orchestrator) finalizeRun(
 	run.Status = status
 	finished := time.Now().UTC()
 	run.FinishedAt = &finished
+	if stopReason != nil {
+		run.StopReason = stopReason
+	}
+	if lastErr != nil {
+		msg := lastErr.Error()
+		run.LastError = &msg
+	}
+	if lastAction != nil {
+		run.LastAction = lastAction
+		run.LastActionAt = &finished
+	}
 	_ = o.Store.SaveRun(run)
 
 	var errMsg *string

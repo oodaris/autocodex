@@ -104,6 +104,65 @@ func TestRunControlAndFeedbackPersistence(t *testing.T) {
 	}
 }
 
+func TestListRunsHydratesControl(t *testing.T) {
+	base := t.TempDir()
+	store := NewStore(
+		filepath.Join(base, "state"),
+		filepath.Join(base, "runs"),
+		filepath.Join(base, "memory"),
+		filepath.Join(base, "logs"),
+		filepath.Join(base, "artifacts"),
+	)
+	if err := store.InitDirs(); err != nil {
+		t.Fatalf("init dirs: %v", err)
+	}
+	run, err := store.CreateRun()
+	if err != nil {
+		t.Fatalf("create run: %v", err)
+	}
+
+	reason := "shutdown"
+	action := "stop"
+	now := time.Now().UTC()
+	control := RunControl{
+		RunID:        run.ID,
+		Status:       "failed",
+		StopReason:   &reason,
+		LastAction:   &action,
+		LastActionAt: &now,
+		UpdatedAt:    now,
+	}
+	if err := store.SaveRunControl(control); err != nil {
+		t.Fatalf("save run control: %v", err)
+	}
+
+	runs, err := store.ListRuns()
+	if err != nil {
+		t.Fatalf("list runs: %v", err)
+	}
+	if len(runs) != 1 {
+		t.Fatalf("expected 1 run, got %d", len(runs))
+	}
+	got := runs[0]
+	if got.StopReason == nil || *got.StopReason != reason {
+		t.Fatalf("expected stop reason")
+	}
+	if got.LastAction == nil || *got.LastAction != action {
+		t.Fatalf("expected last action")
+	}
+	if got.Status != "failed" {
+		t.Fatalf("expected status failed, got %s", got.Status)
+	}
+
+	loaded, err := store.GetRun(run.ID)
+	if err != nil {
+		t.Fatalf("get run: %v", err)
+	}
+	if loaded.StopReason == nil || *loaded.StopReason != reason {
+		t.Fatalf("expected stop reason in run detail")
+	}
+}
+
 func TestAppendMemoryDoc(t *testing.T) {
 	base := t.TempDir()
 	store := NewStore(

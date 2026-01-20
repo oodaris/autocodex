@@ -17,10 +17,16 @@ type Run struct {
 	StartedAt    time.Time  `json:"started_at"`
 	FinishedAt   *time.Time `json:"finished_at"`
 	Iterations   int        `json:"iterations"`
+	StopReason   *string    `json:"stop_reason,omitempty"`
+	LastError    *string    `json:"last_error,omitempty"`
+	LastAction   *string    `json:"last_action,omitempty"`
+	LastActionAt *time.Time `json:"last_action_at,omitempty"`
+	UpdatedAt    time.Time  `json:"updated_at"`
 }
 
 func (s *Store) CreateRun() (*Run, error) {
-	id := fmt.Sprintf("%s-%s", time.Now().UTC().Format("20060102T150405Z"), randSuffix(4))
+	now := time.Now().UTC()
+	id := fmt.Sprintf("%s-%s", now.Format("20060102T150405Z"), randSuffix(4))
 	runDir := filepath.Join(s.RunsDir, id)
 	if err := os.MkdirAll(runDir, 0o755); err != nil {
 		return nil, fmt.Errorf("create run dir: %w", err)
@@ -39,7 +45,8 @@ func (s *Store) CreateRun() (*Run, error) {
 	run := &Run{
 		ID:        id,
 		Status:    "running",
-		StartedAt: time.Now().UTC(),
+		StartedAt: now,
+		UpdatedAt: now,
 	}
 	if err := s.SaveRun(run); err != nil {
 		return nil, err
@@ -48,6 +55,7 @@ func (s *Store) CreateRun() (*Run, error) {
 }
 
 func (s *Store) SaveRun(run *Run) error {
+	run.UpdatedAt = time.Now().UTC()
 	path := filepath.Join(s.RunsDir, run.ID, "run.json")
 	data, err := json.MarshalIndent(run, "", "  ")
 	if err != nil {
@@ -78,6 +86,9 @@ func (s *Store) ListRuns() ([]Run, error) {
 		if err := json.Unmarshal(data, &run); err != nil {
 			continue
 		}
+		if control, err := s.GetRunControl(run.ID); err == nil {
+			mergeRunControl(&run, control)
+		}
 		runs = append(runs, run)
 	}
 	sort.Slice(runs, func(i, j int) bool {
@@ -99,5 +110,50 @@ func (s *Store) GetRun(id string) (Run, error) {
 	if err := json.Unmarshal(data, &run); err != nil {
 		return Run{}, fmt.Errorf("parse run: %w", err)
 	}
+	if control, err := s.GetRunControl(run.ID); err == nil {
+		mergeRunControl(&run, control)
+	}
 	return run, nil
+}
+
+func mergeRunControl(run *Run, control *RunControl) {
+	if run == nil || control == nil {
+		return
+	}
+	if control.Status != "" && control.Status != run.Status {
+		if run.Status == "" || run.Status == "running" {
+			run.Status = control.Status
+		}
+	}
+	if control.StopReason != nil {
+		run.StopReason = copyStringPtr(control.StopReason)
+	}
+	if control.LastError != nil {
+		run.LastError = copyStringPtr(control.LastError)
+	}
+	if control.LastAction != nil {
+		run.LastAction = copyStringPtr(control.LastAction)
+	}
+	if control.LastActionAt != nil {
+		run.LastActionAt = copyTimePtr(control.LastActionAt)
+	}
+	if !control.UpdatedAt.IsZero() && control.UpdatedAt.After(run.UpdatedAt) {
+		run.UpdatedAt = control.UpdatedAt
+	}
+}
+
+func copyStringPtr(value *string) *string {
+	if value == nil {
+		return nil
+	}
+	copy := *value
+	return &copy
+}
+
+func copyTimePtr(value *time.Time) *time.Time {
+	if value == nil {
+		return nil
+	}
+	copy := *value
+	return &copy
 }

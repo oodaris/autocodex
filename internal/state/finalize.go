@@ -26,6 +26,13 @@ func (s *Store) FinalizeRun(runID, status, reason, action string) error {
 	now := time.Now().UTC()
 	run.Status = status
 	run.FinishedAt = &now
+	if strings.TrimSpace(reason) != "" {
+		run.StopReason = &reason
+	}
+	if strings.TrimSpace(action) != "" {
+		run.LastAction = &action
+		run.LastActionAt = &now
+	}
 	if err := s.SaveRun(&run); err != nil {
 		return err
 	}

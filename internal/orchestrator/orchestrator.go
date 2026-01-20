@@ -290,8 +290,12 @@ func (o *Orchestrator) Run(ctx context.Context) (*state.Run, error) {
 					continue
 				}
 				run.Status = "failed"
+				run.StopReason = strPtr("phase_failed")
+				run.LastError = &errMsg
+				run.LastAction = nil
 				finished := time.Now().UTC()
 				run.FinishedAt = &finished
+				run.LastActionAt = nil
 				_ = o.Store.SaveRun(run)
 				return run, execErr
 			}
@@ -341,4 +345,8 @@ func (o *Orchestrator) Run(ctx context.Context) (*state.Run, error) {
 	})
 
 	return run, nil
+}
+
+func strPtr(value string) *string {
+	return &value
 }
