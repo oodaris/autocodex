@@ -2,6 +2,8 @@ package autonomy
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"os"
@@ -13,7 +15,7 @@ import (
 	"github.com/oodaris/autocodex/internal/codex"
 )
 
-func (c *Controller) generateSpecAndPlan(ctx context.Context, task string) (string, string, string, error) {
+func (c *Controller) generateSpecAndPlan(ctx context.Context, task, runTag string) (string, string, string, error) {
 	slug := slugify(task)
 	if slug == "" {
 		return "", "", "", errors.New("empty task slug")
@@ -30,8 +32,8 @@ func (c *Controller) generateSpecAndPlan(ctx context.Context, task string) (stri
 		return "", "", "", fmt.Errorf("read plan template: %w", err)
 	}
 
-	specOutputPath := uniquePath(specOutputPath(specTemplatePath, slug))
-	planOutputPath := uniquePath(planOutputPath(planTemplatePath, slug))
+	specOutputPath := specOutputPath(specTemplatePath, slug, runTag)
+	planOutputPath := planOutputPath(planTemplatePath, slug, runTag)
 
 	if err := os.MkdirAll(filepath.Dir(specOutputPath), 0o755); err != nil {
 		return "", "", "", fmt.Errorf("create spec dir: %w", err)
@@ -219,28 +221,21 @@ func latestTaskFromTodo(memoryDir string) (string, error) {
 	return body, nil
 }
 
-func specOutputPath(specTemplate, slug string) string {
+func specOutputPath(specTemplate, slug, runTag string) string {
 	dir := filepath.Dir(specTemplate)
-	return filepath.Join(dir, slug+".md")
+	return filepath.Join(dir, artifactSlug(slug, runTag)+".md")
 }
 
-func planOutputPath(planTemplate, slug string) string {
+func planOutputPath(planTemplate, slug, runTag string) string {
 	dir := filepath.Dir(planTemplate)
-	return filepath.Join(dir, slug+"-plan.md")
+	return filepath.Join(dir, artifactSlug(slug, runTag)+"-plan.md")
 }
 
-func uniquePath(path string) string {
-	if _, err := os.Stat(path); err != nil {
-		return path
+func artifactSlug(slug, runTag string) string {
+	if strings.TrimSpace(runTag) == "" {
+		return slug
 	}
-	ext := filepath.Ext(path)
-	base := strings.TrimSuffix(path, ext)
-	for i := 2; ; i++ {
-		candidate := fmt.Sprintf("%s-%d%s", base, i, ext)
-		if _, err := os.Stat(candidate); err != nil {
-			return candidate
-		}
-	}
+	return fmt.Sprintf("%s-%s", slug, runTag)
 }
 
 func resolveOutput(path, fallback string) string {
@@ -280,4 +275,24 @@ func slugify(input string) string {
 		return "task"
 	}
 	return slug
+}
+
+func newArtifactTag() string {
+	now := time.Now().UTC().Format("20060102T150405Z")
+	suffix := randomHex(4)
+	if suffix == "" {
+		return now
+	}
+	return fmt.Sprintf("%s-%s", now, suffix)
+}
+
+func randomHex(n int) string {
+	if n <= 0 {
+		return ""
+	}
+	buf := make([]byte, n)
+	if _, err := rand.Read(buf); err != nil {
+		return ""
+	}
+	return hex.EncodeToString(buf)
 }

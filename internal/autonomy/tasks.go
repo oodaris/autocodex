@@ -47,7 +47,7 @@ type TaskGates struct {
 	Verification []string `json:"verification,omitempty"`
 }
 
-func (c *Controller) generateTasksFile(ctx context.Context, task, slug, planPath string) (string, TasksFile, error) {
+func (c *Controller) generateTasksFile(ctx context.Context, task, slug, planPath, runTag string) (string, TasksFile, error) {
 	planContent, err := os.ReadFile(planPath)
 	if err != nil {
 		return "", TasksFile{}, fmt.Errorf("read plan: %w", err)
@@ -60,7 +60,7 @@ func (c *Controller) generateTasksFile(ctx context.Context, task, slug, planPath
 		return "", TasksFile{}, fmt.Errorf("read tasks schema: %w", err)
 	}
 
-	tasksPath := uniquePath(tasksOutputPath(c.Config.Autonomy.TasksOutputTemplate, slug))
+	tasksPath := tasksOutputPath(c.Config.Autonomy.TasksOutputTemplate, artifactSlug(slug, runTag))
 	if err := os.MkdirAll(filepath.Dir(tasksPath), 0o755); err != nil {
 		return "", TasksFile{}, fmt.Errorf("create tasks dir: %w", err)
 	}

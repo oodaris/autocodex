@@ -44,11 +44,12 @@ func (c *Controller) Run(ctx context.Context, input Input) (*state.Run, error) {
 			return nil, err
 		}
 	}
-	specPath, planPath, slug, err := c.generateSpecAndPlan(ctx, task)
+	runTag := newArtifactTag()
+	specPath, planPath, slug, err := c.generateSpecAndPlan(ctx, task, runTag)
 	if err != nil {
 		return nil, err
 	}
-	tasksPath, tasksFile, err := c.generateTasksFile(ctx, task, slug, planPath)
+	tasksPath, tasksFile, err := c.generateTasksFile(ctx, task, slug, planPath, runTag)
 	if err != nil {
 		return nil, err
 	}
