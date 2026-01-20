@@ -17,6 +17,7 @@ import (
 	"github.com/oodaris/autocodex/internal/terminal"
 )
 
+// TerminalSessionCreateRequest creates a new terminal session.
 type TerminalSessionCreateRequest struct {
 	WorkspaceID string   `json:"workspace_id,omitempty"`
 	Command     string   `json:"command,omitempty"`

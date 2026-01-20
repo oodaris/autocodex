@@ -9,11 +9,13 @@ import (
 	"github.com/oodaris/autocodex/internal/config"
 )
 
+// AuthConfig represents runtime auth settings for the local API.
 type AuthConfig struct {
 	Enabled bool
 	Tokens  map[string]struct{}
 }
 
+// NewAuthConfig resolves auth tokens from config and environment.
 func NewAuthConfig(cfg config.AuthConfig) *AuthConfig {
 	auth := &AuthConfig{Enabled: cfg.Enabled, Tokens: map[string]struct{}{}}
 	if !cfg.Enabled {

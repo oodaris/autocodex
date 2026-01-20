@@ -11,6 +11,7 @@ import (
 	"github.com/oodaris/autocodex/internal/terminal"
 )
 
+// Server wires storage, auth, and optional UI hosting into an HTTP handler.
 type Server struct {
 	Store    *state.Store
 	Logger   *slog.Logger

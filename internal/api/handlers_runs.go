@@ -9,12 +9,14 @@ import (
 	"github.com/oodaris/autocodex/internal/state"
 )
 
+// RunControlRequest describes a run control action.
 type RunControlRequest struct {
 	Action string `json:"action"`
 	Reason string `json:"reason"`
 	DryRun bool   `json:"dry_run"`
 }
 
+// RunControlResponse is returned when a run control request is accepted.
 type RunControlResponse struct {
 	RunID    string `json:"run_id"`
 	Action   string `json:"action"`
@@ -23,6 +25,7 @@ type RunControlResponse struct {
 	Message  string `json:"message"`
 }
 
+// RunControlStatus exposes the latest control state for a run.
 type RunControlStatus struct {
 	RunID        string     `json:"run_id"`
 	Status       string     `json:"status"`
@@ -30,6 +33,7 @@ type RunControlStatus struct {
 	LastActionAt *time.Time `json:"last_action_at,omitempty"`
 }
 
+// SnapshotCreateRequest configures a snapshot created via the API.
 type SnapshotCreateRequest struct {
 	Reason           string `json:"reason"`
 	IncludeEvents    *bool  `json:"include_events,omitempty"`

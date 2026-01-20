@@ -10,6 +10,7 @@ import (
 
 const watchdogInterval = 30 * time.Second
 
+// RunWatchdog finalizes runs that exceed the heartbeat threshold.
 type RunWatchdog struct {
 	Store               *state.Store
 	Logger              *slog.Logger
