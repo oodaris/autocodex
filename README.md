@@ -91,6 +91,13 @@ autocodex status --latest
 # resume a run using snapshot context (starts a new run)
 autocodex resume --run <run-id> --task "Continue from the previous run"
 
+# list runs and pick interactively (TTY only)
+autocodex resume --list
+autocodex resume
+
+# resume without adding a new task
+autocodex resume --run <run-id> --force
+
 # start the local API
 autocodex api
 
