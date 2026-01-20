@@ -65,6 +65,7 @@ autocodex "Add a quick summary to memory docs."
 - Autonomy mode generates spec/plan/tasks and creates beads from the plan.
 - The **test** phase should emit an `ACTIONS` JSON block (per `docs/contracts/autonomy-actions.schema.json`) so autocodex can update bead status and select the next bead.
 - Gate failures stop the loop and auto-create a fix bead when enabled.
+- Plans must include explicit must-have gates (tests, runtime verification, evidence paths) so autonomy can enforce completion.
 
 ## 3) Commands
 - Go tests: `go test ./...`
