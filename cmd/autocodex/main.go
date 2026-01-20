@@ -36,6 +36,8 @@ func main() {
 		runOnce(os.Args[2:])
 	case "resume":
 		runResume(os.Args[2:])
+	case "doctor":
+		runDoctor(os.Args[2:])
 	case "cleanup":
 		runCleanup(os.Args[2:])
 	case "kill":
@@ -66,13 +68,13 @@ func main() {
 
 func usage() {
 	fmt.Println("Usage: autocodex <command> [args]")
-	fmt.Println("Commands: bootstrap, init, run, once, resume, kill, snapshot, runs, cleanup, status, beads, plugins, api, ui, version, config")
+	fmt.Println("Commands: bootstrap, init, run, once, resume, doctor, kill, snapshot, runs, cleanup, status, beads, plugins, api, ui, version, config")
 	fmt.Println("Shortcut: autocodex \"<task>\" (implicit run with --task)")
 }
 
 func isCommand(value string) bool {
 	switch value {
-	case "bootstrap", "init", "run", "once", "resume", "kill", "snapshot", "runs", "cleanup", "status", "beads", "plugins", "api", "ui", "version", "config":
+	case "bootstrap", "init", "run", "once", "resume", "doctor", "kill", "snapshot", "runs", "cleanup", "status", "beads", "plugins", "api", "ui", "version", "config":
 		return true
 	default:
 		return false

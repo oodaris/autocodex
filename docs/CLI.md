@@ -62,6 +62,15 @@ Flags:
 - `--force`: resume even if run is still running, or to resume a completed run
 - `--list`: list runs and exit (TTY selection if run id not provided)
 
+### doctor
+Run preflight checks for the current repo.
+```bash
+autocodex doctor [--config <path>] [--strict]
+```
+Flags:
+- `--config`: config file path
+- `--strict`: treat warnings as errors
+
 ### status
 Show run status.
 ```bash
