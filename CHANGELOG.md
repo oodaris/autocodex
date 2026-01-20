@@ -7,6 +7,10 @@ Semantic Versioning.
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-01-20
+
+- Added CLI task-input and API middleware tests to improve coverage.
+
 ## [0.2.0] - 2026-01-19
 
 - Embedded production UI and `autocodex ui` command (API + UI served together).
