@@ -172,6 +172,43 @@ func normalizeTasksFile(tasksFile *TasksFile, prefix string) {
 	}
 	idMap := map[string]string{}
 	for i := range tasksFile.Tasks {
+		task := &tasksFile.Tasks[i]
+		if task.Scope == nil {
+			task.Scope = []string{}
+		}
+		if task.Files == nil {
+			task.Files = []string{}
+		}
+		if task.Dependencies == nil {
+			task.Dependencies = []string{}
+		}
+		if task.Skills == nil {
+			task.Skills = []string{}
+		}
+		if task.AcceptanceCriteria == nil {
+			task.AcceptanceCriteria = []string{}
+		}
+		if task.Tests == nil {
+			task.Tests = []string{}
+		}
+		if task.Docs == nil {
+			task.Docs = []string{}
+		}
+		if task.Gates != nil {
+			if task.Gates.Tests == nil {
+				task.Gates.Tests = []string{}
+			}
+			if task.Gates.Evidence == nil {
+				task.Gates.Evidence = []string{}
+			}
+			if task.Gates.Verification == nil {
+				task.Gates.Verification = []string{}
+			}
+		}
+		if strings.TrimSpace(task.Status) == "" {
+			task.Status = "todo"
+		}
+
 		original := strings.TrimSpace(tasksFile.Tasks[i].ID)
 		if original == "" {
 			continue
