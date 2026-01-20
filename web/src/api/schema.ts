@@ -225,8 +225,8 @@ export function parseRuns(value: unknown): Run[] {
     return []
   }
   if (!Array.isArray(value)) {
-    if (isRecord(value) && Array.isArray((value as { runs?: unknown }).runs)) {
-      const runsValue = (value as { runs: unknown }).runs
+    if (isRecord(value) && Array.isArray(value.runs)) {
+      const runsValue = value.runs as unknown[]
       runsValue.forEach((entry, index) => assertRun(entry, `runs[${index}]`))
       return runsValue as Run[]
     }
