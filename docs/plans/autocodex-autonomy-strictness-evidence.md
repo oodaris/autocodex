@@ -79,10 +79,7 @@ Results:
 - Run ID: `20260120T011444Z-907ebbe2` (completed; 5 phases).
 - ACTIONS JSON emitted at `.autocodex/runs/20260120T011444Z-907ebbe2/artifacts/test-final.txt` with `next.type=none` and `gates.blocking=false`.
 - Verified `bd show autocodex-e36` reports status `CLOSED`.
-- Generated artifacts:
-  - `docs/specs/live-smoke-verify-strict-autonomy-generate-spec.md`
-  - `docs/plans/live-smoke-verify-strict-autonomy-generate-spec-plan.md`
-  - `docs/plans/live-smoke-verify-strict-autonomy-generate-spec-tasks.json`
+- Live smoke doc artifacts were generated for the run and then removed after verification to keep the repo clean.
 
 Notes:
 - Autonomy attempted to continue to another ready bead and started run `20260120T012535Z-6e2cb715`; it was stopped to keep the smoke scoped.
