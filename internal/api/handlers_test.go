@@ -55,6 +55,17 @@ func TestHandleRunsEmpty(t *testing.T) {
 	}
 }
 
+func TestHandleRunsMethodNotAllowed(t *testing.T) {
+	srv := newTestServer(t)
+	req := httptest.NewRequest(http.MethodPost, "/runs", strings.NewReader(`{}`))
+	res := httptest.NewRecorder()
+
+	srv.Handler().ServeHTTP(res, req)
+	if res.Code != http.StatusMethodNotAllowed {
+		t.Fatalf("expected 405, got %d", res.Code)
+	}
+}
+
 func TestHandleRunsWithRun(t *testing.T) {
 	srv := newTestServer(t)
 	if _, err := srv.Store.CreateRun(); err != nil {
@@ -76,6 +87,21 @@ func TestHandleRunsWithRun(t *testing.T) {
 	}
 }
 
+func TestHandleRunDetailMethodNotAllowed(t *testing.T) {
+	srv := newTestServer(t)
+	run, err := srv.Store.CreateRun()
+	if err != nil {
+		t.Fatalf("create run: %v", err)
+	}
+	req := httptest.NewRequest(http.MethodPost, "/runs/"+run.ID, strings.NewReader(`{}`))
+	res := httptest.NewRecorder()
+
+	srv.Handler().ServeHTTP(res, req)
+	if res.Code != http.StatusMethodNotAllowed {
+		t.Fatalf("expected 405, got %d", res.Code)
+	}
+}
+
 func TestHandleRunDetailNotFound(t *testing.T) {
 	srv := newTestServer(t)
 	req := httptest.NewRequest(http.MethodGet, "/runs/does-not-exist", nil)
@@ -84,6 +110,28 @@ func TestHandleRunDetailNotFound(t *testing.T) {
 	srv.Handler().ServeHTTP(res, req)
 	if res.Code != http.StatusNotFound {
 		t.Fatalf("expected 404, got %d", res.Code)
+	}
+}
+
+func TestHandleRunEventsEmpty(t *testing.T) {
+	srv := newTestServer(t)
+	run, err := srv.Store.CreateRun()
+	if err != nil {
+		t.Fatalf("create run: %v", err)
+	}
+	req := httptest.NewRequest(http.MethodGet, "/runs/"+run.ID+"/events", nil)
+	res := httptest.NewRecorder()
+
+	srv.Handler().ServeHTTP(res, req)
+	if res.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d", res.Code)
+	}
+	var events []state.RunEvent
+	if err := json.Unmarshal(res.Body.Bytes(), &events); err != nil {
+		t.Fatalf("decode events: %v", err)
+	}
+	if len(events) != 0 {
+		t.Fatalf("expected 0 events")
 	}
 }
 
@@ -103,6 +151,22 @@ func TestHandleRunControlDryRun(t *testing.T) {
 	}
 }
 
+func TestHandleRunControlInvalidAction(t *testing.T) {
+	srv := newTestServer(t)
+	run, err := srv.Store.CreateRun()
+	if err != nil {
+		t.Fatalf("create run: %v", err)
+	}
+	body := `{"action":"nope"}`
+	req := httptest.NewRequest(http.MethodPost, "/runs/"+run.ID+"/control", strings.NewReader(body))
+	res := httptest.NewRecorder()
+
+	srv.Handler().ServeHTTP(res, req)
+	if res.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400, got %d", res.Code)
+	}
+}
+
 func TestHandleRunControlInvalidJSON(t *testing.T) {
 	srv := newTestServer(t)
 	run, err := srv.Store.CreateRun()
@@ -115,6 +179,36 @@ func TestHandleRunControlInvalidJSON(t *testing.T) {
 	srv.Handler().ServeHTTP(res, req)
 	if res.Code != http.StatusBadRequest {
 		t.Fatalf("expected 400, got %d", res.Code)
+	}
+}
+
+func TestHandleSnapshotsInvalidJSON(t *testing.T) {
+	srv := newTestServer(t)
+	run, err := srv.Store.CreateRun()
+	if err != nil {
+		t.Fatalf("create run: %v", err)
+	}
+	req := httptest.NewRequest(http.MethodPost, "/runs/"+run.ID+"/snapshots", strings.NewReader("nope"))
+	res := httptest.NewRecorder()
+
+	srv.Handler().ServeHTTP(res, req)
+	if res.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400, got %d", res.Code)
+	}
+}
+
+func TestHandleSnapshotNotFound(t *testing.T) {
+	srv := newTestServer(t)
+	run, err := srv.Store.CreateRun()
+	if err != nil {
+		t.Fatalf("create run: %v", err)
+	}
+	req := httptest.NewRequest(http.MethodGet, "/runs/"+run.ID+"/snapshots/missing", nil)
+	res := httptest.NewRecorder()
+
+	srv.Handler().ServeHTTP(res, req)
+	if res.Code != http.StatusNotFound {
+		t.Fatalf("expected 404, got %d", res.Code)
 	}
 }
 
@@ -136,6 +230,17 @@ func TestHandleMemoryDocsAndDetail(t *testing.T) {
 	srv.Handler().ServeHTTP(res, req)
 	if res.Code != http.StatusOK {
 		t.Fatalf("expected 200, got %d", res.Code)
+	}
+}
+
+func TestHandleMemoryDocsMethodNotAllowed(t *testing.T) {
+	srv := newTestServer(t)
+	req := httptest.NewRequest(http.MethodPost, "/memory", strings.NewReader(`{}`))
+	res := httptest.NewRecorder()
+
+	srv.Handler().ServeHTTP(res, req)
+	if res.Code != http.StatusMethodNotAllowed {
+		t.Fatalf("expected 405, got %d", res.Code)
 	}
 }
 
@@ -170,6 +275,17 @@ func TestHandleArtifactDetail(t *testing.T) {
 	srv.Handler().ServeHTTP(res, req)
 	if res.Code != http.StatusOK {
 		t.Fatalf("expected 200, got %d", res.Code)
+	}
+}
+
+func TestHandleArtifactDetailNotFound(t *testing.T) {
+	srv := newTestServer(t)
+	req := httptest.NewRequest(http.MethodGet, "/artifacts/invalid", nil)
+	res := httptest.NewRecorder()
+
+	srv.Handler().ServeHTTP(res, req)
+	if res.Code != http.StatusNotFound {
+		t.Fatalf("expected 404, got %d", res.Code)
 	}
 }
 

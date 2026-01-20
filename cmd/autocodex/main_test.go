@@ -1,6 +1,7 @@
 package main
 
 import (
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -10,6 +11,60 @@ import (
 	"github.com/oodaris/autocodex/internal/config"
 	"github.com/oodaris/autocodex/internal/state"
 )
+
+func captureStdout(t *testing.T, fn func()) string {
+	t.Helper()
+	original := os.Stdout
+	r, w, err := os.Pipe()
+	if err != nil {
+		t.Fatalf("pipe: %v", err)
+	}
+	os.Stdout = w
+	fn()
+	_ = w.Close()
+	os.Stdout = original
+	data, _ := io.ReadAll(r)
+	return string(data)
+}
+
+func TestIsCommand(t *testing.T) {
+	if !isCommand("run") {
+		t.Fatalf("expected run to be a command")
+	}
+	if isCommand("nope") {
+		t.Fatalf("expected unknown command to be false")
+	}
+}
+
+func TestIsVersionArg(t *testing.T) {
+	if !isVersionArg("--version") || !isVersionArg("-v") {
+		t.Fatalf("expected version args to be true")
+	}
+	if isVersionArg("version") {
+		t.Fatalf("expected version command to be false for isVersionArg")
+	}
+}
+
+func TestUsageOutput(t *testing.T) {
+	out := captureStdout(t, usage)
+	if !strings.Contains(out, "Usage: autocodex") {
+		t.Fatalf("expected usage output")
+	}
+	if !strings.Contains(out, "Commands:") {
+		t.Fatalf("expected commands list")
+	}
+}
+
+func TestPrintVersionOutput(t *testing.T) {
+	original := version
+	version = "1.2.3-test"
+	defer func() { version = original }()
+	out := captureStdout(t, printVersion)
+	out = strings.TrimSpace(out)
+	if out != version {
+		t.Fatalf("expected version %s, got %s", version, out)
+	}
+}
 
 func TestRequestRunAction(t *testing.T) {
 	base := t.TempDir()
