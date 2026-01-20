@@ -118,13 +118,11 @@ func (c *Controller) generateTasksFile(ctx context.Context, task, slug, planPath
 			}
 			return "", TasksFile{}, fmt.Errorf("tasks generation failed: %w", err)
 		}
+		usedFallback = true
 		jsonPayload, err = extractJSON(resolveOutput(tasksPath, result.Stdout))
 	}
 	if err != nil {
-		if usedFallback {
-			return c.writeFallbackTasks(task, planPath, tasksPath, beadPrefix)
-		}
-		return "", TasksFile{}, err
+		return c.writeFallbackTasks(task, planPath, tasksPath, beadPrefix)
 	}
 
 	if err := validateJSONSchema(c.Config.Autonomy.TasksSchema, jsonPayload); err != nil {
@@ -326,20 +324,48 @@ func tasksOutputPath(template, slug string) string {
 
 func extractJSON(output string) (string, error) {
 	trimmed := strings.TrimSpace(output)
-	if strings.HasPrefix(trimmed, "```") {
-		lines := strings.Split(trimmed, "\n")
-		if len(lines) >= 2 {
-			lines = lines[1:]
-		}
-		if len(lines) > 0 && strings.HasPrefix(lines[len(lines)-1], "```") {
-			lines = lines[:len(lines)-1]
-		}
-		trimmed = strings.TrimSpace(strings.Join(lines, "\n"))
+	if trimmed == "" {
+		return "", fmt.Errorf("empty JSON output")
 	}
-	if !json.Valid([]byte(trimmed)) {
-		return "", fmt.Errorf("invalid JSON returned by codex")
+	if fenced := extractJSONFromFences(trimmed); fenced != "" {
+		return fenced, nil
 	}
-	return trimmed, nil
+	if json.Valid([]byte(trimmed)) {
+		return trimmed, nil
+	}
+	if candidate := extractJSONFromText(trimmed); candidate != "" {
+		return candidate, nil
+	}
+	return "", fmt.Errorf("invalid JSON returned by codex")
+}
+
+func extractJSONFromFences(output string) string {
+	fences := strings.Split(output, "```")
+	for i := 1; i < len(fences); i += 2 {
+		block := strings.TrimSpace(fences[i])
+		block = strings.TrimPrefix(block, "json")
+		block = strings.TrimSpace(block)
+		if json.Valid([]byte(block)) {
+			return block
+		}
+	}
+	return ""
+}
+
+func extractJSONFromText(output string) string {
+	for start := 0; start < len(output); start++ {
+		ch := output[start]
+		if ch != '{' && ch != '[' {
+			continue
+		}
+		for end := len(output); end > start; end-- {
+			candidate := strings.TrimSpace(output[start:end])
+			if json.Valid([]byte(candidate)) {
+				return candidate
+			}
+		}
+	}
+	return ""
 }
 
 func validateJSONSchema(schemaPath, payload string) error {
