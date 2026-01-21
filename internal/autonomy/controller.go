@@ -53,6 +53,16 @@ func (c *Controller) Run(ctx context.Context, input Input) (*state.Run, error) {
 	if err != nil {
 		return nil, err
 	}
+	if c.Store != nil {
+		if err := c.Store.SaveAutonomyArtifacts(state.AutonomyArtifacts{
+			Tag:       runTag,
+			SpecPath:  specPath,
+			PlanPath:  planPath,
+			TasksPath: tasksPath,
+		}); err != nil && c.Logger != nil {
+			c.Logger.Warn("autonomy artifacts record failed", "error", err.Error())
+		}
+	}
 	if err := c.createBeads(tasksFile); err != nil {
 		return nil, err
 	}

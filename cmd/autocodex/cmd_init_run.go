@@ -279,12 +279,15 @@ func appendArtifactHints(payload string, cfg config.Config, startPhase string, u
 	if startIdx < 0 {
 		return payload, nil
 	}
-	specPath, planPath := latestSpecPlan(cfg)
+	specPath, planPath, tasksPath := latestAutonomyArtifacts(cfg)
 	if startIdx >= phaseIndex("plan") && specPath != "" {
 		payload = appendHint(payload, fmt.Sprintf("Use existing spec: %s", specPath))
 	}
 	if startIdx >= phaseIndex("implement") && planPath != "" {
 		payload = appendHint(payload, fmt.Sprintf("Use existing plan: %s", planPath))
+	}
+	if startIdx >= phaseIndex("implement") && tasksPath != "" {
+		payload = appendHint(payload, fmt.Sprintf("Use existing tasks file: %s", tasksPath))
 	}
 	return payload, nil
 }
@@ -317,7 +320,13 @@ func phaseIndex(name string) int {
 	}
 }
 
-func latestSpecPlan(cfg config.Config) (string, string) {
+func latestAutonomyArtifacts(cfg config.Config) (string, string, string) {
+	store := state.NewStore(cfg.StateDir(), cfg.RunsDir(), cfg.MemoryDir(), cfg.LogsDir(), cfg.ArtifactsDir())
+	if err := store.InitDirs(); err == nil {
+		if art, err := store.LoadLatestAutonomyArtifacts(); err == nil && art != nil {
+			return art.SpecPath, art.PlanPath, art.TasksPath
+		}
+	}
 	specDir := filepath.Dir(cfg.Autonomy.SpecTemplate)
 	planDir := filepath.Dir(cfg.Autonomy.PlanTemplate)
 	spec := latestFile(specDir, func(name string) bool {
@@ -326,7 +335,7 @@ func latestSpecPlan(cfg config.Config) (string, string) {
 	plan := latestFile(planDir, func(name string) bool {
 		return strings.HasSuffix(name, ".md") && !strings.EqualFold(name, "TEMPLATE.md")
 	})
-	return spec, plan
+	return spec, plan, ""
 }
 
 func latestFile(dir string, accept func(string) bool) string {

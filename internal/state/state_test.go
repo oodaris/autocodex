@@ -261,6 +261,36 @@ func TestCleanupRuns(t *testing.T) {
 	}
 }
 
+func TestAutonomyArtifactsRoundTrip(t *testing.T) {
+	base := t.TempDir()
+	store := NewStore(
+		filepath.Join(base, "state"),
+		filepath.Join(base, "runs"),
+		filepath.Join(base, "memory"),
+		filepath.Join(base, "logs"),
+		filepath.Join(base, "artifacts"),
+	)
+	if err := store.InitDirs(); err != nil {
+		t.Fatalf("init dirs: %v", err)
+	}
+	art := AutonomyArtifacts{
+		Tag:       "tag-1234",
+		SpecPath:  "docs/specs/spec.md",
+		PlanPath:  "docs/plans/plan.md",
+		TasksPath: "docs/plans/tasks.json",
+	}
+	if err := store.SaveAutonomyArtifacts(art); err != nil {
+		t.Fatalf("save artifacts: %v", err)
+	}
+	loaded, err := store.LoadLatestAutonomyArtifacts()
+	if err != nil {
+		t.Fatalf("load artifacts: %v", err)
+	}
+	if loaded == nil || loaded.Tag != art.Tag || loaded.SpecPath != art.SpecPath || loaded.PlanPath != art.PlanPath || loaded.TasksPath != art.TasksPath {
+		t.Fatalf("unexpected artifacts: %#v", loaded)
+	}
+}
+
 func TestRunHeartbeat(t *testing.T) {
 	base := t.TempDir()
 	store := NewStore(
