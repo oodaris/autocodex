@@ -52,6 +52,7 @@ footprint and a full autonomy experience.
 **Initialize** (minimal setup)
 - Creates `autocodex.yaml` if missing.
 - Creates local state + memory docs under `.autocodex/`.
+- Initializes a git repo + Beads if missing (disable with `--init-git=false` / `--init-bd=false`).
 - Best when you want to supply your own templates/skills or keep autonomy off.
 
 ```bash
@@ -60,6 +61,7 @@ autocodex init
 
 **Bootstrap** (full autonomy out of the box)
 - Creates `autocodex.yaml` if missing.
+- Initializes a git repo + Beads if missing (disable with `--init-git=false` / `--init-bd=false`).
 - Writes autonomy templates + schemas into `docs/`.
 - Writes a minimal skill pack into `skills/` so autonomy can run immediately.
 - Does **not** overwrite existing files unless you pass `--force`.
@@ -116,6 +118,9 @@ autocodex snapshot 20260115T142253Z-4a4ae121 --reason "handoff"
 
 # clean up old runs (14 days by default)
 autocodex cleanup --dry-run
+
+# remove a specific run (and its logs)
+autocodex cleanup --run <run-id>
 ```
 
 **UI (embedded)**
@@ -145,6 +150,13 @@ autocodex run --config path/to/autocodex.yaml --task "Review backend API and fix
 echo "Review backend API and fix issues." | autocodex run --task-stdin
 ```
 
+**Resume from an existing plan/phase**
+```bash
+# start at implementation, using the latest spec/plan/tasks artifacts
+autocodex run --start-phase implement --use-latest-artifacts \
+  --task "Continue from existing artifacts"
+```
+
 For a longer walkthrough, see `docs/quickstart.md`.
 
 ## Autonomy loop
@@ -162,6 +174,14 @@ When autonomy is enabled:
 - The **test** phase should emit an `ACTIONS` JSON block (see `docs/contracts/autonomy-actions.schema.json`) so autocodex can update bead status and choose the next bead.
 - Gate failures stop the loop and auto-create a fix bead (when beads auto-create is enabled).
  - Plans should include explicit must-have gates (tests, runtime verification, evidence paths) so autonomy can enforce completion.
+
+### Artifacts and cleanup
+Each run stores artifacts under `.autocodex/runs/<run-id>/artifacts` and logs under `.autocodex/logs/<run-id>.jsonl`.
+At the end of a run, autocodex prints a short summary (run id + spec/plan/tasks paths) and a cleanup command you can copy:
+```bash
+autocodex cleanup --run <run-id>
+```
+Use `autocodex cleanup --dry-run` (or `--retention-days`) to prune older runs safely.
 
 ### Autonomy checklist
 - `autocodex.yaml` exists and `autonomy.enabled: true`.
