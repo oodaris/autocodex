@@ -124,15 +124,17 @@ func (o *Orchestrator) gatherFeedback(runID string) (string, state.RunFeedback, 
 			if !appendWithLimit(header) {
 				break
 			}
+			limitReached := false
 			switch cfg.MemoryMode {
 			case "ref_only":
 				if !appendWithLimit(fmt.Sprintf("File: %s (read if needed)\n", filepath.Join(o.Store.MemoryDir, detail.Name))) {
-					break
+					limitReached = true
 				}
 			case "summary_ref":
 				summary := summarizeContent(detail.Content, cfg.SummaryMaxLines)
 				if summary != "" {
 					if !appendWithLimit(summary) {
+						limitReached = true
 						break
 					}
 					if !strings.HasSuffix(summary, "\n") {
@@ -140,12 +142,15 @@ func (o *Orchestrator) gatherFeedback(runID string) (string, state.RunFeedback, 
 					}
 				}
 				if !appendWithLimit(fmt.Sprintf("File: %s (read if needed)\n", filepath.Join(o.Store.MemoryDir, detail.Name))) {
-					break
+					limitReached = true
 				}
 			default:
 				if !appendWithLimit(fmt.Sprintf("%s\n", detail.Content)) {
-					break
+					limitReached = true
 				}
+			}
+			if limitReached {
+				break
 			}
 		}
 	}
