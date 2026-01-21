@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
@@ -17,6 +18,27 @@ type CleanupOptions struct {
 type CleanupResult struct {
 	Deleted []string
 	Skipped []string
+}
+
+func (s *Store) DeleteRun(runID string) error {
+	if strings.TrimSpace(runID) == "" {
+		return errors.New("run id is required")
+	}
+	runDir := filepath.Join(s.RunsDir, runID)
+	if _, err := os.Stat(runDir); err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return fmt.Errorf("run not found")
+		}
+		return fmt.Errorf("stat run dir %s: %w", runDir, err)
+	}
+	if err := os.RemoveAll(runDir); err != nil {
+		return fmt.Errorf("remove run dir %s: %w", runDir, err)
+	}
+	logPath := filepath.Join(s.LogsDir, runID+".jsonl")
+	if err := os.Remove(logPath); err != nil && !errors.Is(err, os.ErrNotExist) {
+		return fmt.Errorf("remove run log %s: %w", logPath, err)
+	}
+	return nil
 }
 
 func (s *Store) CleanupRuns(opts CleanupOptions) (CleanupResult, error) {
@@ -50,13 +72,8 @@ func (s *Store) CleanupRuns(opts CleanupOptions) (CleanupResult, error) {
 		if opts.DryRun {
 			continue
 		}
-		runDir := filepath.Join(s.RunsDir, run.ID)
-		if err := os.RemoveAll(runDir); err != nil {
-			return result, fmt.Errorf("remove run dir %s: %w", runDir, err)
-		}
-		logPath := filepath.Join(s.LogsDir, run.ID+".jsonl")
-		if err := os.Remove(logPath); err != nil && !errors.Is(err, os.ErrNotExist) {
-			return result, fmt.Errorf("remove run log %s: %w", logPath, err)
+		if err := s.DeleteRun(run.ID); err != nil {
+			return result, err
 		}
 	}
 	return result, nil

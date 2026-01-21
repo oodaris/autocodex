@@ -261,6 +261,40 @@ func TestCleanupRuns(t *testing.T) {
 	}
 }
 
+func TestDeleteRun(t *testing.T) {
+	base := t.TempDir()
+	store := NewStore(
+		filepath.Join(base, "state"),
+		filepath.Join(base, "runs"),
+		filepath.Join(base, "memory"),
+		filepath.Join(base, "logs"),
+		filepath.Join(base, "artifacts"),
+	)
+	if err := store.InitDirs(); err != nil {
+		t.Fatalf("init dirs: %v", err)
+	}
+	run, err := store.CreateRun()
+	if err != nil {
+		t.Fatalf("create run: %v", err)
+	}
+	logPath := filepath.Join(store.LogsDir, run.ID+".jsonl")
+	if err := os.WriteFile(logPath, []byte("log"), 0o644); err != nil {
+		t.Fatalf("write log: %v", err)
+	}
+	if err := store.DeleteRun(run.ID); err != nil {
+		t.Fatalf("delete run: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(store.RunsDir, run.ID)); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("expected run dir removed, err=%v", err)
+	}
+	if _, err := os.Stat(logPath); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("expected log removed, err=%v", err)
+	}
+	if err := store.DeleteRun(run.ID); err == nil {
+		t.Fatalf("expected error deleting missing run")
+	}
+}
+
 func TestAutonomyArtifactsRoundTrip(t *testing.T) {
 	base := t.TempDir()
 	store := NewStore(

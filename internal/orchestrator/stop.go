@@ -2,6 +2,8 @@ package orchestrator
 
 import (
 	"context"
+	"fmt"
+	"strings"
 	"time"
 
 	"github.com/oodaris/autocodex/internal/state"
@@ -95,5 +97,16 @@ func (o *Orchestrator) finalizeRun(
 
 	if err := o.appendRunSummary(run, stopReason, lastErr, lastAction); err != nil && o.Logger != nil {
 		o.Logger.Warn("memory summary append failed", "stage", "finalize", "run_id", run.ID, "error", err.Error())
+	}
+
+	if o.Logger != nil && o.Store != nil && run != nil {
+		if artifacts, err := o.Store.ListArtifacts(run.ID); err == nil && len(artifacts) > 0 {
+			names := make([]string, 0, len(artifacts))
+			for _, artifact := range artifacts {
+				names = append(names, artifact.Name)
+			}
+			o.Logger.Info("run artifacts", "run_id", run.ID, "artifacts", strings.Join(names, ", "))
+		}
+		o.Logger.Info("run cleanup", "run_id", run.ID, "command", fmt.Sprintf("autocodex cleanup --run %s", run.ID))
 	}
 }

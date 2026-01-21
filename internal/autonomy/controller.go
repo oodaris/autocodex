@@ -113,6 +113,16 @@ func (c *Controller) Run(ctx context.Context, input Input) (*state.Run, error) {
 			return run, err
 		}
 		lastRun = run
+		if c.Logger != nil {
+			c.Logger.Info(
+				"autonomy run summary",
+				"run_id", run.ID,
+				"spec_path", specPath,
+				"plan_path", planPath,
+				"tasks_path", tasksPath,
+				"cleanup", fmt.Sprintf("autocodex cleanup --run %s", run.ID),
+			)
+		}
 
 		actions, actionsErr := c.actionsFromRun(run.ID)
 		if actionsErr != nil && !requireActions && c.Logger != nil {

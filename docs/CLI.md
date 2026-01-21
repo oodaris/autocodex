@@ -118,10 +118,11 @@ Flags:
 ### cleanup
 Remove old runs.
 ```bash
-autocodex cleanup [--config <path>] [--retention-days N] [--dry-run] [--json]
+autocodex cleanup [--config <path>] [--run <run-id>] [--retention-days N] [--dry-run] [--json]
 ```
 Flags:
 - `--config`: config file path
+- `--run`: delete a single run by id (ignores retention-days)
 - `--retention-days`: days to retain completed runs (0 = use config)
 - `--dry-run`: list deletions only
 - `--json`: output JSON

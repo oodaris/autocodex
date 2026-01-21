@@ -204,6 +204,7 @@ func resumeMessage(run state.Run, taskPayload string, force bool) (string, error
 func runCleanup(args []string) {
 	fs := flag.NewFlagSet("cleanup", flag.ExitOnError)
 	configPath := fs.String("config", config.ResolveConfigPath(), "Config file path")
+	runID := fs.String("run", "", "remove a single run by id")
 	retentionDays := fs.Int("retention-days", 0, "remove completed runs older than N days (0 = use config)")
 	dryRun := fs.Bool("dry-run", false, "list runs to be removed without deleting")
 	jsonOut := fs.Bool("json", false, "output JSON")
@@ -213,15 +214,41 @@ func runCleanup(args []string) {
 	if err != nil {
 		exitErr(err)
 	}
+	store := state.NewStore(cfg.StateDir(), cfg.RunsDir(), cfg.MemoryDir(), cfg.LogsDir(), cfg.ArtifactsDir())
+	if err := store.InitDirs(); err != nil {
+		exitErr(err)
+	}
+
+	if strings.TrimSpace(*runID) != "" {
+		if _, err := store.GetRun(*runID); err != nil {
+			exitErr(err)
+		}
+		if *dryRun {
+			result := state.CleanupResult{Deleted: []string{*runID}}
+			if *jsonOut {
+				writeJSON(result)
+				return
+			}
+			fmt.Printf("Would remove run %s.\n", *runID)
+			return
+		}
+		if err := store.DeleteRun(*runID); err != nil {
+			exitErr(err)
+		}
+		result := state.CleanupResult{Deleted: []string{*runID}}
+		if *jsonOut {
+			writeJSON(result)
+			return
+		}
+		fmt.Printf("Removed run %s.\n", *runID)
+		return
+	}
+
 	if *retentionDays == 0 {
 		*retentionDays = cfg.Cleanup.RetentionDays
 	}
 	if *retentionDays <= 0 {
 		exitErr(fmt.Errorf("retention days must be > 0"))
-	}
-	store := state.NewStore(cfg.StateDir(), cfg.RunsDir(), cfg.MemoryDir(), cfg.LogsDir(), cfg.ArtifactsDir())
-	if err := store.InitDirs(); err != nil {
-		exitErr(err)
 	}
 
 	result, err := store.CleanupRuns(state.CleanupOptions{
