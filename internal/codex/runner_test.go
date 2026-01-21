@@ -37,8 +37,6 @@ func TestRunnerStreamsOutput(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create stderr file: %v", err)
 	}
-	defer stdoutFile.Close()
-	defer stderrFile.Close()
 
 	ctx := WithOutputSinks(context.Background(), stdoutFile, stderrFile)
 	runner := Runner{
@@ -49,6 +47,18 @@ func TestRunnerStreamsOutput(t *testing.T) {
 
 	if _, err := runner.Exec(ctx, "hello"); err != nil {
 		t.Fatalf("exec: %v", err)
+	}
+	if err := stdoutFile.Sync(); err != nil {
+		t.Fatalf("sync stdout: %v", err)
+	}
+	if err := stderrFile.Sync(); err != nil {
+		t.Fatalf("sync stderr: %v", err)
+	}
+	if err := stdoutFile.Close(); err != nil {
+		t.Fatalf("close stdout: %v", err)
+	}
+	if err := stderrFile.Close(); err != nil {
+		t.Fatalf("close stderr: %v", err)
 	}
 
 	stdoutBytes, err := os.ReadFile(stdoutPath)
