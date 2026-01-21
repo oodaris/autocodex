@@ -37,6 +37,17 @@ tar -xzf autocodex_*_darwin_arm64.tar.gz
 sudo mv autocodex /usr/local/bin/autocodex
 ```
 
+**Latest release (version‑pinned by variable)**
+```bash
+# requires gh (GitHub CLI)
+VERSION=$(gh release view -R oodaris/autocodex --json tagName -q .tagName | sed 's/^v//')
+ARCH=darwin_arm64
+gh release download "v${VERSION}" -R oodaris/autocodex -p "autocodex_${VERSION}_${ARCH}.tar.gz"
+tar -xzf "autocodex_${VERSION}_${ARCH}.tar.gz"
+sudo mv autocodex /usr/local/bin/autocodex
+autocodex --version
+```
+
 ## Quickstart
 **Prereqs**
 - Go 1.22+
