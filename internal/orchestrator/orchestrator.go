@@ -35,6 +35,13 @@ func (o *Orchestrator) Run(ctx context.Context) (*state.Run, error) {
 	if err != nil {
 		return nil, err
 	}
+	run.Model = o.Config.Codex.Model
+	run.Reasoning = o.Config.Codex.ReasoningEffort
+	run.CodexCLI = o.Config.Codex.CLIPath
+	run.Mode = o.Config.Mode
+	if err := o.Store.SaveRun(run); err != nil {
+		return nil, err
+	}
 	lock, err := o.Store.AcquireRunLock(run.ID)
 	if err != nil {
 		run.Status = "failed"
@@ -84,7 +91,14 @@ func (o *Orchestrator) Run(ctx context.Context) (*state.Run, error) {
 		TS:      time.Now().UTC(),
 		Type:    "run_start",
 		Message: "run started",
-		Meta:    map[string]string{"trace_id": traceID, "bead_id": beadID},
+		Meta: map[string]string{
+			"trace_id":       traceID,
+			"bead_id":        beadID,
+			"model":          o.Config.Codex.Model,
+			"reasoning":      o.Config.Codex.ReasoningEffort,
+			"codex_cli":      o.Config.Codex.CLIPath,
+			"autocodex_mode": o.Config.Mode,
+		},
 	})
 
 	startTime := time.Now().UTC()

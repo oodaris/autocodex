@@ -14,6 +14,10 @@ type Run struct {
 	ID           string     `json:"id"`
 	Status       string     `json:"status"`
 	CurrentPhase string     `json:"current_phase"`
+	Model        string     `json:"model,omitempty"`
+	Reasoning    string     `json:"reasoning_effort,omitempty"`
+	CodexCLI     string     `json:"codex_cli,omitempty"`
+	Mode         string     `json:"mode,omitempty"`
 	StartedAt    time.Time  `json:"started_at"`
 	FinishedAt   *time.Time `json:"finished_at"`
 	Iterations   int        `json:"iterations"`
