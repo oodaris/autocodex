@@ -55,7 +55,7 @@ func (r Runner) Exec(ctx context.Context, prompt string) (ExecResult, error) {
 		args = append(args, "--model", r.Model)
 	}
 	if r.ReasoningEffort != "" {
-		args = append(args, "-c", fmt.Sprintf(`reasoning.effort=%q`, r.ReasoningEffort))
+		args = append(args, "-c", fmt.Sprintf(`model_reasoning_effort=%q`, r.ReasoningEffort))
 	}
 	if r.JSONOutput {
 		args = append(args, "--json")

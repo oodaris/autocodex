@@ -116,6 +116,15 @@ func (c *Config) ApplyDefaults() {
 	if c.Loop.Feedback.MaxEvents == 0 {
 		c.Loop.Feedback.MaxEvents = 200
 	}
+	if c.Loop.Feedback.MemoryMode == "" {
+		c.Loop.Feedback.MemoryMode = "summary_ref"
+	}
+	if c.Loop.Feedback.SnapshotMode == "" {
+		c.Loop.Feedback.SnapshotMode = "summary_ref"
+	}
+	if c.Loop.Feedback.SummaryMaxLines == 0 {
+		c.Loop.Feedback.SummaryMaxLines = 20
+	}
 	if c.Loop.Feedback.MemoryGlob == "" {
 		c.Loop.Feedback.MemoryGlob = "*.md"
 	}
@@ -138,6 +147,10 @@ func (c *Config) ApplyDefaults() {
 	if c.Autonomy.AllowFallbackTasks == nil {
 		enabled := true
 		c.Autonomy.AllowFallbackTasks = &enabled
+	}
+	if c.Autonomy.KeepInvalidPayloads == nil {
+		enabled := true
+		c.Autonomy.KeepInvalidPayloads = &enabled
 	}
 	if c.Autonomy.SpecTemplate == "" {
 		c.Autonomy.SpecTemplate = "docs/specs/TEMPLATE.md"

@@ -18,7 +18,10 @@ Controls the Codex CLI invocation.
 
 - `cli_path`: path or binary name (default: `codex`)
 - `model`: default `gpt-5.2-codex`
-- `reasoning_effort`: default `xhigh`
+- `reasoning_effort`: default `xhigh` (passed to Codex as `-c model_reasoning_effort=...`)
+  - Model-specific limits apply (examples):
+    - `gpt-5.1*`: `low|medium|high` (no `xhigh`)
+  - `xhigh` is model-dependent; use `medium`/`high` if unsure.
 - `timeout_seconds`: per-run timeout
 - `extra_args`: additional CLI flags
 - `approval_policy` and `sandbox_mode`: ignored in `mode: yolo`
@@ -102,6 +105,12 @@ Autonomy loop controls.
   - Defaults to `on` when `autonomy.enabled: true`
   - `sources` may include `snapshot` (used by `autocodex resume` to inject snapshot context)
   - `snapshot_path` is set automatically by `autocodex resume` (usually leave empty)
+- `memory_mode`: how memory docs are injected (`inline`, `summary_ref`, `ref_only`)
+- `snapshot_mode`: how resume snapshots are injected (`inline`, `summary_ref`, `ref_only`)
+- `summary_max_lines`: max lines for summaries when using `summary_ref`
+- Recommendation: use `summary_ref` for speed; `inline` for full determinism
+  - `ref_only` includes a short instruction telling the agent to read referenced files when needed
+  - Summaries prefer headings/bullets; falls back to the first non-empty lines
 
 ### `autonomy`
 Spec/plan/bead automation controls (feature-flagged).
@@ -112,6 +121,7 @@ Spec/plan/bead automation controls (feature-flagged).
 - `require_bd`: require `bd` to be installed when autonomy is enabled (defaults to true when autonomy enabled)
 - `fail_on_schema_error`: fail immediately when task/action JSON fails schema validation (default true)
 - `allow_fallback_tasks`: when task JSON is invalid, allow writing a fallback tasks file (default true)
+- `keep_invalid_payloads`: keep invalid task/action outputs on disk for debugging (default true)
 - `spec_template`, `plan_template`: template paths for generated docs
 - `tasks_schema`, `actions_schema`: contract paths used by parsers
 - `tasks_output_template`: where `<slug>-tasks.json` is written

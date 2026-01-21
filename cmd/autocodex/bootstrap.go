@@ -12,20 +12,26 @@ func runBootstrap(args []string) {
 	fs := flag.NewFlagSet("bootstrap", flag.ExitOnError)
 	configPath := fs.String("config", config.ResolveConfigPath(), "Config file path")
 	force := fs.Bool("force", false, "overwrite existing templates, schemas, and skills")
+	initGit := fs.Bool("init-git", true, "initialize a git repo if missing")
+	initBD := fs.Bool("init-bd", true, "initialize beads if missing")
 	fs.Parse(args)
 
-	if err := bootstrapRepo(*configPath, *force); err != nil {
+	if err := bootstrapRepo(*configPath, *force, *initGit, *initBD); err != nil {
 		exitErr(err)
 	}
 	fmt.Printf("Bootstrap complete. Config: %s\n", *configPath)
 }
 
-func bootstrapRepo(configPath string, force bool) error {
+func bootstrapRepo(configPath string, force bool, initGit bool, initBD bool) error {
 	if err := ensureConfig(configPath); err != nil {
 		return err
 	}
 	cfg, err := config.Load(configPath)
 	if err != nil {
+		return err
+	}
+
+	if err := ensureRepoPrereqs(cfg, initGit, initBD); err != nil {
 		return err
 	}
 

@@ -56,17 +56,44 @@ func (o *Orchestrator) gatherFeedback(runID string) (string, state.RunFeedback, 
 		return false
 	}
 
+	var refInstructions string
+	if cfg.MemoryMode == "ref_only" || cfg.SnapshotMode == "ref_only" || cfg.MemoryMode == "summary_ref" || cfg.SnapshotMode == "summary_ref" {
+		refInstructions = "## Referenced Files Usage\nIf any referenced file is relevant to your decision or output, read the file before responding.\n"
+	}
+
 	if sourceEnabled("snapshot") && strings.TrimSpace(cfg.SnapshotPath) != "" {
 		content, err := os.ReadFile(cfg.SnapshotPath)
 		if err == nil {
 			meta.SnapshotPath = cfg.SnapshotPath
+			if refInstructions != "" {
+				if !appendWithLimit(refInstructions) {
+					return b.String(), meta, nil
+				}
+				refInstructions = ""
+			}
 			if !appendWithLimit("## Resume Snapshot\n") {
 				return b.String(), meta, nil
 			}
-			if !appendWithLimit(string(content)) {
-				return b.String(), meta, nil
+			switch cfg.SnapshotMode {
+			case "ref_only":
+				appendWithLimit(fmt.Sprintf("File: %s (read if needed)\n", cfg.SnapshotPath))
+			case "summary_ref":
+				summary := summarizeContent(string(content), cfg.SummaryMaxLines)
+				if summary != "" {
+					if !appendWithLimit(summary) {
+						return b.String(), meta, nil
+					}
+					if !strings.HasSuffix(summary, "\n") {
+						appendWithLimit("\n")
+					}
+				}
+				appendWithLimit(fmt.Sprintf("File: %s (read if needed)\n", cfg.SnapshotPath))
+			default:
+				if !appendWithLimit(string(content)) {
+					return b.String(), meta, nil
+				}
+				appendWithLimit("\n")
 			}
-			appendWithLimit("\n")
 		}
 	}
 
@@ -87,8 +114,38 @@ func (o *Orchestrator) gatherFeedback(runID string) (string, state.RunFeedback, 
 				continue
 			}
 			meta.MemoryDocs = append(meta.MemoryDocs, detail.Name)
-			if !appendWithLimit(fmt.Sprintf("## Memory: %s\n%s\n", detail.Name, detail.Content)) {
+			if refInstructions != "" {
+				if !appendWithLimit(refInstructions) {
+					break
+				}
+				refInstructions = ""
+			}
+			header := fmt.Sprintf("## Memory: %s\n", detail.Name)
+			if !appendWithLimit(header) {
 				break
+			}
+			switch cfg.MemoryMode {
+			case "ref_only":
+				if !appendWithLimit(fmt.Sprintf("File: %s (read if needed)\n", filepath.Join(o.Store.MemoryDir, detail.Name))) {
+					break
+				}
+			case "summary_ref":
+				summary := summarizeContent(detail.Content, cfg.SummaryMaxLines)
+				if summary != "" {
+					if !appendWithLimit(summary) {
+						break
+					}
+					if !strings.HasSuffix(summary, "\n") {
+						appendWithLimit("\n")
+					}
+				}
+				if !appendWithLimit(fmt.Sprintf("File: %s (read if needed)\n", filepath.Join(o.Store.MemoryDir, detail.Name))) {
+					break
+				}
+			default:
+				if !appendWithLimit(fmt.Sprintf("%s\n", detail.Content)) {
+					break
+				}
 			}
 		}
 	}
@@ -143,6 +200,68 @@ func (o *Orchestrator) gatherFeedback(runID string) (string, state.RunFeedback, 
 	meta.Bytes = b.Len()
 	meta.LastPromptSummary = feedbackSummary(meta)
 	return b.String(), meta, nil
+}
+
+func summarizeContent(content string, maxLines int) string {
+	if maxLines <= 0 {
+		return ""
+	}
+	lines := strings.Split(content, "\n")
+	var picks []string
+	var nonEmpty int
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if trimmed == "" {
+			continue
+		}
+		nonEmpty++
+		if isHeadingLine(trimmed) || isBulletLine(trimmed) {
+			picks = append(picks, line)
+		}
+	}
+	if len(picks) == 0 {
+		for _, line := range lines {
+			if strings.TrimSpace(line) == "" {
+				continue
+			}
+			picks = append(picks, line)
+			if len(picks) >= maxLines {
+				break
+			}
+		}
+	}
+	if len(picks) > maxLines {
+		picks = picks[:maxLines]
+	}
+	if len(picks) == 0 {
+		return ""
+	}
+	summary := strings.Join(picks, "\n")
+	truncated := nonEmpty > len(picks)
+	if truncated {
+		summary += "\n...[truncated]\n"
+	}
+	return summary
+}
+
+func isHeadingLine(trimmed string) bool {
+	return strings.HasPrefix(trimmed, "#")
+}
+
+func isBulletLine(trimmed string) bool {
+	if strings.HasPrefix(trimmed, "- ") || strings.HasPrefix(trimmed, "* ") || strings.HasPrefix(trimmed, "+ ") {
+		return true
+	}
+	dot := strings.Index(trimmed, ". ")
+	if dot > 0 {
+		for _, r := range trimmed[:dot] {
+			if r < '0' || r > '9' {
+				return false
+			}
+		}
+		return true
+	}
+	return false
 }
 
 func feedbackSummary(meta state.RunFeedback) string {

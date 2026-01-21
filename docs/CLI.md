@@ -14,21 +14,25 @@ autocodex "Review backend API and fix issues."
 ## Commands
 
 ### bootstrap
-Initialize a repo with config, templates/schemas, and a minimal skill pack.
+Initialize a repo with config, templates/schemas, a minimal skill pack, and (optionally) git + beads.
 ```bash
-autocodex bootstrap [--config <path>] [--force]
+autocodex bootstrap [--config <path>] [--force] [--init-git] [--init-bd]
 ```
 Flags:
 - `--config`: config file path (default `autocodex.yaml`)
 - `--force`: overwrite existing templates/schemas/skills
+- `--init-git`: initialize a git repo if missing (default: true)
+- `--init-bd`: initialize beads if missing (default: true)
 
 ### init
 Minimal setup (config + `.autocodex/`).
 ```bash
-autocodex init [--config <path>]
+autocodex init [--config <path>] [--init-git] [--init-bd]
 ```
 Flags:
 - `--config`: config file path
+- `--init-git`: initialize a git repo if missing (default: true)
+- `--init-bd`: initialize beads if missing (default: true)
 
 ### run
 Run one loop (bounded or continuous based on config).

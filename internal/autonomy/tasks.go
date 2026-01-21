@@ -47,6 +47,8 @@ type TaskGates struct {
 	Verification []string `json:"verification,omitempty"`
 }
 
+const maxInvalidTasksExcerpt = 2000
+
 func (c *Controller) generateTasksFile(ctx context.Context, task, slug, planPath, runTag string) (string, TasksFile, error) {
 	planContent, err := os.ReadFile(planPath)
 	if err != nil {
@@ -100,12 +102,15 @@ func (c *Controller) generateTasksFile(ctx context.Context, task, slug, planPath
 		}
 	}
 
-	jsonPayload, err := extractJSON(resolveOutput(tasksPath, result.Stdout))
+	attempt := 1
+	rawOutput := resolveOutput(tasksPath, result.Stdout)
+	jsonPayload, err := extractJSON(rawOutput)
 	if err != nil && !usedFallback {
 		if c.Logger != nil {
 			c.Logger.Warn("tasks JSON invalid, retrying without skill")
 		}
-		fallbackPrompt := buildFallbackTasksPrompt(task, string(planContent), string(schemaContent), planPath, tasksPath, beadPrefix)
+		invalidPath := c.captureInvalidTasksOutput(rawOutput, tasksPath, attempt, err)
+		fallbackPrompt := buildRetryTasksPrompt(task, string(planContent), string(schemaContent), planPath, tasksPath, beadPrefix, invalidPath, err, rawOutput)
 		outputCtx, cancel = context.WithTimeout(ctx, time.Duration(c.Config.Codex.TimeoutSeconds)*time.Second)
 		if c.Config.Codex.OutputLast {
 			outputCtx = codex.WithOutputPath(outputCtx, tasksPath)
@@ -119,9 +124,12 @@ func (c *Controller) generateTasksFile(ctx context.Context, task, slug, planPath
 			return "", TasksFile{}, fmt.Errorf("tasks generation failed: %w", err)
 		}
 		usedFallback = true
-		jsonPayload, err = extractJSON(resolveOutput(tasksPath, result.Stdout))
+		attempt++
+		rawOutput = resolveOutput(tasksPath, result.Stdout)
+		jsonPayload, err = extractJSON(rawOutput)
 	}
 	if err != nil {
+		c.captureInvalidTasksOutput(rawOutput, tasksPath, attempt, err)
 		if c.Config.Autonomy.AllowFallbackTasks != nil && !*c.Config.Autonomy.AllowFallbackTasks {
 			return "", TasksFile{}, fmt.Errorf("tasks JSON invalid: %w", err)
 		}
@@ -330,6 +338,84 @@ func buildFallbackTasksPrompt(task, planContent, schemaContent, planPath, tasksP
 	b.WriteString(tasksPath)
 	b.WriteString("\n")
 	return b.String()
+}
+
+func buildRetryTasksPrompt(task, planContent, schemaContent, planPath, tasksPath, beadPrefix, invalidPath string, invalidErr error, invalidOutput string) string {
+	base := buildFallbackTasksPrompt(task, planContent, schemaContent, planPath, tasksPath, beadPrefix)
+	var b strings.Builder
+	b.WriteString(base)
+	b.WriteString("\n\nPrevious output was invalid JSON.\n")
+	if invalidErr != nil {
+		b.WriteString("Error: ")
+		b.WriteString(invalidErr.Error())
+		b.WriteString("\n")
+	}
+	if invalidPath != "" {
+		b.WriteString("Invalid output saved at: ")
+		b.WriteString(invalidPath)
+		b.WriteString("\n")
+	}
+	excerpt := truncateForPrompt(invalidOutput, maxInvalidTasksExcerpt)
+	if excerpt != "" {
+		b.WriteString("Invalid output excerpt:\n---\n")
+		b.WriteString(excerpt)
+		b.WriteString("\n---\n")
+	}
+	b.WriteString("Return corrected JSON only.\n")
+	return b.String()
+}
+
+func (c *Controller) captureInvalidTasksOutput(raw, tasksPath string, attempt int, err error) string {
+	if c.Config.Autonomy.KeepInvalidPayloads != nil && !*c.Config.Autonomy.KeepInvalidPayloads {
+		return ""
+	}
+	trimmed := strings.TrimSpace(raw)
+	if trimmed == "" {
+		return ""
+	}
+	if attempt < 1 {
+		attempt = 1
+	}
+	invalidPath := fmt.Sprintf("%s.invalid-%d.txt", tasksPath, attempt)
+	if mkErr := os.MkdirAll(filepath.Dir(invalidPath), 0o755); mkErr != nil {
+		if c.Logger != nil {
+			c.Logger.Warn("failed to create invalid tasks output dir", "error", mkErr)
+		}
+		return ""
+	}
+	var b strings.Builder
+	b.WriteString("generated_at: ")
+	b.WriteString(time.Now().UTC().Format(time.RFC3339))
+	b.WriteString("\n")
+	if err != nil {
+		b.WriteString("error: ")
+		b.WriteString(err.Error())
+		b.WriteString("\n")
+	}
+	b.WriteString("---\n")
+	b.WriteString(trimmed)
+	b.WriteString("\n")
+	if writeErr := os.WriteFile(invalidPath, []byte(b.String()), 0o644); writeErr != nil {
+		if c.Logger != nil {
+			c.Logger.Warn("failed to write invalid tasks output", "error", writeErr)
+		}
+		return ""
+	}
+	if c.Logger != nil {
+		c.Logger.Warn("invalid tasks output captured", "path", invalidPath)
+	}
+	return invalidPath
+}
+
+func truncateForPrompt(input string, maxChars int) string {
+	trimmed := strings.TrimSpace(input)
+	if trimmed == "" {
+		return ""
+	}
+	if maxChars <= 0 || len(trimmed) <= maxChars {
+		return trimmed
+	}
+	return trimmed[:maxChars] + "\n...[truncated]"
 }
 
 func (c *Controller) writeFallbackTasks(task, planPath, tasksPath, beadPrefix string) (string, TasksFile, error) {

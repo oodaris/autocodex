@@ -125,6 +125,7 @@ type AutonomyConfig struct {
 	RequireBD           *bool                  `yaml:"require_bd"`
 	FailOnSchemaError   *bool                  `yaml:"fail_on_schema_error"`
 	AllowFallbackTasks  *bool                  `yaml:"allow_fallback_tasks"`
+	KeepInvalidPayloads *bool                  `yaml:"keep_invalid_payloads"`
 	SpecTemplate        string                 `yaml:"spec_template"`
 	PlanTemplate        string                 `yaml:"plan_template"`
 	TasksSchema         string                 `yaml:"tasks_schema"`
@@ -151,11 +152,14 @@ type PromptGuardrailsConfig struct {
 }
 
 type FeedbackConfig struct {
-	Mode         string   `yaml:"mode"`
-	Sources      []string `yaml:"sources"`
-	MaxArtifacts int      `yaml:"max_artifacts"`
-	MaxEvents    int      `yaml:"max_events"`
-	MaxBytes     int      `yaml:"max_bytes"`
-	MemoryGlob   string   `yaml:"memory_glob"`
-	SnapshotPath string   `yaml:"snapshot_path"`
+	Mode            string   `yaml:"mode"`
+	Sources         []string `yaml:"sources"`
+	MaxArtifacts    int      `yaml:"max_artifacts"`
+	MaxEvents       int      `yaml:"max_events"`
+	MaxBytes        int      `yaml:"max_bytes"`
+	MemoryGlob      string   `yaml:"memory_glob"`
+	MemoryMode      string   `yaml:"memory_mode"`
+	SnapshotMode    string   `yaml:"snapshot_mode"`
+	SummaryMaxLines int      `yaml:"summary_max_lines"`
+	SnapshotPath    string   `yaml:"snapshot_path"`
 }

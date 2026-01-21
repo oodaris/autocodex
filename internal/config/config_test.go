@@ -54,6 +54,9 @@ func TestLoadAppliesDefaults(t *testing.T) {
 	if cfg.Autonomy.AllowFallbackTasks == nil || !*cfg.Autonomy.AllowFallbackTasks {
 		t.Fatalf("expected autonomy allow_fallback_tasks default true")
 	}
+	if cfg.Autonomy.KeepInvalidPayloads == nil || !*cfg.Autonomy.KeepInvalidPayloads {
+		t.Fatalf("expected autonomy keep_invalid_payloads default true")
+	}
 }
 
 func TestValidateRejectsInvalidMode(t *testing.T) {
@@ -92,6 +95,29 @@ func TestValidateRejectsJSONWithoutOutputLast(t *testing.T) {
 	}
 }
 
+func TestValidateRejectsUnsupportedReasoningEffort(t *testing.T) {
+	cfg := Config{Version: "v1", Mode: "yolo"}
+	cfg.ApplyDefaults()
+	cfg.Codex.ReasoningEffort = "banana"
+	if err := cfg.Validate(); err == nil {
+		t.Fatalf("expected validation error")
+	}
+}
+
+func TestValidateRejectsGpt51UnsupportedReasoningEffort(t *testing.T) {
+	cfg := Config{Version: "v1", Mode: "yolo"}
+	cfg.ApplyDefaults()
+	cfg.Codex.Model = "gpt-5.1-codex"
+	cfg.Codex.ReasoningEffort = "xhigh"
+	if err := cfg.Validate(); err == nil {
+		t.Fatalf("expected validation error")
+	}
+	cfg.Codex.ReasoningEffort = "low"
+	if err := cfg.Validate(); err != nil {
+		t.Fatalf("unexpected validation error: %v", err)
+	}
+}
+
 func TestAutonomyDefaultsEnableFeedback(t *testing.T) {
 	tmp := t.TempDir()
 	path := filepath.Join(tmp, "config.yaml")
@@ -121,5 +147,8 @@ func TestAutonomyDefaultsEnableFeedback(t *testing.T) {
 	}
 	if cfg.Autonomy.AllowFallbackTasks == nil || !*cfg.Autonomy.AllowFallbackTasks {
 		t.Fatalf("expected autonomy allow_fallback_tasks default true when autonomy enabled")
+	}
+	if cfg.Autonomy.KeepInvalidPayloads == nil || !*cfg.Autonomy.KeepInvalidPayloads {
+		t.Fatalf("expected autonomy keep_invalid_payloads default true when autonomy enabled")
 	}
 }

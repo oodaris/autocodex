@@ -25,6 +25,8 @@ import (
 func runInit(args []string) {
 	fs := flag.NewFlagSet("init", flag.ExitOnError)
 	configPath := fs.String("config", config.ResolveConfigPath(), "Config file path")
+	initGit := fs.Bool("init-git", true, "initialize a git repo if missing")
+	initBD := fs.Bool("init-bd", true, "initialize beads if missing")
 	fs.Parse(args)
 
 	if err := ensureConfig(*configPath); err != nil {
@@ -33,6 +35,10 @@ func runInit(args []string) {
 
 	cfg, err := config.Load(*configPath)
 	if err != nil {
+		exitErr(err)
+	}
+
+	if err := ensureRepoPrereqs(cfg, *initGit, *initBD); err != nil {
 		exitErr(err)
 	}
 

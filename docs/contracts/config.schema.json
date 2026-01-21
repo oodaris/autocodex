@@ -44,7 +44,8 @@
             "high",
             "xhigh"
           ],
-          "default": "xhigh"
+          "default": "xhigh",
+          "description": "Model-dependent; e.g., gpt-5.1* supports low|medium|high."
         },
         "timeout_seconds": {
           "type": "integer",
@@ -420,6 +421,29 @@
               "type": "string",
               "default": "*.md"
             },
+            "memory_mode": {
+              "type": "string",
+              "enum": [
+                "inline",
+                "summary_ref",
+                "ref_only"
+              ],
+              "default": "summary_ref"
+            },
+            "snapshot_mode": {
+              "type": "string",
+              "enum": [
+                "inline",
+                "summary_ref",
+                "ref_only"
+              ],
+              "default": "summary_ref"
+            },
+            "summary_max_lines": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 20
+            },
             "snapshot_path": {
               "type": "string",
               "default": ""
@@ -460,6 +484,21 @@
         "require_bd": {
           "type": "boolean",
           "description": "Require bd to be installed for autonomy runs (defaults to true when autonomy is enabled).",
+          "default": true
+        },
+        "fail_on_schema_error": {
+          "type": "boolean",
+          "description": "Fail immediately when task/action JSON fails schema validation (default true).",
+          "default": true
+        },
+        "allow_fallback_tasks": {
+          "type": "boolean",
+          "description": "Allow writing fallback tasks JSON when parsing fails (default true).",
+          "default": true
+        },
+        "keep_invalid_payloads": {
+          "type": "boolean",
+          "description": "Persist invalid tasks payloads for debugging (default true).",
           "default": true
         },
         "spec_template": {

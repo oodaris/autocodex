@@ -23,10 +23,8 @@ func (c Config) Validate() error {
 			return fmt.Errorf("invalid codex.sandbox_mode: %s", c.Codex.SandboxMode)
 		}
 	}
-	if c.Codex.ReasoningEffort != "" {
-		if !oneOf(c.Codex.ReasoningEffort, []string{"minimal", "low", "medium", "high", "xhigh"}) {
-			return fmt.Errorf("invalid codex.reasoning_effort: %s", c.Codex.ReasoningEffort)
-		}
+	if err := validateReasoningEffort(c.Codex.Model, c.Codex.ReasoningEffort); err != nil {
+		return err
 	}
 	if c.Codex.JSONOutput && !c.Codex.OutputLast {
 		return errors.New("codex.output_last_message must be true when codex.json_output is enabled")
@@ -76,8 +74,18 @@ func (c Config) Validate() error {
 			return fmt.Errorf("invalid loop.feedback.mode: %s", c.Loop.Feedback.Mode)
 		}
 	}
+	if c.Loop.Feedback.MemoryMode != "" {
+		if !oneOf(c.Loop.Feedback.MemoryMode, []string{"inline", "summary_ref", "ref_only"}) {
+			return fmt.Errorf("invalid loop.feedback.memory_mode: %s", c.Loop.Feedback.MemoryMode)
+		}
+	}
+	if c.Loop.Feedback.SnapshotMode != "" {
+		if !oneOf(c.Loop.Feedback.SnapshotMode, []string{"inline", "summary_ref", "ref_only"}) {
+			return fmt.Errorf("invalid loop.feedback.snapshot_mode: %s", c.Loop.Feedback.SnapshotMode)
+		}
+	}
 	for _, source := range c.Loop.Feedback.Sources {
-		if !oneOf(source, []string{"memory", "events", "artifacts"}) {
+		if !oneOf(source, []string{"memory", "events", "artifacts", "snapshot"}) {
 			return fmt.Errorf("invalid loop.feedback.sources entry: %s", source)
 		}
 	}
@@ -89,6 +97,9 @@ func (c Config) Validate() error {
 	}
 	if c.Loop.Feedback.MaxBytes < 0 {
 		return fmt.Errorf("invalid loop.feedback.max_bytes: %d", c.Loop.Feedback.MaxBytes)
+	}
+	if c.Loop.Feedback.SummaryMaxLines < 0 {
+		return fmt.Errorf("invalid loop.feedback.summary_max_lines: %d", c.Loop.Feedback.SummaryMaxLines)
 	}
 	if c.Loop.PromptGuardrails.ReviewMaxBytes < 0 {
 		return fmt.Errorf("invalid loop.prompt_guardrails.review_max_bytes: %d", c.Loop.PromptGuardrails.ReviewMaxBytes)
@@ -118,6 +129,27 @@ func (c Config) Validate() error {
 		if strings.TrimSpace(c.Autonomy.ActionsSchema) == "" {
 			return errors.New("autonomy.actions_schema is required when autonomy is enabled")
 		}
+	}
+	return nil
+}
+
+func validateReasoningEffort(model, effort string) error {
+	if effort == "" {
+		return nil
+	}
+	allowed := []string{"minimal", "low", "medium", "high", "xhigh"}
+	if !oneOf(effort, allowed) {
+		return fmt.Errorf("invalid codex.reasoning_effort: %s", effort)
+	}
+	if model == "" {
+		return nil
+	}
+	modelLower := strings.ToLower(model)
+	if strings.Contains(modelLower, "gpt-5.1") {
+		allowed = []string{"low", "medium", "high"}
+	}
+	if !oneOf(effort, allowed) {
+		return fmt.Errorf("codex.reasoning_effort %q not supported for model %q (allowed: %s)", effort, model, strings.Join(allowed, ", "))
 	}
 	return nil
 }

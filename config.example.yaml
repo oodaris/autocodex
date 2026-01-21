@@ -83,6 +83,9 @@ loop:
       - memory
       - events
       - artifacts
+    memory_mode: summary_ref
+    snapshot_mode: summary_ref
+    summary_max_lines: 20
     max_artifacts: 20
     max_events: 200
     max_bytes: 0
@@ -96,6 +99,7 @@ autonomy:
   require_bd: true
   fail_on_schema_error: true
   allow_fallback_tasks: true
+  keep_invalid_payloads: true
   spec_template: docs/specs/TEMPLATE.md
   plan_template: docs/plans/TEMPLATE.md
   tasks_schema: docs/contracts/autonomy-tasks.schema.json
