@@ -37,25 +37,27 @@ Flags:
 ### run
 Run one loop (bounded or continuous based on config).
 ```bash
-autocodex run [--config <path>] [--task <text> | --task-file <path> | --task-stdin]
+autocodex run [--config <path>] [--task <text> | --task-file <path> | --task-stdin] [--start-phase <phase>] [--use-latest-artifacts]
 ```
 Flags:
 - `--config`: config file path
 - `--task`: task text (also appended to `memory/TODO.md`)
 - `--task-file`: read task text from file
 - `--task-stdin`: read task text from stdin
+- `--start-phase`: start at a specific phase (ideate/plan/implement/review/test)
+- `--use-latest-artifacts`: when starting after ideate, append latest spec/plan paths to the task (default true)
 
 ### once
 Run a single bounded loop (one pass through phases).
 ```bash
-autocodex once [--config <path>] [--task <text> | --task-file <path> | --task-stdin]
+autocodex once [--config <path>] [--task <text> | --task-file <path> | --task-stdin] [--start-phase <phase>] [--use-latest-artifacts]
 ```
 Flags: same as `run`.
 
 ### resume
 Resume from a previous run using snapshot context (starts a new run).
 ```bash
-autocodex resume [--config <path>] [--run <run-id>] [--task <text> | --task-file <path> | --task-stdin] [--force]
+autocodex resume [--config <path>] [--run <run-id>] [--task <text> | --task-file <path> | --task-stdin] [--start-phase <phase>] [--use-latest-artifacts] [--force]
 ```
 Flags:
 - `--config`: config file path
@@ -63,6 +65,8 @@ Flags:
 - `--task`: optional task text to append before resume
 - `--task-file`: task text from file
 - `--task-stdin`: task text from stdin
+- `--start-phase`: start at a specific phase (ideate/plan/implement/review/test)
+- `--use-latest-artifacts`: when starting after ideate, append latest spec/plan paths to the task (default true)
 - `--force`: resume even if run is still running, or to resume a completed run
 - `--list`: list runs and exit (TTY selection if run id not provided)
 

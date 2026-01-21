@@ -81,6 +81,8 @@ func runResume(args []string) {
 	taskStdin := fs.Bool("task-stdin", false, "read task text from stdin")
 	force := fs.Bool("force", false, "resume even if the run is still running or completed without a new task")
 	list := fs.Bool("list", false, "list runs and exit")
+	startPhase := fs.String("start-phase", "", "start phase (ideate, plan, implement, review, test)")
+	useLatestArtifacts := fs.Bool("use-latest-artifacts", true, "append latest spec/plan references when starting after ideate")
 	fs.Parse(args)
 
 	extraArgs := fs.Args()
@@ -97,6 +99,12 @@ func runResume(args []string) {
 	cfg, err := config.Load(*configPath)
 	if err != nil {
 		exitErr(err)
+	}
+	if err := applyStartPhase(&cfg, *startPhase); err != nil {
+		exitErr(err)
+	}
+	if cfg.Autonomy.Enabled && strings.TrimSpace(*startPhase) != "" {
+		fmt.Println("Warning: autonomy is enabled; it will regenerate spec/plan before the loop. Use resume or disable autonomy to reuse existing artifacts.")
 	}
 	store := state.NewStore(cfg.StateDir(), cfg.RunsDir(), cfg.MemoryDir(), cfg.LogsDir(), cfg.ArtifactsDir())
 	if err := store.InitDirs(); err != nil {
@@ -148,6 +156,10 @@ func runResume(args []string) {
 	}
 
 	if strings.TrimSpace(taskPayload) != "" {
+		taskPayload, err = appendArtifactHints(taskPayload, cfg, *startPhase, *useLatestArtifacts)
+		if err != nil {
+			exitErr(err)
+		}
 		taskPayload, err = applyTaskInput(&cfg, taskPayload)
 		if err != nil {
 			exitErr(err)

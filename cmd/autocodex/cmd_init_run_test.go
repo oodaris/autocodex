@@ -108,3 +108,53 @@ func TestApplyTaskInput(t *testing.T) {
 		t.Fatalf("expected payload in TODO.md")
 	}
 }
+
+func TestApplyStartPhase(t *testing.T) {
+	cfg := &config.Config{Loop: config.LoopConfig{Phases: []string{"ideate", "plan", "implement", "review", "test"}}}
+	if err := applyStartPhase(cfg, "implement"); err != nil {
+		t.Fatalf("applyStartPhase: %v", err)
+	}
+	if got := strings.Join(cfg.Loop.Phases, ","); got != "implement,review,test" {
+		t.Fatalf("unexpected phases: %s", got)
+	}
+}
+
+func TestApplyStartPhaseInvalid(t *testing.T) {
+	cfg := &config.Config{Loop: config.LoopConfig{Phases: []string{"ideate", "plan"}}}
+	if err := applyStartPhase(cfg, "test"); err == nil {
+		t.Fatalf("expected error for invalid phase")
+	}
+}
+
+func TestAppendArtifactHints(t *testing.T) {
+	base := t.TempDir()
+	specDir := filepath.Join(base, "specs")
+	planDir := filepath.Join(base, "plans")
+	if err := os.MkdirAll(specDir, 0o755); err != nil {
+		t.Fatalf("mkdir specs: %v", err)
+	}
+	if err := os.MkdirAll(planDir, 0o755); err != nil {
+		t.Fatalf("mkdir plans: %v", err)
+	}
+	specPath := filepath.Join(specDir, "spec.md")
+	planPath := filepath.Join(planDir, "plan.md")
+	if err := os.WriteFile(specPath, []byte("spec"), 0o644); err != nil {
+		t.Fatalf("write spec: %v", err)
+	}
+	if err := os.WriteFile(planPath, []byte("plan"), 0o644); err != nil {
+		t.Fatalf("write plan: %v", err)
+	}
+	cfg := config.Config{
+		Autonomy: config.AutonomyConfig{
+			SpecTemplate: filepath.Join(specDir, "TEMPLATE.md"),
+			PlanTemplate: filepath.Join(planDir, "TEMPLATE.md"),
+		},
+	}
+	payload, err := appendArtifactHints("do work", cfg, "implement", true)
+	if err != nil {
+		t.Fatalf("appendArtifactHints: %v", err)
+	}
+	if !strings.Contains(payload, specPath) || !strings.Contains(payload, planPath) {
+		t.Fatalf("expected spec/plan paths appended")
+	}
+}

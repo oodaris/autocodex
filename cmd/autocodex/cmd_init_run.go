@@ -59,6 +59,8 @@ func runRun(args []string) {
 	task := fs.String("task", "", "task text to append to TODO.md before run")
 	taskFile := fs.String("task-file", "", "path to task file (appended to TODO.md before run)")
 	taskStdin := fs.Bool("task-stdin", false, "read task text from stdin")
+	startPhase := fs.String("start-phase", "", "start phase (ideate, plan, implement, review, test)")
+	useLatestArtifacts := fs.Bool("use-latest-artifacts", true, "append latest spec/plan references when starting after ideate")
 	fs.Parse(args)
 
 	taskPayload, err := resolveTaskInput(*task, *taskFile, *taskStdin, fs.Args(), os.Stdin)
@@ -71,6 +73,16 @@ func runRun(args []string) {
 		exitErr(err)
 	}
 
+	if err := applyStartPhase(&cfg, *startPhase); err != nil {
+		exitErr(err)
+	}
+	if cfg.Autonomy.Enabled && strings.TrimSpace(*startPhase) != "" {
+		fmt.Println("Warning: autonomy is enabled; it will regenerate spec/plan before the loop. Use resume or disable autonomy to reuse existing artifacts.")
+	}
+	taskPayload, err = appendArtifactHints(taskPayload, cfg, *startPhase, *useLatestArtifacts)
+	if err != nil {
+		exitErr(err)
+	}
 	taskPayload, err = applyTaskInput(&cfg, taskPayload)
 	if err != nil {
 		exitErr(err)
@@ -85,6 +97,8 @@ func runOnce(args []string) {
 	task := fs.String("task", "", "task text to append to TODO.md before run")
 	taskFile := fs.String("task-file", "", "path to task file (appended to TODO.md before run)")
 	taskStdin := fs.Bool("task-stdin", false, "read task text from stdin")
+	startPhase := fs.String("start-phase", "", "start phase (ideate, plan, implement, review, test)")
+	useLatestArtifacts := fs.Bool("use-latest-artifacts", true, "append latest spec/plan references when starting after ideate")
 	fs.Parse(args)
 
 	taskPayload, err := resolveTaskInput(*task, *taskFile, *taskStdin, fs.Args(), os.Stdin)
@@ -93,6 +107,16 @@ func runOnce(args []string) {
 	}
 
 	cfg, err := config.Load(*configPath)
+	if err != nil {
+		exitErr(err)
+	}
+	if err := applyStartPhase(&cfg, *startPhase); err != nil {
+		exitErr(err)
+	}
+	if cfg.Autonomy.Enabled && strings.TrimSpace(*startPhase) != "" {
+		fmt.Println("Warning: autonomy is enabled; it will regenerate spec/plan before the loop. Use resume or disable autonomy to reuse existing artifacts.")
+	}
+	taskPayload, err = appendArtifactHints(taskPayload, cfg, *startPhase, *useLatestArtifacts)
 	if err != nil {
 		exitErr(err)
 	}
@@ -221,6 +245,119 @@ func applyTaskInput(cfg *config.Config, payload string) (string, error) {
 	}
 	fmt.Println("Task appended to TODO.md")
 	return payload, nil
+}
+
+func applyStartPhase(cfg *config.Config, startPhase string) error {
+	if cfg == nil || strings.TrimSpace(startPhase) == "" {
+		return nil
+	}
+	startPhase = strings.ToLower(strings.TrimSpace(startPhase))
+	phases := cfg.Loop.Phases
+	if len(phases) == 0 {
+		return fmt.Errorf("loop phases are empty; cannot start at %s", startPhase)
+	}
+	index := -1
+	for i, phase := range phases {
+		if strings.ToLower(strings.TrimSpace(phase)) == startPhase {
+			index = i
+			break
+		}
+	}
+	if index == -1 {
+		return fmt.Errorf("start phase %q not found in loop phases", startPhase)
+	}
+	cfg.Loop.Phases = phases[index:]
+	return nil
+}
+
+func appendArtifactHints(payload string, cfg config.Config, startPhase string, useLatest bool) (string, error) {
+	if !useLatest || strings.TrimSpace(startPhase) == "" {
+		return payload, nil
+	}
+	startPhase = strings.ToLower(strings.TrimSpace(startPhase))
+	startIdx := phaseIndex(startPhase)
+	if startIdx < 0 {
+		return payload, nil
+	}
+	specPath, planPath := latestSpecPlan(cfg)
+	if startIdx >= phaseIndex("plan") && specPath != "" {
+		payload = appendHint(payload, fmt.Sprintf("Use existing spec: %s", specPath))
+	}
+	if startIdx >= phaseIndex("implement") && planPath != "" {
+		payload = appendHint(payload, fmt.Sprintf("Use existing plan: %s", planPath))
+	}
+	return payload, nil
+}
+
+func appendHint(payload, hint string) string {
+	hint = strings.TrimSpace(hint)
+	if hint == "" {
+		return payload
+	}
+	if strings.TrimSpace(payload) == "" {
+		return hint
+	}
+	return payload + "\n\n" + hint
+}
+
+func phaseIndex(name string) int {
+	switch strings.ToLower(strings.TrimSpace(name)) {
+	case "ideate":
+		return 0
+	case "plan":
+		return 1
+	case "implement":
+		return 2
+	case "review":
+		return 3
+	case "test":
+		return 4
+	default:
+		return -1
+	}
+}
+
+func latestSpecPlan(cfg config.Config) (string, string) {
+	specDir := filepath.Dir(cfg.Autonomy.SpecTemplate)
+	planDir := filepath.Dir(cfg.Autonomy.PlanTemplate)
+	spec := latestFile(specDir, func(name string) bool {
+		return strings.HasSuffix(name, ".md") && !strings.EqualFold(name, "TEMPLATE.md")
+	})
+	plan := latestFile(planDir, func(name string) bool {
+		return strings.HasSuffix(name, ".md") && !strings.EqualFold(name, "TEMPLATE.md")
+	})
+	return spec, plan
+}
+
+func latestFile(dir string, accept func(string) bool) string {
+	if dir == "" {
+		return ""
+	}
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return ""
+	}
+	var latest string
+	var latestMod int64
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
+		}
+		name := entry.Name()
+		if accept != nil && !accept(name) {
+			continue
+		}
+		info, err := entry.Info()
+		if err != nil {
+			continue
+		}
+		mod := info.ModTime().Unix()
+		if latest == "" || mod > latestMod {
+			latest = filepath.Join(dir, name)
+			latestMod = mod
+		}
+	}
+	return latest
 }
 
 func appendTaskToTodo(memoryDir, payload string) error {
