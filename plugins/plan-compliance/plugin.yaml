@@ -1,0 +1,9 @@
+name: plan-compliance
+version: 0.1.0
+protocol_version: 1
+entrypoint: ./plan-compliance
+transport: jsonrpc
+capabilities:
+  - name: check
+    input_schema: schemas/check.input.json
+    output_schema: schemas/check.output.json

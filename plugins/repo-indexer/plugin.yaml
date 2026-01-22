@@ -1,0 +1,9 @@
+name: repo-indexer
+version: 0.1.0
+protocol_version: 1
+entrypoint: ./repo-indexer
+transport: jsonrpc
+capabilities:
+  - name: index
+    input_schema: schemas/index.input.json
+    output_schema: schemas/index.output.json

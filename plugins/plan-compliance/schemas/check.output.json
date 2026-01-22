@@ -1,0 +1,10 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "status": {"type": "string", "enum": ["pass", "fail"]},
+    "missing_sections": {"type": "array", "items": {"type": "string"}},
+    "open_tasks": {"type": "array", "items": {"type": "string"}}
+  },
+  "required": ["status", "missing_sections", "open_tasks"]
+}

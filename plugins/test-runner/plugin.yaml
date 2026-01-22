@@ -1,0 +1,9 @@
+name: test-runner
+version: 0.1.0
+protocol_version: 1
+entrypoint: ./test-runner
+transport: jsonrpc
+capabilities:
+  - name: run
+    input_schema: schemas/run.input.json
+    output_schema: schemas/run.output.json

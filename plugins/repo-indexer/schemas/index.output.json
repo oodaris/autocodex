@@ -1,0 +1,33 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "root": {"type": "string"},
+    "languages": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {"type": "string"},
+          "files": {"type": "integer"}
+        },
+        "required": ["name", "files"]
+      }
+    },
+    "top_dirs": {"type": "array", "items": {"type": "string"}},
+    "test_commands": {"type": "array", "items": {"type": "string"}},
+    "services": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {"type": "string"},
+          "path": {"type": "string"}
+        },
+        "required": ["name", "path"]
+      }
+    },
+    "notes": {"type": "array", "items": {"type": "string"}}
+  },
+  "required": ["root", "languages", "top_dirs", "test_commands", "services"]
+}

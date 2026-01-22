@@ -1,0 +1,25 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "status": {"type": "string", "enum": ["passed", "failed"]},
+    "failed_commands": {"type": "integer"},
+    "runs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "command": {"type": "string"},
+          "exit_code": {"type": "integer"},
+          "duration_ms": {"type": "integer"},
+          "stdout": {"type": "string"},
+          "stderr": {"type": "string"},
+          "timed_out": {"type": "boolean"},
+          "output_truncated": {"type": "boolean"}
+        },
+        "required": ["command", "exit_code", "duration_ms", "stdout", "stderr", "timed_out", "output_truncated"]
+      }
+    }
+  },
+  "required": ["status", "failed_commands", "runs"]
+}

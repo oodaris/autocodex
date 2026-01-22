@@ -1,0 +1,9 @@
+name: knowledge-extractor
+version: 0.1.0
+protocol_version: 1
+entrypoint: ./knowledge-extractor
+transport: jsonrpc
+capabilities:
+  - name: extract
+    input_schema: schemas/extract.input.json
+    output_schema: schemas/extract.output.json

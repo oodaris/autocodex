@@ -1,0 +1,9 @@
+name: evidence-collector
+version: 0.1.0
+protocol_version: 1
+entrypoint: ./evidence-collector
+transport: jsonrpc
+capabilities:
+  - name: collect
+    input_schema: schemas/collect.input.json
+    output_schema: schemas/collect.output.json
