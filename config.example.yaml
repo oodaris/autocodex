@@ -34,6 +34,9 @@ plugins:
   enabled: true
   paths:
     - plugins
+    - /usr/local/share/autocodex/plugins
+    - /usr/share/autocodex/plugins
+    - /opt/homebrew/share/autocodex/plugins
   timeout_seconds: 60
 
 hub:

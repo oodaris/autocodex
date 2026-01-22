@@ -4,6 +4,7 @@ set -euo pipefail
 REPO="oodaris/autocodex"
 VERSION="${VERSION:-}"
 DEST="${DEST:-/usr/local/bin}"
+PLUGIN_DEST="${PLUGIN_DEST:-}"
 
 if [[ -z "${VERSION}" ]]; then
   VERSION="$(
@@ -47,6 +48,25 @@ if [[ ! -w "${DEST}" ]]; then
 else
   install -d "${DEST}"
   install -m 0755 "${TMPDIR}/autocodex" "${DEST}/autocodex"
+fi
+
+PREFIX="$(cd "${DEST}/.." && pwd)"
+if [[ -z "${PLUGIN_DEST}" ]]; then
+  PLUGIN_DEST="${PREFIX}/share/autocodex/plugins"
+fi
+
+if [[ -d "${TMPDIR}/plugins" ]]; then
+  if [[ ! -w "${PLUGIN_DEST}" ]]; then
+    echo "Installing plugins to ${PLUGIN_DEST} (sudo required)"
+    sudo install -d "${PLUGIN_DEST}"
+    sudo cp -R "${TMPDIR}/plugins/." "${PLUGIN_DEST}/"
+  else
+    install -d "${PLUGIN_DEST}"
+    cp -R "${TMPDIR}/plugins/." "${PLUGIN_DEST}/"
+  fi
+  echo "Installed plugins to ${PLUGIN_DEST}"
+else
+  echo "No plugins directory found in release archive"
 fi
 
 echo "Installed autocodex to ${DEST}/autocodex"

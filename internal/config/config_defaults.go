@@ -1,5 +1,10 @@
 package config
 
+import (
+	"os"
+	"path/filepath"
+)
+
 func (c *Config) ApplyDefaults() {
 	if c.Version == "" {
 		c.Version = "v1"
@@ -81,7 +86,7 @@ func (c *Config) ApplyDefaults() {
 		c.Skills.Denylist = []string{}
 	}
 	if c.Plugins.Paths == nil {
-		c.Plugins.Paths = []string{"plugins"}
+		c.Plugins.Paths = defaultPluginPaths()
 	}
 	if c.Plugins.TimeoutSeconds == 0 {
 		c.Plugins.TimeoutSeconds = 60
@@ -196,4 +201,17 @@ func (c *Config) ApplyDefaults() {
 		enabled := true
 		c.Autonomy.StopConditions.StopOnGateFailure = &enabled
 	}
+}
+
+func defaultPluginPaths() []string {
+	paths := []string{"plugins"}
+	if home, err := os.UserHomeDir(); err == nil && home != "" {
+		paths = append(paths, filepath.Join(home, ".local/share/autocodex/plugins"))
+	}
+	paths = append(paths,
+		"/usr/local/share/autocodex/plugins",
+		"/usr/share/autocodex/plugins",
+		"/opt/homebrew/share/autocodex/plugins",
+	)
+	return paths
 }

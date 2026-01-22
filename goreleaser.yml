@@ -23,9 +23,75 @@ builds:
     goarch:
       - amd64
       - arm64
+  - id: plugin-repo-indexer
+    main: ./plugins/repo-indexer
+    binary: plugins/repo-indexer/repo-indexer
+    env:
+      - CGO_ENABLED=0
+    goos: [linux, darwin, windows]
+    goarch: [amd64, arm64]
+  - id: plugin-test-runner
+    main: ./plugins/test-runner
+    binary: plugins/test-runner/test-runner
+    env:
+      - CGO_ENABLED=0
+    goos: [linux, darwin, windows]
+    goarch: [amd64, arm64]
+  - id: plugin-diff-summarizer
+    main: ./plugins/diff-summarizer
+    binary: plugins/diff-summarizer/diff-summarizer
+    env:
+      - CGO_ENABLED=0
+    goos: [linux, darwin, windows]
+    goarch: [amd64, arm64]
+  - id: plugin-dep-license-scanner
+    main: ./plugins/dep-license-scanner
+    binary: plugins/dep-license-scanner/dep-license-scanner
+    env:
+      - CGO_ENABLED=0
+    goos: [linux, darwin, windows]
+    goarch: [amd64, arm64]
+  - id: plugin-knowledge-extractor
+    main: ./plugins/knowledge-extractor
+    binary: plugins/knowledge-extractor/knowledge-extractor
+    env:
+      - CGO_ENABLED=0
+    goos: [linux, darwin, windows]
+    goarch: [amd64, arm64]
+  - id: plugin-plan-compliance
+    main: ./plugins/plan-compliance
+    binary: plugins/plan-compliance/plan-compliance
+    env:
+      - CGO_ENABLED=0
+    goos: [linux, darwin, windows]
+    goarch: [amd64, arm64]
+  - id: plugin-evidence-collector
+    main: ./plugins/evidence-collector
+    binary: plugins/evidence-collector/evidence-collector
+    env:
+      - CGO_ENABLED=0
+    goos: [linux, darwin, windows]
+    goarch: [amd64, arm64]
+  - id: plugin-example-summarizer
+    main: ./plugins/example-summarizer
+    binary: plugins/example-summarizer/example-summarizer
+    env:
+      - CGO_ENABLED=0
+    goos: [linux, darwin, windows]
+    goarch: [amd64, arm64]
 
 archives:
   - id: default
+    builds:
+      - autocodex
+      - plugin-repo-indexer
+      - plugin-test-runner
+      - plugin-diff-summarizer
+      - plugin-dep-license-scanner
+      - plugin-knowledge-extractor
+      - plugin-plan-compliance
+      - plugin-evidence-collector
+      - plugin-example-summarizer
     name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
     formats:
       - tar.gz
@@ -33,6 +99,10 @@ archives:
       - goos: windows
         formats:
           - zip
+    files:
+      - plugins/AGENTS.md
+      - plugins/*/plugin.yaml
+      - plugins/*/schemas/*.json
 
 checksum:
   name_template: "checksums.txt"
