@@ -1,0 +1,9 @@
+name: diff-summarizer
+version: 0.1.0
+protocol_version: 1
+entrypoint: ./diff-summarizer
+transport: jsonrpc
+capabilities:
+  - name: summarize
+    input_schema: schemas/summarize.input.json
+    output_schema: schemas/summarize.output.json

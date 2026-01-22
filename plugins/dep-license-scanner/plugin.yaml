@@ -1,0 +1,9 @@
+name: dep-license-scanner
+version: 0.1.0
+protocol_version: 1
+entrypoint: ./dep-license-scanner
+transport: jsonrpc
+capabilities:
+  - name: scan
+    input_schema: schemas/scan.input.json
+    output_schema: schemas/scan.output.json

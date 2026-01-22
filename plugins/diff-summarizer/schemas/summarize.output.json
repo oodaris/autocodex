@@ -1,0 +1,88 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "summary": {
+      "type": "string",
+      "description": "High-level diff summary."
+    },
+    "highlights": {
+      "type": "array",
+      "items": {"type": "string"}
+    },
+    "file_summaries": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "path": {"type": "string"},
+          "change_type": {
+            "type": "string",
+            "enum": ["added", "modified", "deleted", "renamed", "copied", "unknown"]
+          },
+          "summary": {"type": "string"},
+          "notes": {"type": "array", "items": {"type": "string"}}
+        },
+        "required": ["path", "change_type", "summary"],
+        "additionalProperties": false
+      }
+    },
+    "stats": {
+      "type": "object",
+      "properties": {
+        "files_changed": {"type": "integer", "minimum": 0},
+        "insertions": {"type": "integer", "minimum": 0},
+        "deletions": {"type": "integer", "minimum": 0}
+      },
+      "required": ["files_changed", "insertions", "deletions"],
+      "additionalProperties": false
+    },
+    "suggested_tests": {
+      "type": "array",
+      "items": {"type": "string"}
+    },
+    "risk_flags": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {"type": "string"},
+          "severity": {
+            "type": "string",
+            "enum": ["low", "medium", "high", "critical"]
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "breaking_change",
+              "security",
+              "data_loss",
+              "performance",
+              "reliability",
+              "observability",
+              "config",
+              "dependency",
+              "tests",
+              "migration",
+              "compliance",
+              "other"
+            ]
+          },
+          "message": {"type": "string"},
+          "files": {"type": "array", "items": {"type": "string"}},
+          "lines": {"type": "array", "items": {"type": "integer", "minimum": 1}},
+          "evidence": {"type": "string"},
+          "confidence": {"type": "number", "minimum": 0, "maximum": 1}
+        },
+        "required": ["severity", "category", "message"],
+        "additionalProperties": false
+      }
+    },
+    "notes": {
+      "type": "array",
+      "items": {"type": "string"}
+    }
+  },
+  "required": ["summary", "file_summaries", "stats", "risk_flags"],
+  "additionalProperties": false
+}

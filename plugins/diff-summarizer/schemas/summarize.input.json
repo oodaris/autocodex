@@ -1,0 +1,52 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "diff": {
+      "type": "string",
+      "description": "Unified diff text to summarize."
+    },
+    "root": {
+      "type": "string",
+      "description": "Repo root for path normalization (optional)."
+    },
+    "max_summary_chars": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Soft limit for the summary length."
+    },
+    "max_file_summaries": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Maximum number of per-file summaries to emit."
+    },
+    "include_tests": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether to emit suggested tests."
+    },
+    "risk_focus": {
+      "type": "array",
+      "description": "Risk categories to prioritize.",
+      "items": {
+        "type": "string",
+        "enum": [
+          "breaking_change",
+          "security",
+          "data_loss",
+          "performance",
+          "reliability",
+          "observability",
+          "config",
+          "dependency",
+          "tests",
+          "migration",
+          "compliance",
+          "other"
+        ]
+      }
+    }
+  },
+  "required": ["diff"],
+  "additionalProperties": false
+}

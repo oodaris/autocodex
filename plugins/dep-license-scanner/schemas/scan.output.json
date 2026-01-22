@@ -1,0 +1,123 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "summary": {
+      "type": "object",
+      "properties": {
+        "total_dependencies": {"type": "integer", "minimum": 0},
+        "direct_dependencies": {"type": "integer", "minimum": 0},
+        "transitive_dependencies": {"type": "integer", "minimum": 0},
+        "dev_dependencies": {"type": "integer", "minimum": 0},
+        "unknown_licenses": {"type": "integer", "minimum": 0},
+        "by_license": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "license": {"type": "string"},
+              "count": {"type": "integer", "minimum": 0}
+            },
+            "required": ["license", "count"],
+            "additionalProperties": false
+          }
+        },
+        "by_ecosystem": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "ecosystem": {"type": "string"},
+              "count": {"type": "integer", "minimum": 0}
+            },
+            "required": ["ecosystem", "count"],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "total_dependencies",
+        "direct_dependencies",
+        "transitive_dependencies",
+        "dev_dependencies",
+        "unknown_licenses",
+        "by_license",
+        "by_ecosystem"
+      ],
+      "additionalProperties": false
+    },
+    "dependencies": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {"type": "string"},
+          "version": {"type": "string"},
+          "ecosystem": {"type": "string"},
+          "direct": {"type": "boolean"},
+          "dev": {"type": "boolean"},
+          "licenses": {"type": "array", "items": {"type": "string"}},
+          "license_expression": {"type": "string"},
+          "license_source": {"type": "string"},
+          "manifest_path": {"type": "string"},
+          "purl": {"type": "string"}
+        },
+        "required": ["name", "version", "ecosystem", "direct", "dev", "licenses"],
+        "additionalProperties": false
+      }
+    },
+    "policy_violations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "dependency": {"type": "string"},
+          "license": {"type": "string"},
+          "rule": {
+            "type": "string",
+            "enum": ["denylist", "unknown", "missing", "unapproved"]
+          },
+          "severity": {
+            "type": "string",
+            "enum": ["low", "medium", "high", "critical"]
+          },
+          "message": {"type": "string"},
+          "ecosystem": {"type": "string"},
+          "direct": {"type": "boolean"},
+          "dev": {"type": "boolean"}
+        },
+        "required": ["dependency", "rule", "severity", "message"],
+        "additionalProperties": false
+      }
+    },
+    "risk_flags": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {"type": "string"},
+          "severity": {
+            "type": "string",
+            "enum": ["low", "medium", "high", "critical"]
+          },
+          "category": {
+            "type": "string",
+            "enum": ["license", "compliance", "security", "policy", "other"]
+          },
+          "message": {"type": "string"},
+          "dependencies": {"type": "array", "items": {"type": "string"}},
+          "evidence": {"type": "string"},
+          "confidence": {"type": "number", "minimum": 0, "maximum": 1}
+        },
+        "required": ["severity", "category", "message"],
+        "additionalProperties": false
+      }
+    },
+    "notes": {
+      "type": "array",
+      "items": {"type": "string"}
+    }
+  },
+  "required": ["summary", "dependencies", "policy_violations", "risk_flags"],
+  "additionalProperties": false
+}

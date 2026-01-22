@@ -1,0 +1,73 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "root": {
+      "type": "string",
+      "description": "Repo root to scan."
+    },
+    "ecosystems": {
+      "type": "array",
+      "description": "Dependency ecosystems to include (e.g., npm, go, pip).",
+      "items": {"type": "string"}
+    },
+    "manifest_paths": {
+      "type": "array",
+      "description": "Explicit manifest or lockfile paths to scan.",
+      "items": {"type": "string"}
+    },
+    "include_paths": {
+      "type": "array",
+      "description": "Only scan paths under these roots.",
+      "items": {"type": "string"}
+    },
+    "ignore_paths": {
+      "type": "array",
+      "description": "Exclude paths under these roots.",
+      "items": {"type": "string"}
+    },
+    "include_dev": {
+      "type": "boolean",
+      "default": false,
+      "description": "Include dev/test dependencies."
+    },
+    "include_transitive": {
+      "type": "boolean",
+      "default": true,
+      "description": "Include transitive dependencies."
+    },
+    "max_depth": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Maximum dependency depth to traverse."
+    },
+    "allow_licenses": {
+      "type": "array",
+      "description": "License identifiers explicitly allowed.",
+      "items": {"type": "string"}
+    },
+    "deny_licenses": {
+      "type": "array",
+      "description": "License identifiers explicitly disallowed.",
+      "items": {"type": "string"}
+    },
+    "license_overrides": {
+      "type": "array",
+      "description": "Manual license overrides for dependencies.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {"type": "string"},
+          "version": {"type": "string"},
+          "ecosystem": {"type": "string"},
+          "license": {"type": "string"},
+          "reason": {"type": "string"}
+        },
+        "required": ["name", "license"],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": ["root"],
+  "additionalProperties": false
+}
