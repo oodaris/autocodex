@@ -22,8 +22,10 @@ Controls the Codex CLI invocation.
   - Model-specific limits apply (examples):
     - `gpt-5.1*`: `low|medium|high` (no `xhigh`)
   - `xhigh` is model-dependent; use `medium`/`high` if unsure.
-- `collaboration_mode`: optional Codex collaboration mode (passed as `-c collaboration_mode=...`)
-- `preset`: optional collaboration preset (passed as `-c collaboration_mode_preset=...`, requires `collaboration_mode`)
+- `collaboration_enabled`: enable collaboration defaults (default: `true`)
+- `collaboration_mode`: Codex collaboration mode (default: `auto`, passed as `-c collaboration_mode=...`)
+- `preset`: collaboration preset (default: `default`, passed as `-c collaboration_mode_preset=...`, requires `collaboration_mode`)
+  - Set `collaboration_enabled: false` to disable collaboration and clear mode/preset defaults.
 - `timeout_seconds`: per-run timeout
 - `extra_args`: additional CLI flags
 - `approval_policy` and `sandbox_mode`: ignored in `mode: yolo`

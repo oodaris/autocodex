@@ -64,6 +64,22 @@ After `init` or `bootstrap`, you can run the loop:
 autocodex run --config autocodex.yaml
 ```
 
+**Parallelism vs collaboration (quick blurb)**  
+Autocodex parallelism is controlled by the coordinator (`--swarm`), which runs
+multiple Codex CLI processes at once. Codex `collaboration_mode/preset` controls
+role‑style behavior inside a single process. Use both if you want parallel beads
+and in‑process collaboration.
+
+Example:
+```bash
+autocodex run --swarm --task "Execute all ready beads in parallel"
+```
+
+Disable collaboration for a specific run:
+```bash
+autocodex run --no-collaboration --task "Run without collaboration presets"
+```
+
 You can also append a task directly:
 
 ```bash

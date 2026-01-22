@@ -54,6 +54,18 @@ autocodex --version
 
 CLI reference: `docs/CLI.md`
 - Codex CLI on PATH (`codex --version`)
+- Parallelism & collaboration guide: `docs/parallelism-and-collaboration.md`
+
+**Parallelism vs collaboration (quick blurb)**  
+Autocodex **parallelism** is handled by the coordinator (`--swarm`), which runs
+multiple Codex CLI processes in parallel. Codex `collaboration_mode/preset`
+controls **role‑style collaboration inside a single process**. Use both if you
+want parallel beads **and** in‑process collaboration.
+
+Disable collaboration for a single run:
+```bash
+autocodex run --no-collaboration --task "Run without collaboration presets"
+```
 
 ### Choose your setup
 
@@ -101,6 +113,10 @@ autocodex status --table --status failed --limit 10
 
 # list runs (table)
 autocodex runs
+
+# force bead-parallel coordinator (swarm)
+autocodex run --swarm --task "Run all unblocked beads in parallel"
+# Prefer --swarm for guaranteed parallelism (uses the Autocodex coordinator)
 
 # inspect latest status
 autocodex status --latest
@@ -186,6 +202,9 @@ When autonomy is enabled:
 - Gate failures stop the loop and auto-create a fix bead (when beads auto-create is enabled).
  - Plans should include explicit must-have gates (tests, runtime verification, evidence paths) so autonomy can enforce completion.
 
+By default autocodex enables Codex collaboration (`codex.collaboration_mode: auto`, `codex.preset: default`).
+Override with `--collaboration-mode/--preset` or in `autocodex.yaml` if you need different behavior.
+
 ### Artifacts and cleanup
 Each run stores artifacts under `.autocodex/runs/<run-id>/artifacts` and logs under `.autocodex/logs/<run-id>.jsonl`.
 At the end of a run, autocodex prints a short summary (run id + spec/plan/tasks paths) and a cleanup command you can copy:
@@ -198,6 +217,20 @@ Use `autocodex cleanup --dry-run` (or `--retention-days`) to prune older runs sa
 - `autocodex.yaml` exists and `autonomy.enabled: true`.
 - Templates + schemas exist (run `autocodex bootstrap` to create them): `docs/specs/TEMPLATE.md`, `docs/plans/TEMPLATE.md`, `docs/contracts/autonomy-tasks.schema.json`, `docs/contracts/autonomy-actions.schema.json`.
 - Skills available in `skills/`: `core-qna-synthesis`, `core-holistic-planning-and-tracking`, `core-ask-questions-if-underspecified`.
+
+### Parallel coordinator (optional)
+You can run beads in parallel with the autonomy coordinator:
+```yaml
+autonomy:
+  coordinator:
+    enabled: true
+    max_parallel: 2   # 0 = unlimited
+    strategy: bead    # or "phase" for isolated phases
+    fail_fast: false  # stop all beads on first error
+```
+Notes:
+- Parallel mode ignores `require_next`.
+- Memory docs are isolated per bead under `memory/beads/<id>`.
 - Codex CLI installed and reachable (`codex` on PATH or `codex.cli_path`).
 - `bd` is optional; without it, bead creation/updates are skipped with a warning.
 

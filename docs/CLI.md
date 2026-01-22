@@ -11,6 +11,7 @@ autocodex "Review backend API and fix issues."
 - Default config path: `autocodex.yaml` (override with `AUTOCODEX_CONFIG` or `--config`).
 - Shortcut: `autocodex "<task>"` is equivalent to `autocodex run --task "<task>"`.
 - Positional args: `run`, `once`, and `resume` accept a positional task string; `snapshot`, `resume`, and `kill` accept a positional run id.
+- Parallelism vs collaboration: use `--swarm` (coordinator) for real parallel runs; `--collaboration-mode/--preset` control in‑process role behavior. See `docs/parallelism-and-collaboration.md`.
 
 ## Commands
 
@@ -47,6 +48,8 @@ Flags:
 - `--task-stdin`: read task text from stdin
 - `--start-phase`: start at a specific phase (ideate/plan/implement/review/test)
 - `--use-latest-artifacts`: when starting after ideate, append latest spec/plan paths to the task (default true)
+- `--swarm`: force bead-parallel coordinator (enables autonomy)
+- `--no-collaboration`: disable Codex collaboration for this run
 - `--collaboration-mode`: override Codex collaboration mode (passed via `-c collaboration_mode=...`)
 - `--preset`: override Codex collaboration preset (passed via `-c collaboration_mode_preset=...`, requires `--collaboration-mode`)
 
@@ -72,6 +75,8 @@ Flags:
 - `--use-latest-artifacts`: when starting after ideate, append latest spec/plan paths to the task (default true)
 - `--force`: resume even if run is still running, or to resume a completed run
 - `--list`: list runs and exit (TTY selection if run id not provided)
+- `--swarm`: force bead-parallel coordinator (enables autonomy)
+- `--no-collaboration`: disable Codex collaboration for this run
 - `--collaboration-mode`: override Codex collaboration mode (passed via `-c collaboration_mode=...`)
 - `--preset`: override Codex collaboration preset (passed via `-c collaboration_mode_preset=...`, requires `--collaboration-mode`)
 
