@@ -26,7 +26,7 @@ type pluginError struct {
 func main() {
 	handshake := map[string]interface{}{
 		"protocol_version": 1,
-		"name":             "sample-summarizer",
+		"name":             "example-summarizer",
 		"transport":        "jsonrpc",
 		"address":          "stdio",
 	}

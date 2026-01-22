@@ -15,7 +15,63 @@ Protocol spec: `docs/contracts/plugin-protocol.md`.
 | `knowledge-extractor` | `extract` | Parse docs into structured summaries | Doc list + headings/snippets |
 | `plan-compliance` | `check` | Validate plan sections + open tasks | Status + missing items |
 | `evidence-collector` | `collect` | Capture evidence artifacts | Artifact manifest |
-| `sample-summarizer` | `summarize` | Minimal example plugin | Summary string |
+| `example-summarizer` | `summarize` | Minimal example plugin | Summary string |
+
+## Can I run multiple plugins at the same time?
+Yes. Plugins are independent processes, so you can run them sequentially or in parallel. A few options:
+- **Sequential (safe default)**: pipe outputs to files and chain the next step.
+- **Parallel (faster)**: run multiple plugin calls in background shells (`&`) and `wait`.
+
+Example (parallel):
+```bash
+autocodex plugins --action run --name diff-summarizer --capability summarize --input '{"root":"."}' > /tmp/diff.json &
+autocodex plugins --action run --name dep-license-scanner --capability scan --input '{"root":"."}' > /tmp/licenses.json &
+wait
+```
+
+## Recipes (common workflows)
+
+### Repo onboarding
+Create a quick project map and extract docs for context:
+```bash
+autocodex plugins --action run --name repo-indexer --capability index \
+  --input '{"root":"."}' > /tmp/repo-index.json
+
+autocodex plugins --action run --name knowledge-extractor --capability extract \
+  --input '{"root":".","paths":["docs"],"max_files":50}' > /tmp/docs.json
+```
+
+### PR risk triage (no code changes yet)
+```bash
+autocodex plugins --action run --name diff-summarizer --capability summarize \
+  --input '{"root":".","base":"origin/main","head":"HEAD"}' > /tmp/diff.json
+
+autocodex plugins --action run --name dep-license-scanner --capability scan \
+  --input '{"root":".","deny_licenses":["gpl-3.0","agpl-3.0"]}' > /tmp/licenses.json
+```
+
+### CI helper / fast tests
+```bash
+autocodex plugins --action run --name test-runner --capability run \
+  --input '{"root":".","commands":["go test ./..."],"timeout_seconds":1200}' \
+  > /tmp/tests.json
+```
+
+### Plan compliance + evidence bundle
+```bash
+autocodex plugins --action run --name plan-compliance --capability check \
+  --input '{"plan_path":"docs/plans/my-plan.md","required_sections":["acceptance criteria","tests"]}' \
+  > /tmp/plan-check.json
+
+autocodex plugins --action run --name evidence-collector --capability collect \
+  --input '{"root":".","globs":["logs/*.log","reports/*.json"],"output_dir":"artifacts"}' \
+  > /tmp/evidence.json
+```
+
+## Output notes
+- Plugins output **one JSON object per request** to stdout.
+- Log output should go to **stderr** (stdout is reserved for protocol messages).
+- For large inputs, pass `--input-file` and keep payloads small when possible.
 
 ## Layout conventions
 Each plugin lives in its own folder under `plugins/`:
@@ -41,17 +97,17 @@ capabilities:
     output_schema: schemas/index.output.json
 ```
 
-## Sample plugin
-A minimal example lives in `plugins/sample-summarizer/`.
+## Example plugin
+A minimal example lives in `plugins/example-summarizer/`.
 
 Build it:
 ```bash
-go build -o plugins/sample-summarizer/sample-summarizer ./plugins/sample-summarizer
+go build -o plugins/example-summarizer/example-summarizer ./plugins/example-summarizer
 ```
 
 Run it via CLI once the plugin host command is wired:
 ```bash
-autocodex plugins run --name sample-summarizer --capability summarize --input '{"text":"hello world"}'
+autocodex plugins run --name example-summarizer --capability summarize --input '{"text":"hello world"}'
 ```
 
 ## Writing a plugin

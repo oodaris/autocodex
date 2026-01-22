@@ -190,6 +190,17 @@ Flags:
 - `--input-file`: JSON input file (run)
 - `--config`: config file path
 
+Examples:
+```bash
+# repo map
+autocodex plugins --action run --name repo-indexer --capability index --input '{"root":"."}'
+
+# parallel scan (diff + deps)
+autocodex plugins --action run --name diff-summarizer --capability summarize --input '{"root":"."}' > /tmp/diff.json &
+autocodex plugins --action run --name dep-license-scanner --capability scan --input '{"root":"."}' > /tmp/licenses.json &
+wait
+```
+
 ### api
 Start the local API.
 ```bash

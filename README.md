@@ -270,9 +270,15 @@ Plugins are external processes described by `plugin.yaml`. See the catalog and u
 | `plan-compliance` | `check` | Validate plan sections + open tasks | Status + missing items |
 | `evidence-collector` | `collect` | Capture evidence artifacts | Artifact manifest |
 
-Build the sample plugin:
+### Plugin recipes (multi‑plugin workflows)
+- **Repo onboarding**: repo‑indexer → knowledge‑extractor
+- **PR triage**: diff‑summarizer → dep‑license‑scanner → test‑runner
+- **Plan compliance**: plan‑compliance → evidence‑collector
+Full examples: `docs/plugins/README.md`
+
+Build the example plugin:
 ```bash
-go build -o plugins/sample-summarizer/sample-summarizer ./plugins/sample-summarizer
+go build -o plugins/example-summarizer/example-summarizer ./plugins/example-summarizer
 ```
 
 List plugins:
@@ -280,10 +286,10 @@ List plugins:
 go run ./cmd/autocodex plugins --action list
 ```
 
-Run the sample plugin:
+Run the example plugin:
 ```bash
 go run ./cmd/autocodex plugins --action run \
-  --name sample-summarizer \
+  --name example-summarizer \
   --capability summarize \
   --input '{"text":"hello world"}'
 ```
