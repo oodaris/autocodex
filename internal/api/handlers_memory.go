@@ -17,11 +17,14 @@ func (s *Server) handleMemoryDocs(w http.ResponseWriter, r *http.Request) {
 	}
 	docs, err := s.Store.ListMemoryDocs()
 	if err != nil {
-		respondError(w, http.StatusInternalServerError, err.Error())
+		respondError(w, http.StatusInternalServerError, "internal error")
 		s.log(r, http.StatusInternalServerError, start, err)
 		return
 	}
-	respondJSON(w, http.StatusOK, docs)
+	if err := respondJSON(w, http.StatusOK, docs); err != nil {
+		s.log(r, http.StatusInternalServerError, start, err)
+		return
+	}
 	s.log(r, http.StatusOK, start, nil)
 }
 
@@ -45,10 +48,13 @@ func (s *Server) handleMemoryDocDetail(w http.ResponseWriter, r *http.Request) {
 			s.log(r, http.StatusNotFound, start, err)
 			return
 		}
-		respondError(w, http.StatusInternalServerError, err.Error())
+		respondError(w, http.StatusInternalServerError, "internal error")
 		s.log(r, http.StatusInternalServerError, start, err)
 		return
 	}
-	respondJSON(w, http.StatusOK, doc)
+	if err := respondJSON(w, http.StatusOK, doc); err != nil {
+		s.log(r, http.StatusInternalServerError, start, err)
+		return
+	}
 	s.log(r, http.StatusOK, start, nil)
 }

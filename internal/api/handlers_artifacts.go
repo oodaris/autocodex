@@ -25,6 +25,9 @@ func (s *Server) handleArtifactDetail(w http.ResponseWriter, r *http.Request) {
 		s.log(r, http.StatusNotFound, start, err)
 		return
 	}
-	respondJSON(w, http.StatusOK, artifact)
+	if err := respondJSON(w, http.StatusOK, artifact); err != nil {
+		s.log(r, http.StatusInternalServerError, start, err)
+		return
+	}
 	s.log(r, http.StatusOK, start, nil)
 }

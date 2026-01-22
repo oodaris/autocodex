@@ -1,6 +1,7 @@
 package api
 
 import (
+	"bytes"
 	"encoding/json"
 	"net/http"
 	"strings"
@@ -47,14 +48,23 @@ func runIDFromRequest(r *http.Request) string {
 	}
 }
 
-func respondJSON(w http.ResponseWriter, status int, v interface{}) {
+func respondJSON(w http.ResponseWriter, status int, v interface{}) error {
+	var buf bytes.Buffer
+	enc := json.NewEncoder(&buf)
+	enc.SetEscapeHTML(false)
+	if err := enc.Encode(v); err != nil {
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return err
+	}
+	payload := buf.Bytes()
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-	enc := json.NewEncoder(w)
-	enc.SetEscapeHTML(false)
-	_ = enc.Encode(v)
+	if _, err := w.Write(append(payload, '\n')); err != nil {
+		return err
+	}
+	return nil
 }
 
 func respondError(w http.ResponseWriter, status int, message string) {
-	respondJSON(w, status, map[string]string{"error": message})
+	_ = respondJSON(w, status, map[string]string{"error": message})
 }

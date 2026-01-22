@@ -69,7 +69,7 @@ func runUI(args []string) {
 }
 
 func serveAPI(cfg config.Config, configPath string, uiFS fs.FS) {
-	logger := logging.NewLogger(cfg.Logging.Level)
+	logger := logging.NewLogger(cfg.Logging.Level, cfg.Logging.Format)
 	store := state.NewStore(cfg.StateDir(), cfg.RunsDir(), cfg.MemoryDir(), cfg.LogsDir(), cfg.ArtifactsDir())
 	if err := store.InitDirs(); err != nil {
 		exitErr(err)
@@ -125,6 +125,17 @@ func serveAPI(cfg config.Config, configPath string, uiFS fs.FS) {
 	}
 	addr := net.JoinHostPort(cfg.API.Host, fmt.Sprintf("%d", cfg.API.Port))
 	baseURL := fmt.Sprintf("http://%s:%d", hostForLog(cfg.API.Host), cfg.API.Port)
+	basePath := strings.TrimSpace(cfg.API.BasePath)
+	if basePath == "" {
+		basePath = "/"
+	}
+	if basePath != "/" {
+		basePath = "/" + strings.Trim(basePath, "/")
+	}
+	baseURLWithPath := baseURL
+	if basePath != "/" {
+		baseURLWithPath = baseURL + basePath
+	}
 	listener, err := net.Listen("tcp", addr)
 	if err != nil {
 		if isAddrInUse(err) {
@@ -132,13 +143,13 @@ func serveAPI(cfg config.Config, configPath string, uiFS fs.FS) {
 		}
 		exitErr(err)
 	}
-	logger.Info("api server starting", "route", "/", "status", "starting", "latency_ms", 0, "addr", addr, "url", baseURL, "config", configPath)
+	logger.Info("api server starting", "route", "/", "status", "starting", "latency_ms", 0, "addr", addr, "url", baseURLWithPath, "config", configPath)
 	if uiFS != nil {
-		logger.Info("ui embedded", "route", "/", "status", "enabled", "latency_ms", 0, "addr", addr, "url", baseURL)
+		logger.Info("ui embedded", "route", "/", "status", "enabled", "latency_ms", 0, "addr", addr, "url", baseURLWithPath)
 	}
-	logger.Info("api endpoints", "health", baseURL+"/health", "runs", baseURL+"/runs", "memory", baseURL+"/memory")
+	logger.Info("api endpoints", "health", baseURLWithPath+"/health", "runs", baseURLWithPath+"/runs", "memory", baseURLWithPath+"/memory")
 	if uiFS != nil {
-		logger.Info("ui ready", "url", baseURL, "hub", baseURL+"/hub")
+		logger.Info("ui ready", "url", baseURLWithPath, "hub", baseURLWithPath+"/hub")
 	}
 	if err := http.Serve(listener, server.Handler()); err != nil {
 		exitErr(err)

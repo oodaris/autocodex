@@ -51,11 +51,14 @@ func (s *Server) handleRuns(w http.ResponseWriter, r *http.Request) {
 	}
 	runs, err := s.Store.ListRuns()
 	if err != nil {
-		respondError(w, http.StatusInternalServerError, err.Error())
+		respondError(w, http.StatusInternalServerError, "internal error")
 		s.log(r, http.StatusInternalServerError, start, err)
 		return
 	}
-	respondJSON(w, http.StatusOK, runs)
+	if err := respondJSON(w, http.StatusOK, runs); err != nil {
+		s.log(r, http.StatusInternalServerError, start, err)
+		return
+	}
 	s.log(r, http.StatusOK, start, nil)
 }
 
@@ -82,7 +85,10 @@ func (s *Server) handleRunDetail(w http.ResponseWriter, r *http.Request) {
 			s.log(r, http.StatusNotFound, start, err)
 			return
 		}
-		respondJSON(w, http.StatusOK, run)
+		if err := respondJSON(w, http.StatusOK, run); err != nil {
+			s.log(r, http.StatusInternalServerError, start, err)
+			return
+		}
 		s.log(r, http.StatusOK, start, nil)
 		return
 	}
@@ -99,7 +105,7 @@ func (s *Server) handleRunDetail(w http.ResponseWriter, r *http.Request) {
 			}
 			control, err := s.Store.GetRunControl(runID)
 			if err != nil {
-				respondError(w, http.StatusInternalServerError, err.Error())
+				respondError(w, http.StatusInternalServerError, "internal error")
 				s.log(r, http.StatusInternalServerError, start, err)
 				return
 			}
@@ -111,7 +117,10 @@ func (s *Server) handleRunDetail(w http.ResponseWriter, r *http.Request) {
 				status.LastAction = control.LastAction
 				status.LastActionAt = control.LastActionAt
 			}
-			respondJSON(w, http.StatusOK, status)
+			if err := respondJSON(w, http.StatusOK, status); err != nil {
+				s.log(r, http.StatusInternalServerError, start, err)
+				return
+			}
 			s.log(r, http.StatusOK, start, nil)
 		case http.MethodPost:
 			run, err := s.Store.GetRun(runID)
@@ -144,7 +153,7 @@ func (s *Server) handleRunDetail(w http.ResponseWriter, r *http.Request) {
 			}
 			if !req.DryRun {
 				if err := s.Store.SaveRunControl(control); err != nil {
-					respondError(w, http.StatusInternalServerError, err.Error())
+					respondError(w, http.StatusInternalServerError, "internal error")
 					s.log(r, http.StatusInternalServerError, start, err)
 					return
 				}
@@ -153,13 +162,16 @@ func (s *Server) handleRunDetail(w http.ResponseWriter, r *http.Request) {
 			if req.DryRun {
 				message = "dry run"
 			}
-			respondJSON(w, http.StatusAccepted, RunControlResponse{
+			if err := respondJSON(w, http.StatusAccepted, RunControlResponse{
 				RunID:    runID,
 				Action:   req.Action,
 				Accepted: true,
 				Status:   run.Status,
 				Message:  message,
-			})
+			}); err != nil {
+				s.log(r, http.StatusInternalServerError, start, err)
+				return
+			}
 			s.log(r, http.StatusAccepted, start, nil)
 		default:
 			respondError(w, http.StatusMethodNotAllowed, "method not allowed")
@@ -173,11 +185,14 @@ func (s *Server) handleRunDetail(w http.ResponseWriter, r *http.Request) {
 		}
 		events, err := s.Store.ListEvents(runID)
 		if err != nil {
-			respondError(w, http.StatusInternalServerError, err.Error())
+			respondError(w, http.StatusInternalServerError, "internal error")
 			s.log(r, http.StatusInternalServerError, start, err)
 			return
 		}
-		respondJSON(w, http.StatusOK, events)
+		if err := respondJSON(w, http.StatusOK, events); err != nil {
+			s.log(r, http.StatusInternalServerError, start, err)
+			return
+		}
 		s.log(r, http.StatusOK, start, nil)
 	case "artifacts":
 		if r.Method != http.MethodGet {
@@ -187,11 +202,14 @@ func (s *Server) handleRunDetail(w http.ResponseWriter, r *http.Request) {
 		}
 		artifacts, err := s.Store.ListArtifacts(runID)
 		if err != nil {
-			respondError(w, http.StatusInternalServerError, err.Error())
+			respondError(w, http.StatusInternalServerError, "internal error")
 			s.log(r, http.StatusInternalServerError, start, err)
 			return
 		}
-		respondJSON(w, http.StatusOK, artifacts)
+		if err := respondJSON(w, http.StatusOK, artifacts); err != nil {
+			s.log(r, http.StatusInternalServerError, start, err)
+			return
+		}
 		s.log(r, http.StatusOK, start, nil)
 	case "snapshots":
 		if len(parts) == 2 {
@@ -199,11 +217,14 @@ func (s *Server) handleRunDetail(w http.ResponseWriter, r *http.Request) {
 			case http.MethodGet:
 				summaries, err := s.Store.ListSnapshots(runID)
 				if err != nil {
-					respondError(w, http.StatusInternalServerError, err.Error())
+					respondError(w, http.StatusInternalServerError, "internal error")
 					s.log(r, http.StatusInternalServerError, start, err)
 					return
 				}
-				respondJSON(w, http.StatusOK, summaries)
+				if err := respondJSON(w, http.StatusOK, summaries); err != nil {
+					s.log(r, http.StatusInternalServerError, start, err)
+					return
+				}
 				s.log(r, http.StatusOK, start, nil)
 				return
 			case http.MethodPost:
@@ -244,7 +265,10 @@ func (s *Server) handleRunDetail(w http.ResponseWriter, r *http.Request) {
 					s.log(r, http.StatusNotFound, start, err)
 					return
 				}
-				respondJSON(w, http.StatusCreated, detail)
+				if err := respondJSON(w, http.StatusCreated, detail); err != nil {
+					s.log(r, http.StatusInternalServerError, start, err)
+					return
+				}
 				s.log(r, http.StatusCreated, start, nil)
 				return
 			default:
@@ -265,7 +289,10 @@ func (s *Server) handleRunDetail(w http.ResponseWriter, r *http.Request) {
 				s.log(r, http.StatusNotFound, start, err)
 				return
 			}
-			respondJSON(w, http.StatusOK, detail)
+			if err := respondJSON(w, http.StatusOK, detail); err != nil {
+				s.log(r, http.StatusInternalServerError, start, err)
+				return
+			}
 			s.log(r, http.StatusOK, start, nil)
 			return
 		}

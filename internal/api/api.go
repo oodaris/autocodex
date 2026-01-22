@@ -4,6 +4,7 @@ import (
 	"io/fs"
 	"log/slog"
 	"net/http"
+	"strings"
 
 	"github.com/oodaris/autocodex/internal/config"
 	"github.com/oodaris/autocodex/internal/hub"
@@ -43,5 +44,15 @@ func (s *Server) Handler() http.Handler {
 	if s.Auth != nil && s.Auth.Enabled {
 		handler = s.authMiddleware(handler)
 	}
-	return s.corsMiddleware(handler)
+	handler = s.corsMiddleware(handler)
+
+	basePath := strings.TrimSpace(s.Config.API.BasePath)
+	if basePath == "" || basePath == "/" {
+		return handler
+	}
+	basePath = "/" + strings.Trim(basePath, "/")
+	root := http.NewServeMux()
+	root.Handle(basePath+"/", http.StripPrefix(basePath, handler))
+	root.Handle(basePath, http.RedirectHandler(basePath+"/", http.StatusPermanentRedirect))
+	return root
 }

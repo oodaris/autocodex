@@ -35,7 +35,10 @@ func (s *Server) handleTerminalSessions(w http.ResponseWriter, r *http.Request) 
 
 	switch r.Method {
 	case http.MethodGet:
-		respondJSON(w, http.StatusOK, s.Terminal.List())
+		if err := respondJSON(w, http.StatusOK, s.Terminal.List()); err != nil {
+			s.log(r, http.StatusInternalServerError, start, err)
+			return
+		}
 		s.log(r, http.StatusOK, start, nil)
 	case http.MethodPost:
 		var req TerminalSessionCreateRequest
@@ -84,11 +87,14 @@ func (s *Server) handleTerminalSessions(w http.ResponseWriter, r *http.Request) 
 			WorkspaceID: workspaceID,
 		})
 		if err != nil {
-			respondError(w, http.StatusInternalServerError, err.Error())
+			respondError(w, http.StatusInternalServerError, "internal error")
 			s.log(r, http.StatusInternalServerError, start, err)
 			return
 		}
-		respondJSON(w, http.StatusCreated, session.Summary())
+		if err := respondJSON(w, http.StatusCreated, session.Summary()); err != nil {
+			s.log(r, http.StatusInternalServerError, start, err)
+			return
+		}
 		s.log(r, http.StatusCreated, start, nil)
 	default:
 		respondError(w, http.StatusMethodNotAllowed, "method not allowed")
@@ -134,15 +140,21 @@ func (s *Server) handleTerminalSession(w http.ResponseWriter, r *http.Request) {
 
 	switch r.Method {
 	case http.MethodGet:
-		respondJSON(w, http.StatusOK, session.Summary())
-		s.log(r, http.StatusOK, start, nil)
-	case http.MethodDelete:
-		if err := s.Terminal.Close(sessionID); err != nil {
-			respondError(w, http.StatusInternalServerError, err.Error())
+		if err := respondJSON(w, http.StatusOK, session.Summary()); err != nil {
 			s.log(r, http.StatusInternalServerError, start, err)
 			return
 		}
-		respondJSON(w, http.StatusOK, session.Summary())
+		s.log(r, http.StatusOK, start, nil)
+	case http.MethodDelete:
+		if err := s.Terminal.Close(sessionID); err != nil {
+			respondError(w, http.StatusInternalServerError, "internal error")
+			s.log(r, http.StatusInternalServerError, start, err)
+			return
+		}
+		if err := respondJSON(w, http.StatusOK, session.Summary()); err != nil {
+			s.log(r, http.StatusInternalServerError, start, err)
+			return
+		}
 		s.log(r, http.StatusOK, start, nil)
 	default:
 		respondError(w, http.StatusMethodNotAllowed, "method not allowed")

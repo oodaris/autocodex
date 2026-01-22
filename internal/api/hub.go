@@ -21,7 +21,10 @@ func (s *Server) handleHubWorkspaces(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	summaries := s.Hub.ListSummaries()
-	respondJSON(w, http.StatusOK, summaries)
+	if err := respondJSON(w, http.StatusOK, summaries); err != nil {
+		s.log(r, http.StatusInternalServerError, start, err)
+		return
+	}
 	s.log(r, http.StatusOK, start, nil)
 }
 
@@ -49,7 +52,10 @@ func (s *Server) handleHubWorkspace(w http.ResponseWriter, r *http.Request) {
 	r.Header.Set("X-Workspace-Id", workspaceID)
 	if ws.Err != nil {
 		summary := ws.Summary()
-		respondJSON(w, http.StatusServiceUnavailable, summary)
+		if err := respondJSON(w, http.StatusServiceUnavailable, summary); err != nil {
+			s.log(r, http.StatusInternalServerError, start, err)
+			return
+		}
 		s.log(r, http.StatusServiceUnavailable, start, ws.Err)
 		return
 	}
@@ -61,7 +67,10 @@ func (s *Server) handleHubWorkspace(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		summary := ws.Summary()
-		respondJSON(w, http.StatusOK, summary)
+		if err := respondJSON(w, http.StatusOK, summary); err != nil {
+			s.log(r, http.StatusInternalServerError, start, err)
+			return
+		}
 		s.log(r, http.StatusOK, start, nil)
 		return
 	}
