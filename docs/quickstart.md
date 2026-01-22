@@ -65,7 +65,7 @@ autocodex run --config autocodex.yaml
 ```
 
 **Parallelism vs collaboration (quick blurb)**  
-Autocodex parallelism is controlled by the coordinator (`--swarm`), which runs
+autocodex parallelism is controlled by the coordinator (`--swarm`), which runs
 multiple Codex CLI processes at once. Codex `collaboration_mode/preset` controls
 role‑style behavior inside a single process. Use both if you want parallel beads
 and in‑process collaboration.

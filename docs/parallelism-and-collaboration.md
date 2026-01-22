@@ -1,11 +1,11 @@
 # Parallelism, Collaboration, and Subagents
 
-This guide explains how Autocodex achieves parallelism and collaboration, how it
+This guide explains how autocodex achieves parallelism and collaboration, how it
 relates to Codex collaboration modes, and how to structure work with beads,
 roles, and tasks.
 
 ## TL;DR
-- **Guaranteed parallelism** comes from the **Autocodex coordinator** (multiple
+- **Guaranteed parallelism** comes from the **autocodex coordinator** (multiple
   Codex CLI processes in parallel).
 - **Codex collaboration_mode/preset** controls **in‑process collaboration**
   (role‑style behaviors), not OS‑level parallelism.
@@ -14,8 +14,8 @@ roles, and tasks.
 
 ## Two layers of “multi‑agent” behavior
 
-### 1) Autocodex coordinator (real parallelism)
-Autocodex can run **multiple Codex CLI processes concurrently**. Each bead is
+### 1) autocodex coordinator (real parallelism)
+autocodex can run **multiple Codex CLI processes concurrently**. Each bead is
 handled by a separate process, scheduled by the OS across CPU cores.
 
 Enable with config:
@@ -80,13 +80,13 @@ autocodex run --no-collaboration --task "..."
 
 | Goal | Use |
 | --- | --- |
-| Guaranteed parallel execution | Autocodex coordinator / `--swarm` |
+| Guaranteed parallel execution | autocodex coordinator / `--swarm` |
 | Role‑based collaboration inside one run | Codex `collaboration_mode`/`preset` |
 | Both | Enable coordinator **and** keep collaboration defaults |
 
 ## Beads, roles, and tasks
 
-Autocodex uses **beads** as the unit of work in autonomy mode. Each bead
+autocodex uses **beads** as the unit of work in autonomy mode. Each bead
 represents a task with dependencies. This aligns well with parallel execution:
 
 - **Multiple ready beads** ⇒ run in parallel (coordinator)
@@ -148,7 +148,7 @@ autocodex run --swarm --task "Implement all unblocked beads"
 
 **Q: If Codex “spawns subagents,” is that parallel?**  
 Not necessarily. Codex may simulate roles inside one process. If you need
-guaranteed parallelism, use the Autocodex coordinator.
+guaranteed parallelism, use the autocodex coordinator.
 
 **Q: Can I run parallel beads and still use collaboration presets?**  
 Yes. Each bead run can still use Codex collaboration_mode/preset.

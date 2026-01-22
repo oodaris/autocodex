@@ -12,7 +12,7 @@ bd close <id>         # Complete work
 bd sync               # Sync with git
 ```
 
-## Autocodex defaults (for agents)
+## autocodex defaults (for agents)
 
 Use `autocodex bootstrap` when you want autonomy ready immediately.
 - Creates `autocodex.yaml` if missing (falls back to the embedded config if `config.example.yaml` is absent).

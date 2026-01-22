@@ -1,4 +1,4 @@
-# Autocodex OSS DX + Refactor Plan
+# autocodex OSS DX + Refactor Plan
 
 ## Metadata
 ```yaml

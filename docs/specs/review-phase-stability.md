@@ -10,7 +10,7 @@ updated: 2026-01-16
 ```
 
 ## Problem statement
-Autocodex runs are stalling in the review phase and being auto-finalized as stale without producing review artifacts. This obscures root cause analysis and undermines confidence in the autonomy loop. We need deterministic evidence capture and phase-level guardrails so review runs either complete or fail with actionable diagnostics.
+autocodex runs are stalling in the review phase and being auto-finalized as stale without producing review artifacts. This obscures root cause analysis and undermines confidence in the autonomy loop. We need deterministic evidence capture and phase-level guardrails so review runs either complete or fail with actionable diagnostics.
 
 ## Goals
 - Guarantee review phase output and error capture even if the codex child exits early.
