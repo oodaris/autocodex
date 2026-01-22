@@ -8,6 +8,8 @@ This repo uses GoReleaser to package binaries.
 goreleaser release --snapshot --clean -f goreleaser.yml
 ```
 
+Release archives now include prebuilt plugins under `plugins/`.
+
 ## Publish a release
 
 1) Update `CHANGELOG.md`.

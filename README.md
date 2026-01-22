@@ -53,6 +53,12 @@ sudo mv autocodex /usr/local/bin/autocodex
 > Want a version‑pinned install? See `docs/quickstart.md` for the latest‑version
 > install snippet (auto‑detects the newest tag).
 
+Verify install:
+```bash
+autocodex --version
+autocodex plugins --action list
+```
+
 ## Quickstart
 
 **Runtime requirements (binary users)**
@@ -269,6 +275,11 @@ Plugins are external processes described by `plugin.yaml`. See the catalog and u
 | `knowledge-extractor` | `extract` | Parse docs into structured summaries | Doc list + headings/snippets |
 | `plan-compliance` | `check` | Validate plan sections + open tasks | Status + missing items |
 | `evidence-collector` | `collect` | Capture evidence artifacts | Artifact manifest |
+
+### Plugin distribution
+- Release archives include **prebuilt plugins + manifests**.
+- The install script copies plugins to `${PREFIX}/share/autocodex/plugins`.
+- Default plugin search paths include that location (see `docs/plugins/README.md`).
 
 ### Plugin recipes (multi‑plugin workflows)
 - **Repo onboarding**: repo‑indexer → knowledge‑extractor

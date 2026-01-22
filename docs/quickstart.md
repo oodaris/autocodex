@@ -14,6 +14,15 @@ Verify:
 autocodex --help
 ```
 
+Verify plugins:
+```bash
+autocodex plugins --action list
+```
+
+**Plugins note**  
+Release archives include prebuilt plugins and the install script copies them to
+`${PREFIX}/share/autocodex/plugins`. See `docs/plugins/README.md` for details.
+
 ## Configure
 
 Copy the example config:

@@ -53,7 +53,7 @@ shared or external skills, add additional paths here.
 External plugin settings.
 
 - `enabled`: toggle plugins
-- `paths`: directories to search for `plugin.yaml`
+- `paths`: directories to search for `plugin.yaml` (defaults include repo `plugins/` and system share paths)
 - `timeout_seconds`
 
 ### `hub`

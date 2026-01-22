@@ -17,6 +17,46 @@ Protocol spec: `docs/contracts/plugin-protocol.md`.
 | `evidence-collector` | `collect` | Capture evidence artifacts | Artifact manifest |
 | `example-summarizer` | `summarize` | Minimal example plugin | Summary string |
 
+## Distribution
+Release archives include **prebuilt plugins + manifests** under `plugins/`.
+The install script places them in:
+```
+${PREFIX}/share/autocodex/plugins
+```
+(`PREFIX` is the parent of your `DEST` bin directory.)
+
+Override the install location:
+```bash
+PLUGIN_DEST=~/.local/share/autocodex/plugins \
+  curl -fsSL https://raw.githubusercontent.com/oodaris/autocodex/main/scripts/install.sh | bash
+```
+
+Default plugin search paths include:
+- `plugins` (repo‑local)
+- `/usr/local/share/autocodex/plugins`
+- `/usr/share/autocodex/plugins`
+- `/opt/homebrew/share/autocodex/plugins`
+- `~/.local/share/autocodex/plugins` (if present)
+
+Override these via `plugins.paths` in `autocodex.yaml`.
+
+If you move binaries manually, copy the `plugins/` folder from the release
+archive to a path in `plugins.paths`, e.g.:
+```bash
+sudo mkdir -p /usr/local/share/autocodex/plugins
+sudo cp -R plugins/. /usr/local/share/autocodex/plugins
+```
+
+Build all default plugins from source (optional):
+```bash
+for p in plugins/*; do
+  if [ -f "$p/main.go" ]; then
+    name="$(basename "$p")"
+    go build -o "$p/$name" "./$p"
+  fi
+done
+```
+
 ## Can I run multiple plugins at the same time?
 Yes. Plugins are independent processes, so you can run them sequentially or in parallel. A few options:
 - **Sequential (safe default)**: pipe outputs to files and chain the next step.
