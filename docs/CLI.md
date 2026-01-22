@@ -10,6 +10,7 @@ autocodex "Review backend API and fix issues."
 ## Global behavior
 - Default config path: `autocodex.yaml` (override with `AUTOCODEX_CONFIG` or `--config`).
 - Shortcut: `autocodex "<task>"` is equivalent to `autocodex run --task "<task>"`.
+- Positional args: `run`, `once`, and `resume` accept a positional task string; `snapshot`, `resume`, and `kill` accept a positional run id.
 
 ## Commands
 
@@ -46,6 +47,8 @@ Flags:
 - `--task-stdin`: read task text from stdin
 - `--start-phase`: start at a specific phase (ideate/plan/implement/review/test)
 - `--use-latest-artifacts`: when starting after ideate, append latest spec/plan paths to the task (default true)
+- `--collaboration-mode`: override Codex collaboration mode (passed via `-c collaboration_mode=...`)
+- `--preset`: override Codex collaboration preset (passed via `-c collaboration_mode_preset=...`, requires `--collaboration-mode`)
 
 ### once
 Run a single bounded loop (one pass through phases).
@@ -69,6 +72,8 @@ Flags:
 - `--use-latest-artifacts`: when starting after ideate, append latest spec/plan paths to the task (default true)
 - `--force`: resume even if run is still running, or to resume a completed run
 - `--list`: list runs and exit (TTY selection if run id not provided)
+- `--collaboration-mode`: override Codex collaboration mode (passed via `-c collaboration_mode=...`)
+- `--preset`: override Codex collaboration preset (passed via `-c collaboration_mode_preset=...`, requires `--collaboration-mode`)
 
 ### doctor
 Run preflight checks for the current repo.
@@ -98,6 +103,24 @@ Alias for `status --table`.
 ```bash
 autocodex runs [--config <path>] [--status <csv>] [--limit N]
 ```
+Note: accepts the same flags as `status`; `--table` is implied.
+
+### api
+Start the API server.
+```bash
+autocodex api [--config <path>] [--action start|stop|status]
+```
+Flags:
+- `--config`: config file path
+- `--action`: `start` (default), `stop`, or `status`
+
+### ui
+Start the embedded UI (uses the same API port).
+```bash
+autocodex ui [--config <path>]
+```
+Flags:
+- `--config`: config file path
 
 ### snapshot
 Create a snapshot of a run.
