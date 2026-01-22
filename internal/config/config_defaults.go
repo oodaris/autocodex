@@ -31,6 +31,13 @@ func (c *Config) ApplyDefaults() {
 	if c.Codex.Env == nil {
 		c.Codex.Env = map[string]string{}
 	}
+	if c.Autonomy.Coordinator.Strategy == "" {
+		c.Autonomy.Coordinator.Strategy = "bead"
+	}
+	if c.Autonomy.Coordinator.MaxParallel == nil {
+		defaultMax := 2
+		c.Autonomy.Coordinator.MaxParallel = &defaultMax
+	}
 	if c.Paths.StateDir == "" {
 		c.Paths.StateDir = ".autocodex"
 	}

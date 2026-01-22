@@ -6,7 +6,10 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"sync"
 )
+
+var bdMutex sync.Mutex
 
 func (c *Controller) createBeads(tasksFile TasksFile) error {
 	if !c.Config.Beads.Enabled || !c.Config.Beads.AutoCreate {
@@ -150,6 +153,8 @@ func beadExists(id string) bool {
 }
 
 func runBD(args ...string) (string, error) {
+	bdMutex.Lock()
+	defer bdMutex.Unlock()
 	cmd := exec.Command("bd", args...)
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer

@@ -35,18 +35,26 @@
           "type": "string",
           "default": "gpt-5.2-codex"
         },
-        "reasoning_effort": {
-          "type": "string",
-          "enum": [
-            "minimal",
-            "low",
-            "medium",
-            "high",
-            "xhigh"
-          ],
-          "default": "xhigh",
-          "description": "Model-dependent; e.g., gpt-5.1* supports low|medium|high."
-        },
+    "reasoning_effort": {
+      "type": "string",
+      "enum": [
+        "minimal",
+        "low",
+        "medium",
+        "high",
+        "xhigh"
+      ],
+      "default": "xhigh",
+      "description": "Model-dependent; e.g., gpt-5.1* supports low|medium|high."
+    },
+    "collaboration_mode": {
+      "type": "string",
+      "description": "Optional Codex collaboration mode (passed via -c collaboration_mode=...)."
+    },
+    "preset": {
+      "type": "string",
+      "description": "Optional Codex collaboration preset (passed via -c collaboration_mode_preset=...)."
+    },
         "timeout_seconds": {
           "type": "integer",
           "minimum": 1,
@@ -284,7 +292,8 @@
         "format": {
           "type": "string",
           "enum": [
-            "json"
+            "json",
+            "text"
           ],
           "default": "json"
         }
@@ -517,10 +526,42 @@
           "type": "string",
           "default": "docs/contracts/autonomy-actions.schema.json"
         },
-        "tasks_output_template": {
-          "type": "string",
-          "default": "docs/plans/%s-tasks.json"
+    "tasks_output_template": {
+      "type": "string",
+      "default": "docs/plans/%s-tasks.json"
+    },
+    "coordinator": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": false
         },
+        "max_parallel": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "default": 2,
+          "description": "Maximum concurrent beads. 0 means unlimited."
+        },
+        "strategy": {
+          "type": "string",
+          "enum": [
+            "bead",
+            "phase"
+          ],
+          "default": "bead"
+        },
+        "fail_fast": {
+          "type": "boolean",
+          "default": false,
+          "description": "Stop all parallel beads on first error."
+        }
+      }
+    },
         "stop_conditions": {
           "type": "object",
           "additionalProperties": false,

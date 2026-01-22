@@ -30,17 +30,19 @@ type Config struct {
 }
 
 type CodexConfig struct {
-	CLIPath         string            `yaml:"cli_path"`
-	Model           string            `yaml:"model"`
-	ReasoningEffort string            `yaml:"reasoning_effort"`
-	TimeoutSeconds  int               `yaml:"timeout_seconds"`
-	ExtraArgs       []string          `yaml:"extra_args"`
-	ApprovalPolicy  string            `yaml:"approval_policy"`
-	SandboxMode     string            `yaml:"sandbox_mode"`
-	JSONOutput      bool              `yaml:"json_output"`
-	OutputLast      bool              `yaml:"output_last_message"`
-	PromptStdin     bool              `yaml:"prompt_stdin"`
-	Env             map[string]string `yaml:"env"`
+	CLIPath           string            `yaml:"cli_path"`
+	Model             string            `yaml:"model"`
+	ReasoningEffort   string            `yaml:"reasoning_effort"`
+	CollaborationMode string            `yaml:"collaboration_mode"`
+	Preset            string            `yaml:"preset"`
+	TimeoutSeconds    int               `yaml:"timeout_seconds"`
+	ExtraArgs         []string          `yaml:"extra_args"`
+	ApprovalPolicy    string            `yaml:"approval_policy"`
+	SandboxMode       string            `yaml:"sandbox_mode"`
+	JSONOutput        bool              `yaml:"json_output"`
+	OutputLast        bool              `yaml:"output_last_message"`
+	PromptStdin       bool              `yaml:"prompt_stdin"`
+	Env               map[string]string `yaml:"env"`
 }
 
 type PathsConfig struct {
@@ -119,25 +121,33 @@ type LoopConfig struct {
 }
 
 type AutonomyConfig struct {
-	Enabled             bool                   `yaml:"enabled"`
-	RequireActions      *bool                  `yaml:"require_actions"`
-	RequireNext         *bool                  `yaml:"require_next"`
-	RequireBD           *bool                  `yaml:"require_bd"`
-	FailOnSchemaError   *bool                  `yaml:"fail_on_schema_error"`
-	AllowFallbackTasks  *bool                  `yaml:"allow_fallback_tasks"`
-	KeepInvalidPayloads *bool                  `yaml:"keep_invalid_payloads"`
-	SpecTemplate        string                 `yaml:"spec_template"`
-	PlanTemplate        string                 `yaml:"plan_template"`
-	TasksSchema         string                 `yaml:"tasks_schema"`
-	ActionsSchema       string                 `yaml:"actions_schema"`
-	TasksOutputTemplate string                 `yaml:"tasks_output_template"`
-	StopConditions      AutonomyStopConditions `yaml:"stop_conditions"`
+	Enabled             bool                      `yaml:"enabled"`
+	RequireActions      *bool                     `yaml:"require_actions"`
+	RequireNext         *bool                     `yaml:"require_next"`
+	RequireBD           *bool                     `yaml:"require_bd"`
+	FailOnSchemaError   *bool                     `yaml:"fail_on_schema_error"`
+	AllowFallbackTasks  *bool                     `yaml:"allow_fallback_tasks"`
+	KeepInvalidPayloads *bool                     `yaml:"keep_invalid_payloads"`
+	SpecTemplate        string                    `yaml:"spec_template"`
+	PlanTemplate        string                    `yaml:"plan_template"`
+	TasksSchema         string                    `yaml:"tasks_schema"`
+	ActionsSchema       string                    `yaml:"actions_schema"`
+	TasksOutputTemplate string                    `yaml:"tasks_output_template"`
+	StopConditions      AutonomyStopConditions    `yaml:"stop_conditions"`
+	Coordinator         AutonomyCoordinatorConfig `yaml:"coordinator"`
 }
 
 type AutonomyStopConditions struct {
 	MaxFixAttempts    int   `yaml:"max_fix_attempts"`
 	MaxBeads          int   `yaml:"max_beads"`
 	StopOnGateFailure *bool `yaml:"stop_on_gate_failure"`
+}
+
+type AutonomyCoordinatorConfig struct {
+	Enabled     bool   `yaml:"enabled"`
+	MaxParallel *int   `yaml:"max_parallel"`
+	Strategy    string `yaml:"strategy"`
+	FailFast    bool   `yaml:"fail_fast"`
 }
 
 type StopConditionsConfig struct {

@@ -96,7 +96,7 @@ func TestAutonomyRequiresActions(t *testing.T) {
 	loader := skills.Loader{Paths: cfg.Skills.Paths}
 	controller := Controller{
 		Config: cfg,
-		Logger: logging.NewLogger("error"),
+		Logger: logging.NewLogger("error", "json"),
 		Store:  store,
 		Skills: loader,
 		Codex:  exec,
@@ -172,7 +172,7 @@ func TestAutonomyRequiresNextWhenMultipleBeadsReady(t *testing.T) {
 	loader := skills.Loader{Paths: cfg.Skills.Paths}
 	controller := Controller{
 		Config: cfg,
-		Logger: logging.NewLogger("error"),
+		Logger: logging.NewLogger("error", "json"),
 		Store:  store,
 		Skills: loader,
 		Codex:  exec,
@@ -211,7 +211,7 @@ func TestAutonomyRequireBDFailsFast(t *testing.T) {
 	store := state.NewStore(cfg.StateDir(), cfg.RunsDir(), cfg.MemoryDir(), cfg.LogsDir(), cfg.ArtifactsDir())
 	controller := Controller{
 		Config: cfg,
-		Logger: logging.NewLogger("error"),
+		Logger: logging.NewLogger("error", "json"),
 		Store:  store,
 		Skills: skills.Loader{},
 		Codex:  strictnessExecutor{},

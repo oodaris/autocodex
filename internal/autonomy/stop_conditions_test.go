@@ -73,7 +73,7 @@ func TestAutonomyStopsOnMaxBeads(t *testing.T) {
 	loader := skills.Loader{Paths: cfg.Skills.Paths}
 	controller := Controller{
 		Config: cfg,
-		Logger: logging.NewLogger("error"),
+		Logger: logging.NewLogger("error", "json"),
 		Store:  store,
 		Skills: loader,
 		Codex:  exec,
@@ -155,7 +155,7 @@ func TestAutonomyStopOnGateFailure(t *testing.T) {
 	loader := skills.Loader{Paths: cfg.Skills.Paths}
 	controller := Controller{
 		Config: cfg,
-		Logger: logging.NewLogger("error"),
+		Logger: logging.NewLogger("error", "json"),
 		Store:  store,
 		Skills: loader,
 		Codex:  exec,
@@ -233,7 +233,7 @@ func TestAutonomyMaxFixAttempts(t *testing.T) {
 	loader := skills.Loader{Paths: cfg.Skills.Paths}
 	controller := Controller{
 		Config: cfg,
-		Logger: logging.NewLogger("error"),
+		Logger: logging.NewLogger("error", "json"),
 		Store:  store,
 		Skills: loader,
 		Codex:  exec,

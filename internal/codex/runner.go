@@ -14,19 +14,21 @@ import (
 )
 
 type Runner struct {
-	CLIPath         string
-	Model           string
-	ReasoningEffort string
-	ExtraArgs       []string
-	Mode            string
-	ApprovalPolicy  string
-	SandboxMode     string
-	JSONOutput      bool
-	OutputLast      bool
-	PromptStdin     bool
-	Timeout         time.Duration
-	IdleTimeout     time.Duration
-	Env             map[string]string
+	CLIPath           string
+	Model             string
+	ReasoningEffort   string
+	CollaborationMode string
+	Preset            string
+	ExtraArgs         []string
+	Mode              string
+	ApprovalPolicy    string
+	SandboxMode       string
+	JSONOutput        bool
+	OutputLast        bool
+	PromptStdin       bool
+	Timeout           time.Duration
+	IdleTimeout       time.Duration
+	Env               map[string]string
 }
 
 type Executor interface {
@@ -56,6 +58,12 @@ func (r Runner) Exec(ctx context.Context, prompt string) (ExecResult, error) {
 	}
 	if r.ReasoningEffort != "" {
 		args = append(args, "-c", fmt.Sprintf(`model_reasoning_effort=%q`, r.ReasoningEffort))
+	}
+	if r.CollaborationMode != "" {
+		args = append(args, "-c", fmt.Sprintf(`collaboration_mode=%q`, r.CollaborationMode))
+	}
+	if r.Preset != "" {
+		args = append(args, "-c", fmt.Sprintf(`collaboration_mode_preset=%q`, r.Preset))
 	}
 	if r.JSONOutput {
 		args = append(args, "--json")

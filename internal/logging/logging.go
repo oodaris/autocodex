@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-func NewLogger(level string) *slog.Logger {
+func NewLogger(level, format string) *slog.Logger {
 	lvl := slog.LevelInfo
 	switch strings.ToLower(level) {
 	case "debug":
@@ -18,7 +18,7 @@ func NewLogger(level string) *slog.Logger {
 		lvl = slog.LevelError
 	}
 
-	handler := slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{
+	handlerOptions := &slog.HandlerOptions{
 		Level:     lvl,
 		AddSource: false,
 		ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
@@ -27,7 +27,12 @@ func NewLogger(level string) *slog.Logger {
 			}
 			return a
 		},
-	})
+	}
 
-	return slog.New(handler)
+	switch strings.ToLower(strings.TrimSpace(format)) {
+	case "text":
+		return slog.New(slog.NewTextHandler(os.Stderr, handlerOptions))
+	default:
+		return slog.New(slog.NewJSONHandler(os.Stderr, handlerOptions))
+	}
 }

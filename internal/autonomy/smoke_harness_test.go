@@ -87,7 +87,7 @@ func newSmokeHarness(t *testing.T, exec codex.Executor, opts SmokeHarnessOptions
 	loader := skills.Loader{Paths: cfg.Skills.Paths}
 	controller := Controller{
 		Config: cfg,
-		Logger: logging.NewLogger("error"),
+		Logger: logging.NewLogger("error", "json"),
 		Store:  store,
 		Skills: loader,
 		Codex:  exec,

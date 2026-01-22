@@ -26,6 +26,9 @@ func (c Config) Validate() error {
 	if err := validateReasoningEffort(c.Codex.Model, c.Codex.ReasoningEffort); err != nil {
 		return err
 	}
+	if strings.TrimSpace(c.Codex.Preset) != "" && strings.TrimSpace(c.Codex.CollaborationMode) == "" {
+		return errors.New("codex.preset requires codex.collaboration_mode")
+	}
 	if c.Codex.JSONOutput && !c.Codex.OutputLast {
 		return errors.New("codex.output_last_message must be true when codex.json_output is enabled")
 	}
@@ -107,6 +110,15 @@ func (c Config) Validate() error {
 	if c.API.Port < 1 || c.API.Port > 65535 {
 		return fmt.Errorf("invalid api.port: %d", c.API.Port)
 	}
+	if strings.TrimSpace(c.Logging.Level) == "" {
+		return errors.New("logging.level is required")
+	}
+	if !oneOf(strings.ToLower(c.Logging.Level), []string{"debug", "info", "warn", "error"}) {
+		return fmt.Errorf("invalid logging.level: %s", c.Logging.Level)
+	}
+	if c.Logging.Format != "" && !oneOf(strings.ToLower(c.Logging.Format), []string{"json", "text"}) {
+		return fmt.Errorf("invalid logging.format: %s", c.Logging.Format)
+	}
 	if len(c.Loop.Phases) == 0 {
 		return errors.New("loop.phases must not be empty")
 	}
@@ -115,6 +127,14 @@ func (c Config) Validate() error {
 	}
 	if c.Autonomy.StopConditions.MaxBeads < 0 {
 		return fmt.Errorf("invalid autonomy.stop_conditions.max_beads: %d", c.Autonomy.StopConditions.MaxBeads)
+	}
+	if c.Autonomy.Coordinator.Strategy != "" {
+		if !oneOf(c.Autonomy.Coordinator.Strategy, []string{"bead", "phase"}) {
+			return fmt.Errorf("invalid autonomy.coordinator.strategy: %s", c.Autonomy.Coordinator.Strategy)
+		}
+	}
+	if c.Autonomy.Coordinator.MaxParallel != nil && *c.Autonomy.Coordinator.MaxParallel < 0 {
+		return fmt.Errorf("invalid autonomy.coordinator.max_parallel: %d", *c.Autonomy.Coordinator.MaxParallel)
 	}
 	if c.Autonomy.Enabled {
 		if strings.TrimSpace(c.Autonomy.SpecTemplate) == "" {

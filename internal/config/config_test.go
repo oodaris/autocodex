@@ -57,6 +57,12 @@ func TestLoadAppliesDefaults(t *testing.T) {
 	if cfg.Autonomy.KeepInvalidPayloads == nil || !*cfg.Autonomy.KeepInvalidPayloads {
 		t.Fatalf("expected autonomy keep_invalid_payloads default true")
 	}
+	if cfg.Autonomy.Coordinator.Strategy == "" {
+		t.Fatalf("expected autonomy coordinator strategy default")
+	}
+	if cfg.Autonomy.Coordinator.MaxParallel == nil || *cfg.Autonomy.Coordinator.MaxParallel == 0 {
+		t.Fatalf("expected autonomy coordinator max_parallel default")
+	}
 }
 
 func TestValidateRejectsInvalidMode(t *testing.T) {
@@ -76,10 +82,38 @@ func TestValidateRejectsInvalidLoopMode(t *testing.T) {
 	}
 }
 
+func TestValidateRejectsInvalidLoggingLevel(t *testing.T) {
+	cfg := Config{Version: "v1", Mode: "yolo"}
+	cfg.ApplyDefaults()
+	cfg.Logging.Level = "nope"
+	if err := cfg.Validate(); err == nil {
+		t.Fatalf("expected validation error")
+	}
+}
+
+func TestValidateRejectsPresetWithoutCollaborationMode(t *testing.T) {
+	cfg := Config{Version: "v1", Mode: "yolo"}
+	cfg.ApplyDefaults()
+	cfg.Codex.Preset = "team"
+	cfg.Codex.CollaborationMode = ""
+	if err := cfg.Validate(); err == nil {
+		t.Fatalf("expected validation error")
+	}
+}
+
 func TestValidateRejectsInvalidFeedbackSource(t *testing.T) {
 	cfg := Config{Version: "v1", Mode: "yolo"}
 	cfg.ApplyDefaults()
 	cfg.Loop.Feedback.Sources = []string{"memory", "bad"}
+	if err := cfg.Validate(); err == nil {
+		t.Fatalf("expected validation error")
+	}
+}
+
+func TestValidateRejectsInvalidCoordinatorStrategy(t *testing.T) {
+	cfg := Config{Version: "v1", Mode: "yolo"}
+	cfg.ApplyDefaults()
+	cfg.Autonomy.Coordinator.Strategy = "nope"
 	if err := cfg.Validate(); err == nil {
 		t.Fatalf("expected validation error")
 	}

@@ -48,7 +48,7 @@ func runPlugins(args []string) {
 		exitErr(err)
 	}
 
-	logger := logging.NewLogger(cfg.Logging.Level)
+	logger := logging.NewLogger(cfg.Logging.Level, cfg.Logging.Format)
 	traceID := fmt.Sprintf("trace-%d", time.Now().UnixNano())
 	tenantID := os.Getenv("AUTOCODEX_TENANT_ID")
 	if tenantID == "" {

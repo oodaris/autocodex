@@ -5,6 +5,8 @@ codex:
   cli_path: codex
   model: gpt-5.2-codex
   reasoning_effort: xhigh
+  collaboration_mode: ""
+  preset: ""
   timeout_seconds: 900
   extra_args: []
   # approval/sandbox are ignored when mode: yolo (yolo uses --yolo)
@@ -105,6 +107,11 @@ autonomy:
   tasks_schema: docs/contracts/autonomy-tasks.schema.json
   actions_schema: docs/contracts/autonomy-actions.schema.json
   tasks_output_template: docs/plans/%s-tasks.json
+  coordinator:
+    enabled: false
+    max_parallel: 2 # 0 = unlimited
+    strategy: bead
+    fail_fast: false
   stop_conditions:
     max_fix_attempts: 3
     max_beads: 0

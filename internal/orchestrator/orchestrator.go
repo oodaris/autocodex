@@ -3,6 +3,7 @@ package orchestrator
 import (
 	"context"
 	"fmt"
+	"io"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -30,6 +31,9 @@ func (o *Orchestrator) Run(ctx context.Context) (*state.Run, error) {
 	if err := o.Store.EnsureMemoryDocs(); err != nil {
 		return nil, err
 	}
+	if o.Logger == nil {
+		o.Logger = slog.New(slog.NewJSONHandler(io.Discard, &slog.HandlerOptions{}))
+	}
 
 	run, err := o.Store.CreateRun()
 	if err != nil {
@@ -37,6 +41,8 @@ func (o *Orchestrator) Run(ctx context.Context) (*state.Run, error) {
 	}
 	run.Model = o.Config.Codex.Model
 	run.Reasoning = o.Config.Codex.ReasoningEffort
+	run.CollabMode = o.Config.Codex.CollaborationMode
+	run.CollabPreset = o.Config.Codex.Preset
 	run.CodexCLI = o.Config.Codex.CLIPath
 	run.Mode = o.Config.Mode
 	if err := o.Store.SaveRun(run); err != nil {
@@ -62,7 +68,10 @@ func (o *Orchestrator) Run(ctx context.Context) (*state.Run, error) {
 	go o.heartbeatLoop(heartbeatCtx, run.ID, os.Getpid())
 
 	traceID := newTraceID()
-	beadID := os.Getenv("AUTOCODEX_BEAD_ID")
+	beadID := beadIDFromContext(ctx)
+	if beadID == "" {
+		beadID = os.Getenv("AUTOCODEX_BEAD_ID")
+	}
 	if beadID == "" {
 		beadID = os.Getenv("BD_ISSUE")
 	}
@@ -96,6 +105,8 @@ func (o *Orchestrator) Run(ctx context.Context) (*state.Run, error) {
 			"bead_id":        beadID,
 			"model":          o.Config.Codex.Model,
 			"reasoning":      o.Config.Codex.ReasoningEffort,
+			"collab_mode":    o.Config.Codex.CollaborationMode,
+			"collab_preset":  o.Config.Codex.Preset,
 			"codex_cli":      o.Config.Codex.CLIPath,
 			"autocodex_mode": o.Config.Mode,
 		},

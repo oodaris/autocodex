@@ -69,6 +69,9 @@ func (c *Controller) Run(ctx context.Context, input Input) (*state.Run, error) {
 	if c.Logger != nil {
 		c.Logger.Info("autonomy artifacts ready", "spec_path", specPath, "plan_path", planPath, "tasks_path", tasksPath)
 	}
+	if c.Config.Autonomy.Coordinator.Enabled {
+		return c.runCoordinator(ctx, specPath, planPath, tasksPath)
+	}
 
 	orch := orchestrator.Orchestrator{
 		Config: c.Config,

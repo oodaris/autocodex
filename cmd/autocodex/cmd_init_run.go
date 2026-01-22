@@ -61,6 +61,8 @@ func runRun(args []string) {
 	taskStdin := fs.Bool("task-stdin", false, "read task text from stdin")
 	startPhase := fs.String("start-phase", "", "start phase (ideate, plan, implement, review, test)")
 	useLatestArtifacts := fs.Bool("use-latest-artifacts", true, "append latest spec/plan references when starting after ideate")
+	collaborationMode := fs.String("collaboration-mode", "", "codex collaboration mode override (passed via -c collaboration_mode=...)")
+	preset := fs.String("preset", "", "codex collaboration preset override (passed via -c collaboration_mode_preset=...)")
 	fs.Parse(args)
 
 	taskPayload, err := resolveTaskInput(*task, *taskFile, *taskStdin, fs.Args(), os.Stdin)
@@ -72,6 +74,7 @@ func runRun(args []string) {
 	if err != nil {
 		exitErr(err)
 	}
+	applyCodexOverrides(&cfg, strings.TrimSpace(*collaborationMode), strings.TrimSpace(*preset))
 
 	if err := applyStartPhase(&cfg, *startPhase); err != nil {
 		exitErr(err)
@@ -99,6 +102,8 @@ func runOnce(args []string) {
 	taskStdin := fs.Bool("task-stdin", false, "read task text from stdin")
 	startPhase := fs.String("start-phase", "", "start phase (ideate, plan, implement, review, test)")
 	useLatestArtifacts := fs.Bool("use-latest-artifacts", true, "append latest spec/plan references when starting after ideate")
+	collaborationMode := fs.String("collaboration-mode", "", "codex collaboration mode override (passed via -c collaboration_mode=...)")
+	preset := fs.String("preset", "", "codex collaboration preset override (passed via -c collaboration_mode_preset=...)")
 	fs.Parse(args)
 
 	taskPayload, err := resolveTaskInput(*task, *taskFile, *taskStdin, fs.Args(), os.Stdin)
@@ -110,6 +115,7 @@ func runOnce(args []string) {
 	if err != nil {
 		exitErr(err)
 	}
+	applyCodexOverrides(&cfg, strings.TrimSpace(*collaborationMode), strings.TrimSpace(*preset))
 	if err := applyStartPhase(&cfg, *startPhase); err != nil {
 		exitErr(err)
 	}
@@ -129,23 +135,25 @@ func runOnce(args []string) {
 }
 
 func runLoop(cfg config.Config, taskPayload string) {
-	logger := logging.NewLogger(cfg.Logging.Level)
+	logger := logging.NewLogger(cfg.Logging.Level, cfg.Logging.Format)
 	store := state.NewStore(cfg.StateDir(), cfg.RunsDir(), cfg.MemoryDir(), cfg.LogsDir(), cfg.ArtifactsDir())
 	loader := skills.Loader{Paths: cfg.Skills.Paths}
 	runner := codex.Runner{
-		CLIPath:         cfg.Codex.CLIPath,
-		Model:           cfg.Codex.Model,
-		ReasoningEffort: cfg.Codex.ReasoningEffort,
-		ExtraArgs:       cfg.Codex.ExtraArgs,
-		Mode:            cfg.Mode,
-		ApprovalPolicy:  cfg.Codex.ApprovalPolicy,
-		SandboxMode:     cfg.Codex.SandboxMode,
-		JSONOutput:      cfg.Codex.JSONOutput,
-		OutputLast:      cfg.Codex.OutputLast,
-		PromptStdin:     cfg.Codex.PromptStdin,
-		Timeout:         time.Duration(cfg.Codex.TimeoutSeconds) * time.Second,
-		IdleTimeout:     time.Duration(cfg.Loop.StopConditions.MaxIdleSeconds) * time.Second,
-		Env:             cfg.Codex.Env,
+		CLIPath:           cfg.Codex.CLIPath,
+		Model:             cfg.Codex.Model,
+		ReasoningEffort:   cfg.Codex.ReasoningEffort,
+		CollaborationMode: cfg.Codex.CollaborationMode,
+		Preset:            cfg.Codex.Preset,
+		ExtraArgs:         cfg.Codex.ExtraArgs,
+		Mode:              cfg.Mode,
+		ApprovalPolicy:    cfg.Codex.ApprovalPolicy,
+		SandboxMode:       cfg.Codex.SandboxMode,
+		JSONOutput:        cfg.Codex.JSONOutput,
+		OutputLast:        cfg.Codex.OutputLast,
+		PromptStdin:       cfg.Codex.PromptStdin,
+		Timeout:           time.Duration(cfg.Codex.TimeoutSeconds) * time.Second,
+		IdleTimeout:       time.Duration(cfg.Loop.StopConditions.MaxIdleSeconds) * time.Second,
+		Env:               cfg.Codex.Env,
 	}
 
 	orch := orchestrator.Orchestrator{
@@ -240,7 +248,7 @@ func applyTaskInput(cfg *config.Config, payload string) (string, error) {
 		return "", err
 	}
 
-	if cfg.Loop.Feedback.Mode == "" || cfg.Loop.Feedback.Mode == "off" {
+	if cfg.Loop.Feedback.Mode == "" {
 		cfg.Loop.Feedback.Mode = "on"
 	}
 	fmt.Println("Task appended to TODO.md")

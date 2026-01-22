@@ -22,6 +22,8 @@ Controls the Codex CLI invocation.
   - Model-specific limits apply (examples):
     - `gpt-5.1*`: `low|medium|high` (no `xhigh`)
   - `xhigh` is model-dependent; use `medium`/`high` if unsure.
+- `collaboration_mode`: optional Codex collaboration mode (passed as `-c collaboration_mode=...`)
+- `preset`: optional collaboration preset (passed as `-c collaboration_mode_preset=...`, requires `collaboration_mode`)
 - `timeout_seconds`: per-run timeout
 - `extra_args`: additional CLI flags
 - `approval_policy` and `sandbox_mode`: ignored in `mode: yolo`
@@ -62,7 +64,7 @@ Multi-repo workspace tracking.
 Local API server configuration.
 
 - `enabled`: toggle API server
-- `host`, `port`, `base_path`
+- `host`, `port`, `base_path` (API/UI served under the base path when set)
 
 ### `ui`
 UI origin and enablement.
@@ -85,7 +87,7 @@ Local retention for run artifacts and logs.
 Logging behavior.
 
 - `level`: `debug|info|warn|error`
-- `format`: `json` recommended
+- `format`: `json` (default) or `text`
 
 ### `auth`
 API token enforcement.
@@ -125,6 +127,14 @@ Spec/plan/bead automation controls (feature-flagged).
 - `spec_template`, `plan_template`: template paths for generated docs
 - `tasks_schema`, `actions_schema`: contract paths used by parsers
 - `tasks_output_template`: where `<slug>-tasks.json` is written
+- `coordinator`: optional parallel bead runner
+  - `enabled`: spawn parallel bead runs instead of sequential loop
+  - `max_parallel`: max concurrent beads (default 2, `0` = unlimited)
+  - `strategy`: `bead` runs beads in parallel; `phase` runs isolated phases in parallel and does not share artifacts between phases
+  - `fail_fast`: stop all parallel beads on the first error (default false)
+  - Note: `require_next` is ignored in parallel mode
+  - Note: parallel mode isolates memory docs per bead under `memory/beads/<id>`
+  - `strategy`: `bead` (default) or `phase` (runs isolated phases in parallel; does not share phase artifacts)
 - `stop_conditions`: `max_fix_attempts`, `max_beads`, `stop_on_gate_failure`
 
 ## Safety notes

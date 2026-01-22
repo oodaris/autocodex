@@ -83,6 +83,8 @@ func runResume(args []string) {
 	list := fs.Bool("list", false, "list runs and exit")
 	startPhase := fs.String("start-phase", "", "start phase (ideate, plan, implement, review, test)")
 	useLatestArtifacts := fs.Bool("use-latest-artifacts", true, "append latest spec/plan references when starting after ideate")
+	collaborationMode := fs.String("collaboration-mode", "", "codex collaboration mode override (passed via -c collaboration_mode=...)")
+	preset := fs.String("preset", "", "codex collaboration preset override (passed via -c collaboration_mode_preset=...)")
 	fs.Parse(args)
 
 	extraArgs := fs.Args()
@@ -100,6 +102,7 @@ func runResume(args []string) {
 	if err != nil {
 		exitErr(err)
 	}
+	applyCodexOverrides(&cfg, strings.TrimSpace(*collaborationMode), strings.TrimSpace(*preset))
 	if err := applyStartPhase(&cfg, *startPhase); err != nil {
 		exitErr(err)
 	}
@@ -166,7 +169,7 @@ func runResume(args []string) {
 		}
 	}
 
-	if cfg.Loop.Feedback.Mode == "" || cfg.Loop.Feedback.Mode == "off" {
+	if cfg.Loop.Feedback.Mode == "" {
 		cfg.Loop.Feedback.Mode = "on"
 	}
 	cfg.Loop.Feedback.Sources = ensureSource(cfg.Loop.Feedback.Sources, "snapshot")

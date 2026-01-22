@@ -16,6 +16,8 @@ type Run struct {
 	CurrentPhase string     `json:"current_phase"`
 	Model        string     `json:"model,omitempty"`
 	Reasoning    string     `json:"reasoning_effort,omitempty"`
+	CollabMode   string     `json:"collaboration_mode,omitempty"`
+	CollabPreset string     `json:"collaboration_preset,omitempty"`
 	CodexCLI     string     `json:"codex_cli,omitempty"`
 	Mode         string     `json:"mode,omitempty"`
 	StartedAt    time.Time  `json:"started_at"`
