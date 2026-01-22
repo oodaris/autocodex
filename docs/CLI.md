@@ -48,7 +48,7 @@ Flags:
 - `--task-stdin`: read task text from stdin
 - `--start-phase`: start at a specific phase (ideate/plan/implement/review/test)
 - `--use-latest-artifacts`: when starting after ideate, append latest spec/plan paths to the task (default true)
-- `--swarm`: force bead-parallel coordinator (enables autonomy)
+- `--swarm`: force bead-parallel coordinator and set max_parallel to unlimited for the run (enables autonomy)
 - `--no-collaboration`: disable Codex collaboration for this run
 - `--collaboration-mode`: override Codex collaboration mode (passed via `-c collaboration_mode=...`)
 - `--preset`: override Codex collaboration preset (passed via `-c collaboration_mode_preset=...`, requires `--collaboration-mode`)
@@ -75,7 +75,7 @@ Flags:
 - `--use-latest-artifacts`: when starting after ideate, append latest spec/plan paths to the task (default true)
 - `--force`: resume even if run is still running, or to resume a completed run
 - `--list`: list runs and exit (TTY selection if run id not provided)
-- `--swarm`: force bead-parallel coordinator (enables autonomy)
+- `--swarm`: force bead-parallel coordinator and set max_parallel to unlimited for the run (enables autonomy)
 - `--no-collaboration`: disable Codex collaboration for this run
 - `--collaboration-mode`: override Codex collaboration mode (passed via `-c collaboration_mode=...`)
 - `--preset`: override Codex collaboration preset (passed via `-c collaboration_mode_preset=...`, requires `--collaboration-mode`)

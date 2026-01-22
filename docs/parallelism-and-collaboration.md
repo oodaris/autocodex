@@ -33,6 +33,7 @@ Or force it per run:
 ```bash
 autocodex run --swarm --task "Run all unblocked beads in parallel"
 ```
+Note: `--swarm` sets `autonomy.coordinator.max_parallel` to `0` (unlimited) for the run.
 `--swarm` enables the coordinator and uses your configured `max_parallel`
 (default: `2`) unless you explicitly set `max_parallel: 0` for unlimited.
 

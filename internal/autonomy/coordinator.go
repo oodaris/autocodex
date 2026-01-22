@@ -18,7 +18,8 @@ func (c *Controller) runCoordinator(ctx context.Context, specPath, planPath, tas
 	if err != nil {
 		return nil, err
 	}
-	if len(ready) == 0 {
+	readyTotal := len(ready)
+	if readyTotal == 0 {
 		if c.Logger != nil {
 			c.Logger.Info("autonomy coordinator: no ready beads")
 		}
@@ -29,31 +30,41 @@ func (c *Controller) runCoordinator(ctx context.Context, specPath, planPath, tas
 	if maxBeads > 0 && len(ready) > maxBeads {
 		ready = ready[:maxBeads]
 	}
+	readyCount := len(ready)
 
 	strategy := c.Config.Autonomy.Coordinator.Strategy
 	if strategy == "" {
 		strategy = "bead"
 	}
+	var phases []string
+	if strategy == "phase" {
+		phases = c.Config.Loop.Phases
+		if len(phases) == 0 {
+			phases = []string{"ideate", "plan", "implement", "review", "test"}
+		}
+	}
 
 	if c.Logger != nil {
-		maxParallel := 0
-		if c.Config.Autonomy.Coordinator.MaxParallel != nil {
-			maxParallel = *c.Config.Autonomy.Coordinator.MaxParallel
+		configuredMax, effectiveMax := resolveMaxParallel(c.Config.Autonomy.Coordinator, readyCount)
+		fields := []any{
+			"strategy", strategy,
+			"ready_beads", readyCount,
+			"ready_beads_total", readyTotal,
+			"max_beads", maxBeads,
+			"max_parallel", effectiveMax,
+			"max_parallel_config", configuredMax,
+			"fail_fast", c.Config.Autonomy.Coordinator.FailFast,
+		}
+		if len(phases) > 0 {
+			fields = append(fields, "phase_count", len(phases))
 		}
 		c.Logger.Info(
 			"autonomy coordinator starting",
-			"strategy", strategy,
-			"ready_beads", len(ready),
-			"max_parallel", maxParallel,
-			"fail_fast", c.Config.Autonomy.Coordinator.FailFast,
+			fields...,
 		)
 	}
 
 	if strategy == "phase" {
-		phases := c.Config.Loop.Phases
-		if len(phases) == 0 {
-			phases = []string{"ideate", "plan", "implement", "review", "test"}
-		}
 		var lastRun *state.Run
 		for idx, phase := range phases {
 			applyActions := idx == len(phases)-1
@@ -72,23 +83,21 @@ func (c *Controller) runCoordinator(ctx context.Context, specPath, planPath, tas
 }
 
 func (c *Controller) runParallelBeads(ctx context.Context, beads []ReadyBead, phase string, applyActions bool, specPath, planPath, tasksPath string) (*state.Run, error) {
-	maxParallel := 0
-	if c.Config.Autonomy.Coordinator.MaxParallel != nil {
-		maxParallel = *c.Config.Autonomy.Coordinator.MaxParallel
-	}
-	if maxParallel <= 0 || maxParallel > len(beads) {
-		maxParallel = len(beads)
-	}
-	if maxParallel <= 0 {
-		maxParallel = 1
-	}
+	configuredMax, maxParallel := resolveMaxParallel(c.Config.Autonomy.Coordinator, len(beads))
 
 	if c.Logger != nil && maxParallel > 1 {
-		c.Logger.Info(
-			"parallel agents launched",
+		fields := []any{
 			"strategy", c.Config.Autonomy.Coordinator.Strategy,
 			"beads", len(beads),
 			"max_parallel", maxParallel,
+			"max_parallel_config", configuredMax,
+		}
+		if phase != "" {
+			fields = append(fields, "phase", phase)
+		}
+		c.Logger.Info(
+			"parallel agents launched",
+			fields...,
 		)
 	}
 
@@ -162,6 +171,21 @@ func (c *Controller) runParallelBeads(ctx context.Context, beads []ReadyBead, ph
 	return lastRun, nil
 }
 
+func resolveMaxParallel(cfg config.AutonomyCoordinatorConfig, beadCount int) (int, int) {
+	configured := 0
+	if cfg.MaxParallel != nil {
+		configured = *cfg.MaxParallel
+	}
+	effective := configured
+	if effective <= 0 || effective > beadCount {
+		effective = beadCount
+	}
+	if effective <= 0 {
+		effective = 1
+	}
+	return configured, effective
+}
+
 func (c *Controller) runBeadOnce(
 	ctx context.Context,
 	bead ReadyBead,
@@ -174,6 +198,16 @@ func (c *Controller) runBeadOnce(
 	maxFixAttempts int,
 	bdMu *sync.Mutex,
 ) (*state.Run, error) {
+	start := time.Now()
+	if c.Logger != nil {
+		c.Logger.Info(
+			"autonomy bead start",
+			"bead_id", bead.ID,
+			"title", bead.Title,
+			"phase", phase,
+			"apply_actions", applyActions,
+		)
+	}
 	store := c.Store
 	if c.Config.Autonomy.Coordinator.Enabled && bead.ID != "" {
 		store = state.NewStore(
@@ -201,15 +235,32 @@ func (c *Controller) runBeadOnce(
 		if c.Config.Beads.AutoUpdate && bdAvailable() {
 			withBDLock(bdMu, func() { _ = updateBeadStatus(bead.ID, "blocked") })
 		}
+		if c.Logger != nil {
+			c.Logger.Error(
+				"autonomy bead failed",
+				"bead_id", bead.ID,
+				"phase", phase,
+				"error", err.Error(),
+				"latency_ms", time.Since(start).Milliseconds(),
+			)
+		}
+		if bead.ID != "" {
+			err = fmt.Errorf("bead %s: %w", bead.ID, err)
+		}
 		return run, err
 	}
 	if c.Logger != nil {
 		c.Logger.Info(
 			"autonomy run summary",
 			"run_id", run.ID,
+			"bead_id", bead.ID,
+			"title", bead.Title,
+			"phase", phase,
+			"apply_actions", applyActions,
 			"spec_path", specPath,
 			"plan_path", planPath,
 			"tasks_path", tasksPath,
+			"latency_ms", time.Since(start).Milliseconds(),
 			"cleanup", fmt.Sprintf("autocodex cleanup --run %s", run.ID),
 		)
 	}
@@ -220,7 +271,13 @@ func (c *Controller) runBeadOnce(
 	requireActions := c.Config.Autonomy.RequireActions != nil && *c.Config.Autonomy.RequireActions
 	actions, actionsErr := c.actionsFromRun(run.ID)
 	if actionsErr != nil && !requireActions && c.Logger != nil {
-		c.Logger.Warn("autonomy actions parse failed", "run_id", run.ID, "error", actionsErr.Error())
+		c.Logger.Warn(
+			"autonomy actions parse failed",
+			"run_id", run.ID,
+			"bead_id", bead.ID,
+			"phase", phase,
+			"error", actionsErr.Error(),
+		)
 	}
 
 	stopReason, gateFailure, updatedCurrent, err := c.applyActions(bead.ID, actions)
@@ -255,7 +312,12 @@ func (c *Controller) runBeadOnce(
 			var fixErr error
 			withBDLock(bdMu, func() { fixErr = c.createFixBead(bead.ID, stopReason) })
 			if fixErr != nil && c.Logger != nil {
-				c.Logger.Warn("autonomy fix bead create failed", "error", fixErr.Error())
+				c.Logger.Warn(
+					"autonomy fix bead create failed",
+					"bead_id", bead.ID,
+					"phase", phase,
+					"error", fixErr.Error(),
+				)
 			}
 		}
 		if fixAttempts != nil && maxFixAttempts > 0 && fixAttempts.Increment(bead.ID) >= maxFixAttempts {

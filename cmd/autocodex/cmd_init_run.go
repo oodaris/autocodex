@@ -64,7 +64,7 @@ func runRun(args []string) {
 	collaborationMode := fs.String("collaboration-mode", "", "codex collaboration mode override (passed via -c collaboration_mode=...)")
 	preset := fs.String("preset", "", "codex collaboration preset override (passed via -c collaboration_mode_preset=...)")
 	noCollab := fs.Bool("no-collaboration", false, "disable codex collaboration for this run")
-	swarm := fs.Bool("swarm", false, "force bead-parallel coordinator (enables autonomy)")
+	swarm := fs.Bool("swarm", false, "force bead-parallel coordinator with unlimited max_parallel (enables autonomy)")
 	fs.Parse(args)
 
 	taskPayload, err := resolveTaskInput(*task, *taskFile, *taskStdin, fs.Args(), os.Stdin)
@@ -111,7 +111,7 @@ func runOnce(args []string) {
 	collaborationMode := fs.String("collaboration-mode", "", "codex collaboration mode override (passed via -c collaboration_mode=...)")
 	preset := fs.String("preset", "", "codex collaboration preset override (passed via -c collaboration_mode_preset=...)")
 	noCollab := fs.Bool("no-collaboration", false, "disable codex collaboration for this run")
-	swarm := fs.Bool("swarm", false, "force bead-parallel coordinator (enables autonomy)")
+	swarm := fs.Bool("swarm", false, "force bead-parallel coordinator with unlimited max_parallel (enables autonomy)")
 	fs.Parse(args)
 
 	taskPayload, err := resolveTaskInput(*task, *taskFile, *taskStdin, fs.Args(), os.Stdin)

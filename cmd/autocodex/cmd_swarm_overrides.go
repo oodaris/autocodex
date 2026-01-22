@@ -16,8 +16,6 @@ func applySwarmOverrides(cfg *config.Config, swarm bool) {
 	}
 	cfg.Autonomy.Coordinator.Enabled = true
 	cfg.Autonomy.Coordinator.Strategy = "bead"
-	if cfg.Autonomy.Coordinator.MaxParallel == nil {
-		defaultParallel := 2
-		cfg.Autonomy.Coordinator.MaxParallel = &defaultParallel
-	}
+	unlimited := 0
+	cfg.Autonomy.Coordinator.MaxParallel = &unlimited
 }

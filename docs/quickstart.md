@@ -74,6 +74,7 @@ Example:
 ```bash
 autocodex run --swarm --task "Execute all ready beads in parallel"
 ```
+Note: `--swarm` sets `autonomy.coordinator.max_parallel` to `0` (unlimited) for the run.
 
 Disable collaboration for a specific run:
 ```bash

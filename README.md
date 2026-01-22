@@ -12,6 +12,11 @@
 
 autocodex orchestrates a structured loop: ideate → plan → implement → review → test. It uses Beads for task tracking, runs the local Codex CLI, and supports external plugins via JSON‑RPC.
 
+> 🚀 **Quickstart**
+> 1) `autocodex bootstrap`  
+> 2) `autocodex "Review backend API and fix issues."`  
+> 3) `autocodex ui`
+
 ## Features
 - Go CLI with a deterministic, scriptable workflow
 - Beads-first task tracking
@@ -24,12 +29,13 @@ autocodex orchestrates a structured loop: ideate → plan → implement → revi
 - Optional token auth for the API/UI
 
 ## Install
-Install with Go:
+
+### Option A — Go (fastest)
 ```bash
 go install github.com/oodaris/autocodex/cmd/autocodex@latest
 ```
 
-Or download a release binary from GitHub Releases (recommended for non-Go setups):
+### Option B — GitHub release binary
 ```bash
 # requires gh (GitHub CLI)
 gh release download -R oodaris/autocodex -p "autocodex_*_darwin_arm64.tar.gz"
@@ -37,40 +43,21 @@ tar -xzf autocodex_*_darwin_arm64.tar.gz
 sudo mv autocodex /usr/local/bin/autocodex
 ```
 
-**Latest release (version‑pinned by variable)**
-```bash
-# requires gh (GitHub CLI)
-VERSION=$(gh release view -R oodaris/autocodex --json tagName -q .tagName | sed 's/^v//')
-ARCH=darwin_arm64
-gh release download "v${VERSION}" -R oodaris/autocodex -p "autocodex_${VERSION}_${ARCH}.tar.gz"
-tar -xzf "autocodex_${VERSION}_${ARCH}.tar.gz"
-sudo mv autocodex /usr/local/bin/autocodex
-autocodex --version
-```
+> 💡 **Tip**
+> Want a version‑pinned install? See `docs/quickstart.md` for the latest‑version
+> install snippet (auto‑detects the newest tag).
 
 ## Quickstart
+
 **Prereqs**
 - Go 1.22+
-
-CLI reference: `docs/CLI.md`
 - Codex CLI on PATH (`codex --version`)
-- Parallelism & collaboration guide: `docs/parallelism-and-collaboration.md`
 
-**Parallelism vs collaboration (quick blurb)**  
-Autocodex **parallelism** is handled by the coordinator (`--swarm`), which runs
-multiple Codex CLI processes in parallel. Codex `collaboration_mode/preset`
-controls **role‑style collaboration inside a single process**. Use both if you
-want parallel beads **and** in‑process collaboration.
-
-Disable collaboration for a single run:
-```bash
-autocodex run --no-collaboration --task "Run without collaboration presets"
-```
+**Docs**
+- CLI reference: `docs/CLI.md`
+- Parallelism & collaboration: `docs/parallelism-and-collaboration.md`
 
 ### Choose your setup
-
-We ship two setup commands so open‑source users can choose between a minimal
-footprint and a full autonomy experience.
 
 **Initialize** (minimal setup)
 - Creates `autocodex.yaml` if missing.
@@ -89,105 +76,71 @@ autocodex init
 - Writes a minimal skill pack into `skills/` so autonomy can run immediately.
 - Does **not** overwrite existing files unless you pass `--force`.
 - If `bd` is missing, bead tracking is skipped with a warning.
-- Best for new contributors or repos that want autonomy by default.
 
 ```bash
 autocodex bootstrap
 ```
 
-**Run a task** (shortest command)
+### Run a task
 ```bash
 autocodex "Review backend API and fix issues."
 ```
 
-**Common commands**
+### Start the UI
+```bash
+autocodex ui
+```
+
+> ⚡ **Parallelism vs collaboration**
+> `--swarm` uses the autocodex coordinator to run **multiple Codex processes** in parallel.
+> Codex `collaboration_mode/preset` controls **role‑style collaboration inside a single process**.
+> Use both if you want parallel beads **and** in‑process collaboration.
+
+Disable collaboration for a single run:
+```bash
+autocodex run --no-collaboration --task "Run without collaboration presets"
+```
+
+## Parallelism & collaboration
+- **Guaranteed parallelism**: `autocodex run --swarm`  
+- **Role‑style collaboration**: `--collaboration-mode/--preset`  
+Full guide: `docs/parallelism-and-collaboration.md`
+
+## CLI cheat sheet
+<details>
+<summary>Common commands</summary>
+
 ```bash
 # bounded loop
 autocodex once "Run a quick UI a11y review."
 
 # inspect status
 autocodex status
-
-# inspect status as a table (with filters)
 autocodex status --table --status failed --limit 10
-
-# list runs (table)
 autocodex runs
 
-# force bead-parallel coordinator (swarm)
+# parallel beads
 autocodex run --swarm --task "Run all unblocked beads in parallel"
-# Prefer --swarm for guaranteed parallelism (uses the Autocodex coordinator)
 
-# inspect latest status
-autocodex status --latest
-
-# resume a run using snapshot context (starts a new run)
+# resume a run
 autocodex resume --run <run-id> --task "Continue from the previous run"
-
-# list runs and pick interactively (TTY only)
 autocodex resume --list
-autocodex resume
-
-# resume without adding a new task
 autocodex resume --run <run-id> --force
 
-# start the local API
+# api + ui
 autocodex api
-
-# start the embedded UI + API
 autocodex ui
 
-# print version
-autocodex --version
-
-# snapshot a run
-autocodex snapshot 20260115T142253Z-4a4ae121 --reason "handoff"
-
-# clean up old runs (14 days by default)
+# snapshot + cleanup
+autocodex snapshot <run-id> --reason "handoff"
 autocodex cleanup --dry-run
-
-# remove a specific run (and its logs)
 autocodex cleanup --run <run-id>
 ```
-
-**UI (embedded)**
-```bash
-autocodex ui
-```
-
-**UI dev server (Vite)**
-```bash
-cd web
-npm install
-npm run dev
-```
-
-## Troubleshooting
-- **Address already in use (API/UI won't start)**: stop the existing process listening on the port or change `api.port` in `autocodex.yaml`.
-- **Auth enabled but no tokens resolved**: set `auth.tokens` in `autocodex.yaml` or provide `AUTH_TOKEN` via `auth.token_env`.
-- **`bd` not installed**: install Beads (`bd`) or disable Beads features in config (`beads.enabled: false`).
-
-**Custom config path**
-```bash
-autocodex run --config path/to/autocodex.yaml --task "Review backend API and fix issues."
-```
-
-**Pipe a task from stdin**
-```bash
-echo "Review backend API and fix issues." | autocodex run --task-stdin
-```
-
-**Resume from an existing plan/phase**
-```bash
-# start at implementation, using the latest spec/plan/tasks artifacts
-autocodex run --start-phase implement --use-latest-artifacts \
-  --task "Continue from existing artifacts"
-```
-
-For a longer walkthrough, see `docs/quickstart.md`.
+</details>
 
 ## Autonomy loop
-Autonomy mode generates spec/plan artifacts, creates beads, and advances through beads automatically.
+<details>
+<summary>How autonomy works</summary>
 
 Enable it in `autocodex.yaml`:
 ```yaml
@@ -200,26 +153,9 @@ When autonomy is enabled:
 - Beads are selected in dependency order (`bd ready`).
 - The **test** phase should emit an `ACTIONS` JSON block (see `docs/contracts/autonomy-actions.schema.json`) so autocodex can update bead status and choose the next bead.
 - Gate failures stop the loop and auto-create a fix bead (when beads auto-create is enabled).
- - Plans should include explicit must-have gates (tests, runtime verification, evidence paths) so autonomy can enforce completion.
+- Plans should include explicit must-have gates (tests, runtime verification, evidence paths).
 
-By default autocodex enables Codex collaboration (`codex.collaboration_mode: auto`, `codex.preset: default`).
-Override with `--collaboration-mode/--preset` or in `autocodex.yaml` if you need different behavior.
-
-### Artifacts and cleanup
-Each run stores artifacts under `.autocodex/runs/<run-id>/artifacts` and logs under `.autocodex/logs/<run-id>.jsonl`.
-At the end of a run, autocodex prints a short summary (run id + spec/plan/tasks paths) and a cleanup command you can copy:
-```bash
-autocodex cleanup --run <run-id>
-```
-Use `autocodex cleanup --dry-run` (or `--retention-days`) to prune older runs safely.
-
-### Autonomy checklist
-- `autocodex.yaml` exists and `autonomy.enabled: true`.
-- Templates + schemas exist (run `autocodex bootstrap` to create them): `docs/specs/TEMPLATE.md`, `docs/plans/TEMPLATE.md`, `docs/contracts/autonomy-tasks.schema.json`, `docs/contracts/autonomy-actions.schema.json`.
-- Skills available in `skills/`: `core-qna-synthesis`, `core-holistic-planning-and-tracking`, `core-ask-questions-if-underspecified`.
-
-### Parallel coordinator (optional)
-You can run beads in parallel with the autonomy coordinator:
+Parallel coordinator (optional):
 ```yaml
 autonomy:
   coordinator:
@@ -228,40 +164,31 @@ autonomy:
     strategy: bead    # or "phase" for isolated phases
     fail_fast: false  # stop all beads on first error
 ```
+
 Notes:
 - Parallel mode ignores `require_next`.
 - Memory docs are isolated per bead under `memory/beads/<id>`.
-- Codex CLI installed and reachable (`codex` on PATH or `codex.cli_path`).
+- Codex CLI must be installed and reachable (`codex` on PATH or `codex.cli_path`).
 - `bd` is optional; without it, bead creation/updates are skipped with a warning.
+</details>
 
 ## Configuration
-- `autocodex.yaml` controls mode, paths, Codex CLI settings, plugins, and API settings.
-- `mode: yolo` is explicit and must be used intentionally.
-- Default Codex model/effort: `gpt-5.2-codex` + `xhigh` (override in `autocodex.yaml` if needed).
-- `hub.enabled` adds multi-repo workspace tracking.
-- `auth.enabled` enforces API tokens (see `docs/ui/README.md`).
-- `auth.token_env` can read a token from an environment variable.
-- `autonomy.enabled` generates spec + plan artifacts before the loop runs.
-- Templates: `docs/specs/TEMPLATE.md` and `docs/plans/TEMPLATE.md`.
-If the Codex CLI is not on PATH, set `codex.cli_path` in `autocodex.yaml`.
-For a full reference, see `docs/config/README.md`.
+autocodex uses `autocodex.yaml` for all runtime settings.  
+See `docs/config/README.md` for the full reference.
 
-## Agent requirements
-To run autocodex in an agent environment:
-- `autocodex.yaml` present in the repo (or pass `--config`)
-- Codex CLI installed and reachable (`codex.cli_path` if not on PATH)
-- Skills path configured (`skills.paths`)
-- Optional: Beads (`bd`) if you want task tracking
+## Troubleshooting
+- **Address already in use** (API/UI won’t start): stop the existing process or change `api.port`.
+- **`codex` not found**: set `codex.cli_path` in `autocodex.yaml`.
+- **API 401**: set `auth.enabled: true` and provide `auth.token_env` or `auth.tokens`.
+- **API 404 at `/`**: ensure `api.base_path` is `/` and hit `/health`.
+- **UI shows zero runs**: confirm `autocodex api` is running and `ui.origin` matches the UI URL.
+- **Hub not enabled**: set `hub.enabled: true` (or add workspaces in `autocodex.yaml`).
+- **`bd` not installed**: install Beads (`bd`) or disable in config (`beads.enabled: false`).
 
-## UI usage
-`autocodex ui` serves the embedded production UI and starts the API server.
-See `docs/ui/README.md` for local dev + Vercel deployment notes.
-
-Building from source requires a UI build before Go compile:
-```bash
-npm ci --prefix web
-npm run build --prefix web
-```
+## Development
+- Tests: `go test ./...`
+- Vet: `go vet ./...`
+- Format: `gofmt -w $(rg --files -g '*.go')`
 
 ## Plugins
 Plugins are external processes described by `plugin.yaml`. A sample plugin lives in `plugins/sample-summarizer/`.
@@ -290,19 +217,7 @@ Generate a run snapshot (memory docs + recent events/artifacts) for sharing or c
 autocodex snapshot <run-id> --reason "handoff"
 ```
 
-## Troubleshooting
-- `codex` not found: set `codex.cli_path` in `autocodex.yaml`.
-- API 401: set `auth.enabled: true` and provide `auth.token_env` or `auth.tokens`.
-- API 404 at `/`: ensure `api.base_path` is `/` and hit `/health` for a quick check.
-- UI shows zero runs: confirm `autocodex api` is running and `ui.origin` matches the UI URL.
-- Hub shows “hub not enabled”: set `hub.enabled: true` (or add workspaces in `autocodex.yaml`).
-
-## Development
-- Tests: `go test ./...`
-- Vet: `go vet ./...`
-- Format: `gofmt -w $(rg --files -g '*.go')`
-
-## Repo Guide
+## Repo guide
 - Agent instructions: `AGENTS.md`
 - Engineering playbook: `docs/AGENTS.md`
 - Plan: `docs/plans/autocodex-v1-plan.md`
