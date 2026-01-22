@@ -5,8 +5,9 @@ codex:
   cli_path: codex
   model: gpt-5.2-codex
   reasoning_effort: xhigh
-  collaboration_mode: ""
-  preset: ""
+  collaboration_enabled: true
+  collaboration_mode: auto
+  preset: default
   timeout_seconds: 900
   extra_args: []
   # approval/sandbox are ignored when mode: yolo (yolo uses --yolo)

@@ -83,6 +83,15 @@ func (c *Controller) runParallelBeads(ctx context.Context, beads []ReadyBead, ph
 		maxParallel = 1
 	}
 
+	if c.Logger != nil && maxParallel > 1 {
+		c.Logger.Info(
+			"parallel agents launched",
+			"strategy", c.Config.Autonomy.Coordinator.Strategy,
+			"beads", len(beads),
+			"max_parallel", maxParallel,
+		)
+	}
+
 	if phase != "" && c.Logger != nil {
 		c.Logger.Warn(
 			"autonomy coordinator running isolated phase (artifacts not shared across phases)",

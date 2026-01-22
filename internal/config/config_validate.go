@@ -29,6 +29,11 @@ func (c Config) Validate() error {
 	if strings.TrimSpace(c.Codex.Preset) != "" && strings.TrimSpace(c.Codex.CollaborationMode) == "" {
 		return errors.New("codex.preset requires codex.collaboration_mode")
 	}
+	if c.Codex.CollaborationOn != nil && !*c.Codex.CollaborationOn {
+		if strings.TrimSpace(c.Codex.CollaborationMode) != "" || strings.TrimSpace(c.Codex.Preset) != "" {
+			return errors.New("codex.collaboration_enabled=false requires empty codex.collaboration_mode and codex.preset")
+		}
+	}
 	if c.Codex.JSONOutput && !c.Codex.OutputLast {
 		return errors.New("codex.output_last_message must be true when codex.json_output is enabled")
 	}

@@ -33,6 +33,7 @@ type CodexConfig struct {
 	CLIPath           string            `yaml:"cli_path"`
 	Model             string            `yaml:"model"`
 	ReasoningEffort   string            `yaml:"reasoning_effort"`
+	CollaborationOn   *bool             `yaml:"collaboration_enabled"`
 	CollaborationMode string            `yaml:"collaboration_mode"`
 	Preset            string            `yaml:"preset"`
 	TimeoutSeconds    int               `yaml:"timeout_seconds"`

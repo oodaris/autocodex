@@ -24,6 +24,12 @@ func TestLoadAppliesDefaults(t *testing.T) {
 	if cfg.Codex.ReasoningEffort == "" {
 		t.Fatalf("expected codex reasoning effort default")
 	}
+	if cfg.Codex.CollaborationOn == nil || !*cfg.Codex.CollaborationOn {
+		t.Fatalf("expected collaboration enabled default true")
+	}
+	if cfg.Codex.CollaborationMode == "" || cfg.Codex.Preset == "" {
+		t.Fatalf("expected collaboration mode/preset defaults when enabled")
+	}
 	if cfg.Paths.StateDir == "" {
 		t.Fatalf("expected state dir default")
 	}
@@ -96,6 +102,37 @@ func TestValidateRejectsPresetWithoutCollaborationMode(t *testing.T) {
 	cfg.ApplyDefaults()
 	cfg.Codex.Preset = "team"
 	cfg.Codex.CollaborationMode = ""
+	if err := cfg.Validate(); err == nil {
+		t.Fatalf("expected validation error")
+	}
+}
+
+func TestCollaborationDisabledClearsDefaults(t *testing.T) {
+	tmp := t.TempDir()
+	path := filepath.Join(tmp, "config.yaml")
+	data := []byte("version: v1\nmode: yolo\ncodex:\n  collaboration_enabled: false\n")
+	if err := os.WriteFile(path, data, 0o644); err != nil {
+		t.Fatalf("write config: %v", err)
+	}
+
+	cfg, err := Load(path)
+	if err != nil {
+		t.Fatalf("load: %v", err)
+	}
+	if cfg.Codex.CollaborationOn == nil || *cfg.Codex.CollaborationOn {
+		t.Fatalf("expected collaboration enabled false")
+	}
+	if cfg.Codex.CollaborationMode != "" || cfg.Codex.Preset != "" {
+		t.Fatalf("expected collaboration mode/preset empty when disabled")
+	}
+}
+
+func TestValidateRejectsCollaborationDisabledWithValues(t *testing.T) {
+	cfg := Config{Version: "v1", Mode: "yolo"}
+	cfg.ApplyDefaults()
+	disabled := false
+	cfg.Codex.CollaborationOn = &disabled
+	cfg.Codex.CollaborationMode = "auto"
 	if err := cfg.Validate(); err == nil {
 		t.Fatalf("expected validation error")
 	}

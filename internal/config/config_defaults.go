@@ -19,6 +19,21 @@ func (c *Config) ApplyDefaults() {
 	if c.Codex.ReasoningEffort == "" {
 		c.Codex.ReasoningEffort = "xhigh"
 	}
+	if c.Codex.CollaborationOn == nil {
+		enabled := true
+		c.Codex.CollaborationOn = &enabled
+	}
+	if c.Codex.CollaborationOn != nil && *c.Codex.CollaborationOn {
+		if c.Codex.CollaborationMode == "" {
+			c.Codex.CollaborationMode = "auto"
+		}
+		if c.Codex.Preset == "" {
+			c.Codex.Preset = "default"
+		}
+	} else {
+		c.Codex.CollaborationMode = ""
+		c.Codex.Preset = ""
+	}
 	if c.Codex.ExtraArgs == nil {
 		c.Codex.ExtraArgs = []string{}
 	}

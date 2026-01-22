@@ -13,3 +13,13 @@ func applyCodexOverrides(cfg *config.Config, collaborationMode, preset string) {
 		cfg.Codex.Preset = preset
 	}
 }
+
+func disableCollaboration(cfg *config.Config) {
+	if cfg == nil {
+		return
+	}
+	disabled := false
+	cfg.Codex.CollaborationOn = &disabled
+	cfg.Codex.CollaborationMode = ""
+	cfg.Codex.Preset = ""
+}

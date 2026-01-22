@@ -49,11 +49,15 @@
     },
     "collaboration_mode": {
       "type": "string",
-      "description": "Optional Codex collaboration mode (passed via -c collaboration_mode=...)."
+      "description": "Codex collaboration mode (default: auto, passed via -c collaboration_mode=...)."
+    },
+    "collaboration_enabled": {
+      "type": "boolean",
+      "description": "Enable Codex collaboration defaults (default: true). When false, collaboration_mode/preset must be empty."
     },
     "preset": {
       "type": "string",
-      "description": "Optional Codex collaboration preset (passed via -c collaboration_mode_preset=...)."
+      "description": "Codex collaboration preset (default: default, passed via -c collaboration_mode_preset=...)."
     },
         "timeout_seconds": {
           "type": "integer",

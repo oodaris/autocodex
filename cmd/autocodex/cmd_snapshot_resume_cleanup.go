@@ -85,6 +85,8 @@ func runResume(args []string) {
 	useLatestArtifacts := fs.Bool("use-latest-artifacts", true, "append latest spec/plan references when starting after ideate")
 	collaborationMode := fs.String("collaboration-mode", "", "codex collaboration mode override (passed via -c collaboration_mode=...)")
 	preset := fs.String("preset", "", "codex collaboration preset override (passed via -c collaboration_mode_preset=...)")
+	noCollab := fs.Bool("no-collaboration", false, "disable codex collaboration for this run")
+	swarm := fs.Bool("swarm", false, "force bead-parallel coordinator (enables autonomy)")
 	fs.Parse(args)
 
 	extraArgs := fs.Args()
@@ -103,6 +105,10 @@ func runResume(args []string) {
 		exitErr(err)
 	}
 	applyCodexOverrides(&cfg, strings.TrimSpace(*collaborationMode), strings.TrimSpace(*preset))
+	if *noCollab {
+		disableCollaboration(&cfg)
+	}
+	applySwarmOverrides(&cfg, *swarm)
 	if err := applyStartPhase(&cfg, *startPhase); err != nil {
 		exitErr(err)
 	}
