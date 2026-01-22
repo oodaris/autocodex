@@ -2,13 +2,7 @@
 
 # autocodex
 
-[![ci](https://github.com/oodaris/autocodex/actions/workflows/ci.yml/badge.svg)](https://github.com/oodaris/autocodex/actions/workflows/ci.yml)
-[![coverage](https://codecov.io/gh/oodaris/autocodex/branch/main/graph/badge.svg)](https://codecov.io/gh/oodaris/autocodex)
-[![Go Report Card](https://goreportcard.com/badge/github.com/oodaris/autocodex)](https://goreportcard.com/report/github.com/oodaris/autocodex)
-[![Scorecard](https://api.securityscorecards.dev/projects/github.com/oodaris/autocodex/badge)](https://securityscorecards.dev/viewer/?uri=github.com/oodaris/autocodex)
-[![release](https://img.shields.io/github/v/release/oodaris/autocodex?display_name=tag&sort=semver)](https://github.com/oodaris/autocodex/releases/latest)
-[![license](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
-[![go](https://img.shields.io/badge/go-1.22%2B-blue)](go.mod)
+[![ci](https://github.com/oodaris/autocodex/actions/workflows/ci.yml/badge.svg)](https://github.com/oodaris/autocodex/actions/workflows/ci.yml) [![coverage](https://codecov.io/gh/oodaris/autocodex/branch/main/graph/badge.svg)](https://codecov.io/gh/oodaris/autocodex) [![Go Report Card](https://goreportcard.com/badge/github.com/oodaris/autocodex)](https://goreportcard.com/report/github.com/oodaris/autocodex) [![Scorecard](https://api.securityscorecards.dev/projects/github.com/oodaris/autocodex/badge)](https://securityscorecards.dev/viewer/?uri=github.com/oodaris/autocodex) [![release](https://img.shields.io/github/v/release/oodaris/autocodex?display_name=tag&sort=semver)](https://github.com/oodaris/autocodex/releases/latest) [![license](https://img.shields.io/badge/license-MIT-blue)](LICENSE) [![go](https://img.shields.io/badge/go-1.22%2B-blue)](go.mod)
 
 autocodex orchestrates a structured loop: ideate → plan → implement → review → test. It uses Beads for task tracking, runs the local Codex CLI, and supports external plugins via JSON‑RPC.
 
@@ -35,7 +29,19 @@ autocodex orchestrates a structured loop: ideate → plan → implement → revi
 go install github.com/oodaris/autocodex/cmd/autocodex@latest
 ```
 
-### Option B — GitHub release binary
+### Option B — GitHub release binary (one‑liner)
+```bash
+curl -fsSL https://raw.githubusercontent.com/oodaris/autocodex/main/scripts/install.sh | bash
+```
+
+> 💡 **Tip**
+> Pin a version or install to a custom path:
+> ```bash
+> VERSION=0.5.1 DEST=~/.local/bin \
+>   curl -fsSL https://raw.githubusercontent.com/oodaris/autocodex/main/scripts/install.sh | bash
+> ```
+
+### Option C — GitHub release binary (manual)
 ```bash
 # requires gh (GitHub CLI)
 gh release download -R oodaris/autocodex -p "autocodex_*_darwin_arm64.tar.gz"
@@ -49,13 +55,44 @@ sudo mv autocodex /usr/local/bin/autocodex
 
 ## Quickstart
 
-**Prereqs**
-- Go 1.22+
+**Runtime requirements (binary users)**
 - Codex CLI on PATH (`codex --version`)
+- Beads (`bd`) optional, required when `autonomy.require_bd: true`
+
+**Build / contributor requirements**
+- Go 1.22+ (only if installing via `go install` or building from source)
+- Node.js + npm (only for UI dev)
+
+**Install Codex CLI** (GitHub: `openai/codex`)
+```bash
+# npm
+npm i -g @openai/codex
+# or homebrew
+brew install --cask codex
+```
+
+**Install Beads (`bd`)** (GitHub: `steveyegge/beads`)
+```bash
+# go
+go install github.com/steveyegge/beads/cmd/bd@latest
+# or homebrew
+brew install steveyegge/beads/bd
+```
 
 **Docs**
 - CLI reference: `docs/CLI.md`
 - Parallelism & collaboration: `docs/parallelism-and-collaboration.md`
+
+### What happens on run
+```
+task → spec → plan → tasks.json → beads → loop (ideate/plan/implement/review/test)
+```
+
+### Autonomy vs run
+| Mode | What it does | When to use |
+| --- | --- | --- |
+| `run` / `once` | Executes the loop with your task | Quick iteration or manual control |
+| `autonomy` | Generates spec/plan/tasks + beads and advances automatically | Larger tasks with dependencies |
 
 ### Choose your setup
 
@@ -101,6 +138,12 @@ Disable collaboration for a single run:
 autocodex run --no-collaboration --task "Run without collaboration presets"
 ```
 
+### Cost control / performance
+Use these settings to reduce compute:
+- `codex.reasoning_effort`: `low` / `medium` / `high` (avoid `xhigh` if speed/cost matters)
+- `autonomy.coordinator.max_parallel`: limit concurrent bead runs
+- `autonomy.stop_conditions.max_fix_attempts` and `max_beads`: cap retries and total beads
+
 ## Parallelism & collaboration
 - **Guaranteed parallelism**: `autocodex run --swarm`  
 - **Role‑style collaboration**: `--collaboration-mode/--preset`  
@@ -137,6 +180,22 @@ autocodex cleanup --dry-run
 autocodex cleanup --run <run-id>
 ```
 </details>
+
+## Flag index (top‑level)
+| Flag | Commands | Purpose |
+| --- | --- | --- |
+| `--config` | most | config file path |
+| `--task` / `--task-file` / `--task-stdin` | run/once/resume | task input |
+| `--start-phase` | run/once/resume | start at a specific phase |
+| `--use-latest-artifacts` | run/once/resume | reuse latest spec/plan |
+| `--swarm` | run/once/resume | force coordinator (parallel beads) |
+| `--no-collaboration` | run/once/resume | disable collaboration defaults |
+| `--collaboration-mode` / `--preset` | run/once/resume | collaboration settings |
+| `--run` | resume/snapshot/kill/cleanup | run id |
+| `--list` | resume | list runs and exit |
+| `--force` | resume | resume even if completed/running |
+| `--json` | status/snapshot/cleanup/kill | machine‑readable output |
+| `--dry-run` | cleanup | preview deletions |
 
 ## Autonomy loop
 <details>
@@ -177,6 +236,13 @@ autocodex uses `autocodex.yaml` for all runtime settings.
 See `docs/config/README.md` for the full reference.
 
 ## Troubleshooting
+### If your first run fails
+```bash
+codex --version
+autocodex doctor
+autocodex status --latest
+```
+
 - **Address already in use** (API/UI won’t start): stop the existing process or change `api.port`.
 - **`codex` not found**: set `codex.cli_path` in `autocodex.yaml`.
 - **API 401**: set `auth.enabled: true` and provide `auth.token_env` or `auth.tokens`.
