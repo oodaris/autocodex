@@ -161,10 +161,9 @@ func readGoDeps(root string) []dep {
 			inRequire = false
 			continue
 		}
-		if strings.HasPrefix(trimmed, "require ") {
-			trimmed = strings.TrimPrefix(trimmed, "require ")
-		}
-		if !inRequire && !strings.HasPrefix(line, "require ") {
+		hadRequire := strings.HasPrefix(trimmed, "require ")
+		trimmed = strings.TrimPrefix(trimmed, "require ")
+		if !inRequire && !hadRequire {
 			continue
 		}
 		fields := strings.Fields(trimmed)
