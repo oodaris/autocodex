@@ -257,7 +257,18 @@ autocodex status --latest
 - Format: `gofmt -w $(rg --files -g '*.go')`
 
 ## Plugins
-Plugins are external processes described by `plugin.yaml`. A sample plugin lives in `plugins/sample-summarizer/`.
+Plugins are external processes described by `plugin.yaml`. See the catalog and usage details in `docs/plugins/README.md`.
+
+### Plugin catalog
+| Plugin | Capability | Purpose | Output |
+| --- | --- | --- | --- |
+| `repo-indexer` | `index` | Project map: languages, key dirs, test commands, services | JSON summary for models + humans |
+| `test-runner` | `run` | Run scoped tests with timeouts | Pass/fail + command logs |
+| `diff-summarizer` | `summarize` | Summarize git diff + risk flags | Areas + risk flags |
+| `dep-license-scanner` | `scan` | Extract dependencies + license risks | Dependencies + risk flags |
+| `knowledge-extractor` | `extract` | Parse docs into structured summaries | Doc list + headings/snippets |
+| `plan-compliance` | `check` | Validate plan sections + open tasks | Status + missing items |
+| `evidence-collector` | `collect` | Capture evidence artifacts | Artifact manifest |
 
 Build the sample plugin:
 ```bash
