@@ -71,6 +71,7 @@ autocodex run --no-collaboration --task "..."
 **What you get**
 - Role‑like behaviors inside a single Codex run.
 - Potentially “subagent” style reasoning, but **not guaranteed parallelism**.
+- Recent Codex releases add an explorer role and max-depth guardrails; if you need deeper decomposition, split work into beads or use the coordinator.
 
 **When to use**
 - You want richer reasoning or structured collaboration inside a single run.

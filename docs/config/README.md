@@ -28,6 +28,7 @@ Controls the Codex CLI invocation.
   - Set `collaboration_enabled: false` to disable collaboration and clear mode/preset defaults.
 - `timeout_seconds`: per-run timeout
 - `extra_args`: additional CLI flags
+- `web_search` caching: Codex 0.92.0 defaults to cached results; use `extra_args` if you need fresher web results (see Codex docs for flags)
 - `approval_policy` and `sandbox_mode`: ignored in `mode: yolo`
 - `json_output`: emit JSONL events from `codex exec` (requires `output_last_message`)
 - `output_last_message`: write the final agent message to an artifact per phase
