@@ -28,7 +28,9 @@ Controls the Codex CLI invocation.
   - Set `collaboration_enabled: false` to disable collaboration and clear mode/preset defaults.
 - `timeout_seconds`: per-run timeout
 - `extra_args`: additional CLI flags
-- `web_search` caching: Codex 0.92.0 defaults to cached results; use `extra_args` if you need fresher web results (see Codex docs for flags)
+- `web_search` behavior: Codex 0.93.0+ enables live web search by default when sandbox policy is `danger-full-access`; use `extra_args` if you need cached/disabled search (see Codex docs for flags)
+  - Deprecated web search flags/aliases (Codex 0.93.0+): `[features].web_search_request`, `[features].web_search_cached`, `[tools].web_search`, `[features].web_search`
+- `approval_policy`: Codex 0.93.0+ enables smart approvals by default (including explicit approval prompts for MCP tool calls); for non-interactive runs, set `approval_policy: never` (or `mode: yolo`) to avoid follow-up prompts
 - `approval_policy` and `sandbox_mode`: ignored in `mode: yolo`
 - `json_output`: emit JSONL events from `codex exec` (requires `output_last_message`)
 - `output_last_message`: write the final agent message to an artifact per phase
