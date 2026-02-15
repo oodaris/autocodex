@@ -7,6 +7,8 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/oodaris/autocodex/internal/config"
@@ -52,6 +54,7 @@ func runDoctorChecks(cfg config.Config, configPath string) []checkResult {
 	results = append(results, checkConfigValidation(cfg))
 	results = append(results, checkGitRepo())
 	results = append(results, checkCommandOnPath("codex"))
+	results = append(results, checkCodexVersion())
 	if cfg.Autonomy.RequireBD != nil && *cfg.Autonomy.RequireBD {
 		results = append(results, checkCommandOnPath("bd"))
 	} else {
@@ -100,6 +103,86 @@ func checkCommandOptional(name string) checkResult {
 		return checkResult{Name: name, Status: "warn", Details: "not found in PATH", Required: false}
 	}
 	return checkResult{Name: name, Status: "ok", Details: path, Required: false}
+}
+
+type semver struct {
+	Major int
+	Minor int
+	Patch int
+}
+
+func (v semver) String() string {
+	return fmt.Sprintf("%d.%d.%d", v.Major, v.Minor, v.Patch)
+}
+
+func (v semver) Less(other semver) bool {
+	if v.Major != other.Major {
+		return v.Major < other.Major
+	}
+	if v.Minor != other.Minor {
+		return v.Minor < other.Minor
+	}
+	return v.Patch < other.Patch
+}
+
+func recommendedMinCodexVersion() semver {
+	// Keep this as a "warn-only" floor: autocodex likely works on older Codex CLIs,
+	// but modern approvals/search/mode behavior changed significantly around 0.93+.
+	return semver{Major: 0, Minor: 93, Patch: 0}
+}
+
+func parseFirstSemver(text string) (semver, bool) {
+	re := regexp.MustCompile(`\b(\d+)\.(\d+)\.(\d+)\b`)
+	m := re.FindStringSubmatch(text)
+	if len(m) != 4 {
+		return semver{}, false
+	}
+	major, err := strconv.Atoi(m[1])
+	if err != nil {
+		return semver{}, false
+	}
+	minor, err := strconv.Atoi(m[2])
+	if err != nil {
+		return semver{}, false
+	}
+	patch, err := strconv.Atoi(m[3])
+	if err != nil {
+		return semver{}, false
+	}
+	return semver{Major: major, Minor: minor, Patch: patch}, true
+}
+
+func checkCodexVersion() checkResult {
+	path, err := exec.LookPath("codex")
+	if err != nil {
+		return checkResult{Name: "codex-version", Status: "warn", Details: "codex not found; skipping version check", Required: false}
+	}
+
+	out, err := exec.Command(path, "--version").CombinedOutput()
+	if err != nil {
+		return checkResult{Name: "codex-version", Status: "warn", Details: fmt.Sprintf("codex --version failed: %v", err), Required: false}
+	}
+	versionText := strings.TrimSpace(string(out))
+	if versionText == "" {
+		return checkResult{Name: "codex-version", Status: "warn", Details: "codex --version returned empty output", Required: false}
+	}
+
+	got, ok := parseFirstSemver(versionText)
+	if !ok {
+		// Show raw output to help debug unusual installs/wrappers.
+		return checkResult{Name: "codex-version", Status: "warn", Details: fmt.Sprintf("unrecognized version output: %q", versionText), Required: false}
+	}
+
+	min := recommendedMinCodexVersion()
+	if got.Less(min) {
+		return checkResult{
+			Name:     "codex-version",
+			Status:   "warn",
+			Details:  fmt.Sprintf("%s (recommended >= %s)", versionText, min.String()),
+			Required: false,
+		}
+	}
+	return checkResult{Name: "codex-version", Status: "ok", Details: versionText, Required: false}
 }
 
 func checkMemoryDir(cfg config.Config) checkResult {

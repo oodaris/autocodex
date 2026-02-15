@@ -27,10 +27,17 @@ Controls the Codex CLI invocation.
 - `preset`: collaboration preset (default: `default`, passed as `-c collaboration_mode_preset=...`, requires `collaboration_mode`)
   - Set `collaboration_enabled: false` to disable collaboration and clear mode/preset defaults.
 - `timeout_seconds`: per-run timeout
-- `extra_args`: additional CLI flags
-- `web_search` behavior: Codex 0.93.0+ enables live web search by default when sandbox policy is `danger-full-access`; use `extra_args` if you need cached/disabled search (see Codex docs for flags)
-  - Deprecated web search flags/aliases (Codex 0.93.0+): `[features].web_search_request`, `[features].web_search_cached`, `[tools].web_search`, `[features].web_search`
-- `approval_policy`: Codex 0.93.0+ enables smart approvals by default (including explicit approval prompts for MCP tool calls); for non-interactive runs, set `approval_policy: never` (or `mode: yolo`) to avoid follow-up prompts
+- `extra_args`: additional Codex CLI flags (escape hatch)
+  - Codex reads defaults from `~/.codex/config.toml`; use `extra_args` to override Codex config keys via `-c key=value`.
+  - Example: explicitly disable web search for determinism/cost control:
+    - `-c web_search="disabled"` (or `cached` / `live`)
+- Web search (Codex CLI): modern Codex versions support a `web_search` config key (`disabled` | `cached` | `live`).
+  - Prefer setting `web_search` explicitly via `extra_args` for reproducible runs.
+  - Avoid older/deprecated keys/aliases (newer Codex CLIs ignore or remove these):
+    - `features.web_search_request`, `features.web_search_cached`, `tools.web_search`, `features.web_search`
+- Non-interactive constraints: autocodex runs `codex exec` (non-interactive).
+  - Tools like `request_user_input` are only available in interactive Codex modes (Plan/Pair). Include required context in tasks to avoid follow-up prompts.
+- `approval_policy`: Codex 0.93.0+ enables smarter approvals by default (including explicit approval prompts for some tool calls); for non-interactive runs, set `approval_policy: never` (or `mode: yolo`) to avoid follow-up prompts
 - `approval_policy` and `sandbox_mode`: ignored in `mode: yolo`
 - `json_output`: emit JSONL events from `codex exec` (requires `output_last_message`)
 - `output_last_message`: write the final agent message to an artifact per phase

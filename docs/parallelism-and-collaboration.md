@@ -77,6 +77,16 @@ autocodex run --no-collaboration --task "..."
 - You want richer reasoning or structured collaboration inside a single run.
 - You do **not** need true OS‑level parallelism.
 
+### Plan/Pair Modes (Interactive Codex UX)
+Codex also supports interactive modes like Plan and Pair. autocodex does **not**
+invoke these modes: it runs `codex exec` (non-interactive) under the hood.
+
+Practical implications:
+- Tools like `request_user_input` are only available in interactive Plan/Pair.
+- If your prompt is underspecified, Codex may request follow-up; in non-interactive
+  runs this can fail. Prefer self-contained tasks, or run Codex interactively to
+  clarify first and then paste the refined task into autocodex.
+
 ## Swarm vs Collaboration: choosing the right tool
 
 | Goal | Use |

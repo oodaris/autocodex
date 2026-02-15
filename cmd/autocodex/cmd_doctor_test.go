@@ -63,3 +63,33 @@ func TestDoctorMemoryDirMissing(t *testing.T) {
 		t.Fatalf("expected missing details, got %s", result.Details)
 	}
 }
+
+func TestParseFirstSemver(t *testing.T) {
+	v, ok := parseFirstSemver("codex-cli 0.101.0")
+	if !ok {
+		t.Fatalf("expected to parse version")
+	}
+	if v.Major != 0 || v.Minor != 101 || v.Patch != 0 {
+		t.Fatalf("unexpected version: %+v", v)
+	}
+
+	v, ok = parseFirstSemver("0.102.0-alpha.7")
+	if !ok {
+		t.Fatalf("expected to parse prerelease version")
+	}
+	if v.Major != 0 || v.Minor != 102 || v.Patch != 0 {
+		t.Fatalf("unexpected version: %+v", v)
+	}
+}
+
+func TestSemverLess(t *testing.T) {
+	if !(semver{Major: 0, Minor: 92, Patch: 9}).Less(semver{Major: 0, Minor: 93, Patch: 0}) {
+		t.Fatalf("expected 0.92.9 < 0.93.0")
+	}
+	if (semver{Major: 0, Minor: 93, Patch: 0}).Less(semver{Major: 0, Minor: 93, Patch: 0}) {
+		t.Fatalf("expected 0.93.0 !< 0.93.0")
+	}
+	if (semver{Major: 0, Minor: 93, Patch: 1}).Less(semver{Major: 0, Minor: 93, Patch: 0}) {
+		t.Fatalf("expected 0.93.1 !< 0.93.0")
+	}
+}

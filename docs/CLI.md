@@ -11,7 +11,7 @@ autocodex "Review backend API and fix issues."
 - Default config path: `autocodex.yaml` (override with `AUTOCODEX_CONFIG` or `--config`).
 - Shortcut: `autocodex "<task>"` is equivalent to `autocodex run --task "<task>"`.
 - Positional args: `run`, `once`, and `resume` accept a positional task string; `snapshot`, `resume`, and `kill` accept a positional run id.
-- Codex rejects `request_user_input` outside Plan/Pair; include required context in the task for non-interactive runs.
+- autocodex runs `codex exec` (non-interactive). Codex rejects `request_user_input` outside interactive Plan/Pair modes, so include required context in the task (or run Codex interactively to clarify first).
 - Parallelism vs collaboration: use `--swarm` (coordinator) for real parallel runs; `--collaboration-mode/--preset` control in‑process role behavior. See `docs/parallelism-and-collaboration.md`.
 
 ## Commands
