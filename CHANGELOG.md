@@ -9,6 +9,7 @@ Semantic Versioning.
 
 - Doctor: warn when Codex CLI is older than recommended (warn-only version check).
 - Docs: clarify Codex Plan/Pair interactivity limits for `codex exec`, and document modern `web_search` config via `extra_args`.
+- Tooling: bump Go toolchain baseline to Go 1.26 (CI + go.mod).
 
 ## [0.3.0] - 2026-01-20
 

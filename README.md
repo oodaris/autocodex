@@ -2,7 +2,7 @@
 
 # autocodex
 
-[![ci](https://github.com/oodaris/autocodex/actions/workflows/ci.yml/badge.svg)](https://github.com/oodaris/autocodex/actions/workflows/ci.yml) [![scorecard](https://github.com/oodaris/autocodex/actions/workflows/scorecard.yml/badge.svg)](https://github.com/oodaris/autocodex/actions/workflows/scorecard.yml) [![Go Report Card](https://goreportcard.com/badge/github.com/oodaris/autocodex)](https://goreportcard.com/report/github.com/oodaris/autocodex) [![release](https://img.shields.io/github/v/release/oodaris/autocodex?display_name=tag&sort=semver)](https://github.com/oodaris/autocodex/releases/latest) [![license](https://img.shields.io/badge/license-MIT-blue)](LICENSE) [![go](https://img.shields.io/badge/go-1.22%2B-blue)](go.mod)
+[![ci](https://github.com/oodaris/autocodex/actions/workflows/ci.yml/badge.svg)](https://github.com/oodaris/autocodex/actions/workflows/ci.yml) [![scorecard](https://github.com/oodaris/autocodex/actions/workflows/scorecard.yml/badge.svg)](https://github.com/oodaris/autocodex/actions/workflows/scorecard.yml) [![Go Report Card](https://goreportcard.com/badge/github.com/oodaris/autocodex)](https://goreportcard.com/report/github.com/oodaris/autocodex) [![release](https://img.shields.io/github/v/release/oodaris/autocodex?display_name=tag&sort=semver)](https://github.com/oodaris/autocodex/releases/latest) [![license](https://img.shields.io/badge/license-MIT-blue)](LICENSE) [![go](https://img.shields.io/badge/go-1.26%2B-blue)](go.mod)
 
 autocodex orchestrates a structured loop: ideate → plan → implement → review → test. It uses Beads for task tracking, runs the local Codex CLI, and supports external plugins via JSON‑RPC.
 
@@ -68,7 +68,7 @@ autocodex plugins --action list
 - Beads (`bd`) optional, required when `autonomy.require_bd: true`
 
 **Build / contributor requirements**
-- Go 1.22+ (only if installing via `go install` or building from source)
+- Go 1.26+ (only if installing via `go install` or building from source)
 - Node.js + npm (only for UI dev)
 
 **Install Codex CLI** (GitHub: `openai/codex`)
