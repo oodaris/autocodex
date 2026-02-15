@@ -12,7 +12,7 @@ Release archives now include prebuilt plugins under `plugins/`.
 
 ## Publish a release
 
-1) Sync Beads (this repo tracks issues in `.beads/issues.jsonl`):
+1) Sync Beads (sync-branch mode: `bd sync` commits/pushes beads data to `beads-sync`):
 ```bash
 bd sync
 ```

@@ -19,7 +19,8 @@ AGENTS.md is the agent-focused companion to README. Keep it short, prescriptive,
 
 ### Beads backend (this repo)
 - Backend: Dolt (embedded). Database state lives under `.beads/dolt` (gitignored).
-- Canonical issue log: `.beads/issues.jsonl` is tracked in git; run `bd sync` before `git push`.
+- Sync branch: `beads-sync` (configured via `.beads/config.yaml` `sync-branch`).
+- Canonical issue log: `.beads/issues.jsonl` is tracked on the `beads-sync` branch (not `main`). Run `bd sync` before `git push` so beads data is committed/pushed.
 - Health checks: `bd backend show --json` and `bd doctor --migration=post`.
 
 ### bd task template

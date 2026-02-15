@@ -4,14 +4,20 @@ This project uses **bd** (beads) for issue tracking. Run `bd onboard` to get sta
 
 Repo note: this repo's `.beads` is on the Dolt backend (embedded). Verify with `bd backend show --json`.
 
+Beads sync-branch: this repo is configured to sync beads data via the dedicated `beads-sync` branch (see `.beads/config.yaml`).
+- `bd sync` will commit/push beads data to `beads-sync` so `main` stays clean.
+- In a fresh clone, run `bd migrate sync beads-sync` once to create the local worktree (`.git/beads-worktrees/beads-sync`).
+
 ## Quick Reference
 
 ```bash
+bd onboard            # One-time setup for this clone (hooks, config, etc.)
+bd migrate sync beads-sync  # One-time: set up sync-branch worktree (if needed)
 bd ready              # Find available work
 bd show <id>          # View issue details
 bd update <id> --status in_progress  # Claim work
 bd close <id>         # Complete work
-bd sync               # Sync with git
+bd sync               # Sync with git (commits/pushes to beads-sync)
 ```
 
 ## autocodex defaults (for agents)
