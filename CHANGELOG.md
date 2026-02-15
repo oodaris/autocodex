@@ -7,6 +7,8 @@ Semantic Versioning.
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-02-15
+
 ### Added
 - Doctor: warn when Codex CLI is older than recommended (warn-only version check).
 
