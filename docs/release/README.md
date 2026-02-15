@@ -12,13 +12,21 @@ Release archives now include prebuilt plugins under `plugins/`.
 
 ## Publish a release
 
-1) Update `CHANGELOG.md`.
-2) Tag a version:
+1) Sync Beads (this repo tracks issues in `.beads/issues.jsonl`):
+```bash
+bd sync
+```
+2) Update `CHANGELOG.md`.
+3) Smoke test a snapshot build:
+```bash
+goreleaser release --snapshot --clean -f goreleaser.yml
+```
+4) Tag a version:
 ```bash
 git tag -a v0.2.0 -m "v0.2.0"
 git push origin v0.2.0
 ```
-3) Run GoReleaser:
+5) Run GoReleaser:
 ```bash
 goreleaser release -f goreleaser.yml
 ```

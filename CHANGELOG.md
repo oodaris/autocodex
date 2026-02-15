@@ -7,9 +7,53 @@ Semantic Versioning.
 
 ## [Unreleased]
 
+### Added
 - Doctor: warn when Codex CLI is older than recommended (warn-only version check).
-- Docs: clarify Codex Plan/Pair interactivity limits for `codex exec`, and document modern `web_search` config via `extra_args`.
+
+### Changed
 - Tooling: bump Go toolchain baseline to Go 1.26 (CI + go.mod).
+- Dependencies: update Go module dependencies (`github.com/creack/pty`, `github.com/gorilla/websocket`).
+- Beads: migrate this repo's Beads backend to Dolt (embedded) for better branch/diff workflows.
+
+### Docs
+- Clarify Codex Plan/Pair interactivity limits for `codex exec`, and document modern `web_search` config via `extra_args`.
+- Document Beads Dolt backend expectations and release verification gates.
+
+## [0.7.1] - 2026-01-22
+
+- Plugins: satisfy staticcheck in dep-license-scanner.
+
+## [0.7.0] - 2026-01-22
+
+- Plugins: bundle plugin binaries in release archives.
+- Plugin catalog: add reference plugin implementations and contribution docs.
+
+## [0.6.0] - 2026-01-21
+
+- Autonomy: coordinator "swarm" mode with guardrails and collaboration opt-out.
+- API: respect `base_path` and harden JSON responses.
+- Docs: collaboration/parallelism guidance and improved CLI reference.
+
+## [0.5.2] - 2026-01-21
+
+- Feedback: stop memory loop on size limit.
+
+## [0.5.1] - 2026-01-21
+
+- Docs: README install snippet for the latest release.
+- Tests: improve Codex exec output flushing for CI stability.
+
+## [0.5.0] - 2026-01-21
+
+- Loop: `--start-phase` and artifact hints.
+- Runs: record model and reasoning metadata.
+- Autonomy: persist artifacts for resume hints.
+- Cleanup: add run deletion and cleanup hints.
+- Docs: document init, cleanup, and resume UX.
+
+## [0.4.0] - 2026-01-21
+
+- Init: auto-init git and beads, and improve autonomy resilience.
 
 ## [0.3.0] - 2026-01-20
 

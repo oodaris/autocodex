@@ -2,6 +2,8 @@
 
 This project uses **bd** (beads) for issue tracking. Run `bd onboard` to get started.
 
+Repo note: this repo's `.beads` is on the Dolt backend (embedded). Verify with `bd backend show --json`.
+
 ## Quick Reference
 
 ```bash

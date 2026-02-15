@@ -17,6 +17,11 @@ AGENTS.md is the agent-focused companion to README. Keep it short, prescriptive,
 - Create tasks with `bd create "<title>"`; add dependencies with `bd dep add <task> <depends_on>`.
 - Each task must declare a **Files** scope; do not edit outside of the claim.
 
+### Beads backend (this repo)
+- Backend: Dolt (embedded). Database state lives under `.beads/dolt` (gitignored).
+- Canonical issue log: `.beads/issues.jsonl` is tracked in git; run `bd sync` before `git push`.
+- Health checks: `bd backend show --json` and `bd doctor --migration=post`.
+
 ### bd task template
 ```md
 Title:

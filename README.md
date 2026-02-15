@@ -66,6 +66,8 @@ autocodex plugins --action list
   - Tested with: `codex-cli 0.101.0`
   - Recommended: `codex-cli >= 0.94.0` (older versions may work but have different defaults around approvals/search/modes)
 - Beads (`bd`) optional, required when `autonomy.require_bd: true`
+  - Tested with: `bd 0.50.3`
+  - Repo note (contributors): this repo's `.beads` uses the Dolt backend (`.beads/dolt`, gitignored). Verify with `bd backend show --json`.
 
 **Build / contributor requirements**
 - Go 1.26+ (only if installing via `go install` or building from source)
@@ -81,6 +83,9 @@ brew install --cask codex
 
 **Install Beads (`bd`)** (GitHub: `steveyegge/beads`)
 ```bash
+# npm
+npm i -g @beads/bd
+
 # go
 go install github.com/steveyegge/beads/cmd/bd@latest
 # or homebrew
