@@ -7,6 +7,9 @@ Semantic Versioning.
 
 ## [Unreleased]
 
+- Doctor: warn when Codex CLI is older than recommended (warn-only version check).
+- Docs: clarify Codex Plan/Pair interactivity limits for `codex exec`, and document modern `web_search` config via `extra_args`.
+
 ## [0.3.0] - 2026-01-20
 
 - Autonomy hardening: strict ACTIONS validation, schema policy flags, and run-tagged artifact paths.
