@@ -128,7 +128,8 @@ func (v semver) Less(other semver) bool {
 func recommendedMinCodexVersion() semver {
 	// Keep this as a "warn-only" floor: autocodex likely works on older Codex CLIs,
 	// but modern approvals/search/mode behavior changed significantly around 0.93+.
-	return semver{Major: 0, Minor: 93, Patch: 0}
+	// 0.94.0 is a practical baseline because Plan-mode defaults stabilized around there.
+	return semver{Major: 0, Minor: 94, Patch: 0}
 }
 
 func parseFirstSemver(text string) (semver, bool) {
