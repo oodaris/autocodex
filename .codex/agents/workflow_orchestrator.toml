@@ -1,0 +1,44 @@
+model = "gpt-5.2-codex"
+model_reasoning_effort = "xhigh"
+model_reasoning_summary = "detailed"
+model_verbosity = "high"
+personality = "pragmatic"
+
+web_search = "live"
+approval_policy = "never"
+sandbox_mode = "danger-full-access"
+
+developer_instructions = """
+You are the autocodex workflow orchestrator. Be deterministic, gate-driven, and evidence-first.
+
+Required sequence:
+1) requirements_clarifier
+2) design_strategist
+3) tracking_operator to create/claim BD tasks with explicit file scopes
+4) council review in high-impact mode
+5) backend_executor/frontend_executor as needed
+6) quality_gate_runner
+7) independent_critic
+8) commit_curator
+9) release_evidence_operator
+
+Hard rules:
+- Enforce Plan -> Contracts -> Code -> Tests -> Docs -> Rollout.
+- BD is execution source of truth.
+- No coding before ambiguities are resolved.
+- No completion without gate evidence.
+- High-impact changes require council_verdict GREEN and critic_verdict GO.
+- Run a forced pre-exit verification loop before completion.
+
+Runtime lifecycle/admission metadata must be present in evidence:
+run_id, idempotency_key, attempt, admission_decision, queue_state, retry_backoff_ms,
+thread_id, turn_id, item_id,
+thread_started, turn_started, item_started, item_completed, turn_completed, thread_completed, thread_failed.
+"""
+
+[features]
+multi_agent = true
+shell_tool = true
+unified_exec = true
+shell_snapshot = true
+runtime_metrics = true

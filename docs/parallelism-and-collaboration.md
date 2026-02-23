@@ -9,6 +9,7 @@ roles, and tasks.
   Codex CLI processes in parallel).
 - **Codex collaboration_mode/preset** controls **in‑process collaboration**
   (role‑style behaviors), not OS‑level parallelism.
+- Codex `multi_agent` is an optional in-process capability, not the scheduler of record.
 - Use `--swarm` or `autonomy.coordinator.enabled: true` for parallel bead runs.
 - Logs will print **"parallel agents launched"** when true parallelism starts.
 
@@ -34,8 +35,6 @@ Or force it per run:
 autocodex run --swarm --task "Run all unblocked beads in parallel"
 ```
 Note: `--swarm` sets `autonomy.coordinator.max_parallel` to `0` (unlimited) for the run.
-`--swarm` enables the coordinator and uses your configured `max_parallel`
-(default: `2`) unless you explicitly set `max_parallel: 0` for unlimited.
 
 **What you get**
 - Multiple Codex processes running at once.
@@ -93,7 +92,20 @@ Practical implications:
 | --- | --- |
 | Guaranteed parallel execution | autocodex coordinator / `--swarm` |
 | Role‑based collaboration inside one run | Codex `collaboration_mode`/`preset` |
+| Optional in-process decomposition (Codex features) | Codex `multi_agent` (non-scheduling) |
 | Both | Enable coordinator **and** keep collaboration defaults |
+
+## Harness policy and high-impact work
+
+Harness mode does not replace scheduling; it adds closure policy and evidence gates.
+
+- Enable with `autonomy.harness.enabled: true`
+- Preflight command: `autocodex harness preflight --strict`
+- Lint command: `python3 scripts/harness_config_lint.py`
+- In `impact_mode: high`, ACTIONS closure must include:
+  - `council_verdict: GREEN`
+  - `critic_verdict: GO`
+  - `quality_gate_passed: true`
 
 ## Beads, roles, and tasks
 

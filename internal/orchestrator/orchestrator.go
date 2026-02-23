@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -87,6 +88,29 @@ func (o *Orchestrator) Run(ctx context.Context) (*state.Run, error) {
 		"bead_id", beadID,
 	)
 	runLogger := logger.With("stage", "run")
+	idempotencyKey := run.ID
+	if beadID != "" {
+		idempotencyKey = fmt.Sprintf("%s:%s", run.ID, beadID)
+	}
+	buildEventMeta := func(queueState, admissionDecision, phase, turnID, itemID string, attempt, retryBackoffMS int) map[string]string {
+		meta := map[string]string{
+			"trace_id":           traceID,
+			"bead_id":            beadID,
+			"run_id":             run.ID,
+			"idempotency_key":    idempotencyKey,
+			"attempt":            strconv.Itoa(attempt),
+			"admission_decision": admissionDecision,
+			"queue_state":        queueState,
+			"retry_backoff_ms":   strconv.Itoa(retryBackoffMS),
+			"thread_id":          run.ID,
+			"turn_id":            turnID,
+			"item_id":            itemID,
+		}
+		if phase != "" {
+			meta["phase"] = phase
+		}
+		return meta
+	}
 
 	runLogger.Info("run started", "status", "started", "latency_ms", 0)
 	_ = o.Store.SaveRunControl(state.RunControl{
@@ -100,16 +124,24 @@ func (o *Orchestrator) Run(ctx context.Context) (*state.Run, error) {
 		TS:      time.Now().UTC(),
 		Type:    "run_start",
 		Message: "run started",
-		Meta: map[string]string{
-			"trace_id":       traceID,
-			"bead_id":        beadID,
-			"model":          o.Config.Codex.Model,
-			"reasoning":      o.Config.Codex.ReasoningEffort,
-			"collab_mode":    o.Config.Codex.CollaborationMode,
-			"collab_preset":  o.Config.Codex.Preset,
-			"codex_cli":      o.Config.Codex.CLIPath,
-			"autocodex_mode": o.Config.Mode,
-		},
+		Meta: func() map[string]string {
+			meta := buildEventMeta("running", "admit", "run", "run-start", "run-start", 0, 0)
+			meta["model"] = o.Config.Codex.Model
+			meta["reasoning"] = o.Config.Codex.ReasoningEffort
+			meta["collab_mode"] = o.Config.Codex.CollaborationMode
+			meta["collab_preset"] = o.Config.Codex.Preset
+			meta["codex_cli"] = o.Config.Codex.CLIPath
+			meta["autocodex_mode"] = o.Config.Mode
+			return meta
+		}(),
+	})
+	_ = o.Store.AppendEvent(state.RunEvent{
+		ID:      eventID("thread-started"),
+		RunID:   run.ID,
+		TS:      time.Now().UTC(),
+		Type:    "thread_started",
+		Message: "thread started",
+		Meta:    buildEventMeta("running", "admit", "run", "run-start", "run-start", 0, 0),
 	})
 
 	startTime := time.Now().UTC()
@@ -123,13 +155,29 @@ func (o *Orchestrator) Run(ctx context.Context) (*state.Run, error) {
 			if stop, reason, status, action := o.shouldStop(ctx, run, startTime, lastProgress, consecutiveFailures); stop {
 				o.finalizeRun(run, status, &reason, nil, action)
 				runLogger.Info("run stopped", "status", status, "reason", reason, "latency_ms", 0)
+				stopTurnID := fmt.Sprintf("%s-turn-%d", run.ID, run.Iterations)
+				stopItemID := fmt.Sprintf("%s-item-stop", stopTurnID)
 				_ = o.Store.AppendEvent(state.RunEvent{
 					ID:      eventID("run-stopped"),
 					RunID:   run.ID,
 					TS:      time.Now().UTC(),
 					Type:    "run_stopped",
 					Message: reason,
-					Meta:    map[string]string{"trace_id": traceID, "bead_id": beadID},
+					Meta:    buildEventMeta(status, "admit", "run", stopTurnID, stopItemID, run.Iterations, 0),
+				})
+				threadEventType := "thread_failed"
+				threadMessage := "thread failed"
+				if status == "completed" {
+					threadEventType = "thread_completed"
+					threadMessage = "thread completed"
+				}
+				_ = o.Store.AppendEvent(state.RunEvent{
+					ID:      eventID(threadEventType),
+					RunID:   run.ID,
+					TS:      time.Now().UTC(),
+					Type:    threadEventType,
+					Message: threadMessage,
+					Meta:    buildEventMeta(status, "admit", "run", stopTurnID, stopItemID, run.Iterations, 0),
 				})
 				return run, nil
 			}
@@ -142,6 +190,9 @@ func (o *Orchestrator) Run(ctx context.Context) (*state.Run, error) {
 			_ = o.Store.TouchRunHeartbeat(run.ID, os.Getpid())
 
 			phaseStart := time.Now().UTC()
+			turnID := fmt.Sprintf("%s-turn-%d", run.ID, run.Iterations)
+			itemID := fmt.Sprintf("%s-item-%s", turnID, phase)
+			eventMeta := buildEventMeta("running", "admit", phase, turnID, itemID, run.Iterations, 0)
 			phaseLogger := logger.With("stage", phase)
 			phaseLogger.Info("phase start", "phase", phase, "status", "started", "latency_ms", 0)
 			_ = o.Store.AppendEvent(state.RunEvent{
@@ -151,7 +202,25 @@ func (o *Orchestrator) Run(ctx context.Context) (*state.Run, error) {
 				Type:    "phase_start",
 				Phase:   phase,
 				Message: "phase started",
-				Meta:    map[string]string{"trace_id": traceID, "bead_id": beadID},
+				Meta:    eventMeta,
+			})
+			_ = o.Store.AppendEvent(state.RunEvent{
+				ID:      eventID("turn-started"),
+				RunID:   run.ID,
+				TS:      time.Now().UTC(),
+				Type:    "turn_started",
+				Phase:   phase,
+				Message: "turn started",
+				Meta:    eventMeta,
+			})
+			_ = o.Store.AppendEvent(state.RunEvent{
+				ID:      eventID("item-started"),
+				RunID:   run.ID,
+				TS:      time.Now().UTC(),
+				Type:    "item_started",
+				Phase:   phase,
+				Message: "item started",
+				Meta:    eventMeta,
 			})
 
 			feedbackText, feedbackMeta, err := o.gatherFeedback(run.ID)
@@ -212,7 +281,25 @@ func (o *Orchestrator) Run(ctx context.Context) (*state.Run, error) {
 					Type:    "phase_complete",
 					Phase:   phase,
 					Message: "phase skipped",
-					Meta:    map[string]string{"trace_id": traceID, "bead_id": beadID},
+					Meta:    eventMeta,
+				})
+				_ = o.Store.AppendEvent(state.RunEvent{
+					ID:      eventID("item-completed"),
+					RunID:   run.ID,
+					TS:      time.Now().UTC(),
+					Type:    "item_completed",
+					Phase:   phase,
+					Message: "item completed (skipped)",
+					Meta:    eventMeta,
+				})
+				_ = o.Store.AppendEvent(state.RunEvent{
+					ID:      eventID("turn-completed"),
+					RunID:   run.ID,
+					TS:      time.Now().UTC(),
+					Type:    "turn_completed",
+					Phase:   phase,
+					Message: "turn completed (skipped)",
+					Meta:    eventMeta,
 				})
 				lastProgress = time.Now().UTC()
 				continue
@@ -298,7 +385,25 @@ func (o *Orchestrator) Run(ctx context.Context) (*state.Run, error) {
 					Type:    "phase_failed",
 					Phase:   phase,
 					Message: execErr.Error(),
-					Meta:    map[string]string{"trace_id": traceID, "bead_id": beadID},
+					Meta:    eventMeta,
+				})
+				_ = o.Store.AppendEvent(state.RunEvent{
+					ID:      eventID("item-completed-failed"),
+					RunID:   run.ID,
+					TS:      time.Now().UTC(),
+					Type:    "item_completed",
+					Phase:   phase,
+					Message: "item completed (failed)",
+					Meta:    eventMeta,
+				})
+				_ = o.Store.AppendEvent(state.RunEvent{
+					ID:      eventID("turn-completed-failed"),
+					RunID:   run.ID,
+					TS:      time.Now().UTC(),
+					Type:    "turn_completed",
+					Phase:   phase,
+					Message: "turn completed (failed)",
+					Meta:    eventMeta,
 				})
 				consecutiveFailures++
 				errMsg := execErr.Error()
@@ -324,6 +429,14 @@ func (o *Orchestrator) Run(ctx context.Context) (*state.Run, error) {
 				run.FinishedAt = &finished
 				run.LastActionAt = nil
 				_ = o.Store.SaveRun(run)
+				_ = o.Store.AppendEvent(state.RunEvent{
+					ID:      eventID("thread-failed"),
+					RunID:   run.ID,
+					TS:      time.Now().UTC(),
+					Type:    "thread_failed",
+					Message: "thread failed",
+					Meta:    buildEventMeta("failed", "admit", phase, turnID, itemID, run.Iterations, 0),
+				})
 				return run, execErr
 			}
 			consecutiveFailures = 0
@@ -350,7 +463,25 @@ func (o *Orchestrator) Run(ctx context.Context) (*state.Run, error) {
 				Type:    "phase_complete",
 				Phase:   phase,
 				Message: "phase completed",
-				Meta:    map[string]string{"trace_id": traceID, "bead_id": beadID},
+				Meta:    eventMeta,
+			})
+			_ = o.Store.AppendEvent(state.RunEvent{
+				ID:      eventID("item-completed"),
+				RunID:   run.ID,
+				TS:      time.Now().UTC(),
+				Type:    "item_completed",
+				Phase:   phase,
+				Message: "item completed",
+				Meta:    eventMeta,
+			})
+			_ = o.Store.AppendEvent(state.RunEvent{
+				ID:      eventID("turn-completed"),
+				RunID:   run.ID,
+				TS:      time.Now().UTC(),
+				Type:    "turn_completed",
+				Phase:   phase,
+				Message: "turn completed",
+				Meta:    eventMeta,
 			})
 			lastProgress = time.Now().UTC()
 		}
@@ -362,13 +493,24 @@ func (o *Orchestrator) Run(ctx context.Context) (*state.Run, error) {
 
 	o.finalizeRun(run, "completed", nil, nil, nil)
 	runLogger.Info("run completed", "status", "completed", "latency_ms", 0)
+	completionTurnID := fmt.Sprintf("%s-turn-%d", run.ID, run.Iterations)
+	completionItemID := fmt.Sprintf("%s-item-run-complete", completionTurnID)
+	completionMeta := buildEventMeta("completed", "admit", "run", completionTurnID, completionItemID, run.Iterations, 0)
+	_ = o.Store.AppendEvent(state.RunEvent{
+		ID:      eventID("thread-completed"),
+		RunID:   run.ID,
+		TS:      time.Now().UTC(),
+		Type:    "thread_completed",
+		Message: "thread completed",
+		Meta:    completionMeta,
+	})
 	_ = o.Store.AppendEvent(state.RunEvent{
 		ID:      eventID("run-complete"),
 		RunID:   run.ID,
 		TS:      time.Now().UTC(),
 		Type:    "run_complete",
 		Message: "run completed",
-		Meta:    map[string]string{"trace_id": traceID, "bead_id": beadID},
+		Meta:    completionMeta,
 	})
 
 	return run, nil

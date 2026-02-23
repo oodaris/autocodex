@@ -141,6 +141,25 @@ func (c Config) Validate() error {
 	if c.Autonomy.Coordinator.MaxParallel != nil && *c.Autonomy.Coordinator.MaxParallel < 0 {
 		return fmt.Errorf("invalid autonomy.coordinator.max_parallel: %d", *c.Autonomy.Coordinator.MaxParallel)
 	}
+	if c.Autonomy.Harness.ImpactMode != "" {
+		if !oneOf(c.Autonomy.Harness.ImpactMode, []string{"normal", "high"}) {
+			return fmt.Errorf("invalid autonomy.harness.impact_mode: %s", c.Autonomy.Harness.ImpactMode)
+		}
+	}
+	if c.Autonomy.Harness.StrictTrackingMode != "" {
+		if !oneOf(c.Autonomy.Harness.StrictTrackingMode, []string{"bd_strict", "offline_evidence_only"}) {
+			return fmt.Errorf("invalid autonomy.harness.strict_tracking_mode: %s", c.Autonomy.Harness.StrictTrackingMode)
+		}
+	}
+	if c.Autonomy.Harness.Eval.MinScenarios < 0 {
+		return fmt.Errorf("invalid autonomy.harness.eval.min_scenarios: %d", c.Autonomy.Harness.Eval.MinScenarios)
+	}
+	if c.Autonomy.Harness.Eval.MinPassRate < 0 || c.Autonomy.Harness.Eval.MinPassRate > 1 {
+		return fmt.Errorf("invalid autonomy.harness.eval.min_pass_rate: %f", c.Autonomy.Harness.Eval.MinPassRate)
+	}
+	if c.Autonomy.Harness.Eval.MaxSoftFailures < 0 {
+		return fmt.Errorf("invalid autonomy.harness.eval.max_soft_failures: %d", c.Autonomy.Harness.Eval.MaxSoftFailures)
+	}
 	if c.Autonomy.Enabled {
 		if strings.TrimSpace(c.Autonomy.SpecTemplate) == "" {
 			return errors.New("autonomy.spec_template is required when autonomy is enabled")

@@ -534,10 +534,10 @@
       "type": "string",
       "default": "docs/plans/%s-tasks.json"
     },
-    "coordinator": {
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
+	    "coordinator": {
+	      "type": "object",
+	      "additionalProperties": false,
+	      "properties": {
         "enabled": {
           "type": "boolean",
           "default": false
@@ -563,13 +563,85 @@
           "type": "boolean",
           "default": false,
           "description": "Stop all parallel beads on first error."
-        }
-      }
-    },
-        "stop_conditions": {
-          "type": "object",
-          "additionalProperties": false,
-          "properties": {
+	        }
+	      }
+	    },
+	    "harness": {
+	      "type": "object",
+	      "additionalProperties": false,
+	      "properties": {
+	        "enabled": {
+	          "type": "boolean",
+	          "default": false
+	        },
+	        "impact_mode": {
+	          "type": "string",
+	          "enum": [
+	            "normal",
+	            "high"
+	          ],
+	          "default": "normal"
+	        },
+	        "strict_tracking_mode": {
+	          "type": "string",
+	          "enum": [
+	            "bd_strict",
+	            "offline_evidence_only"
+	          ],
+	          "default": "bd_strict"
+	        },
+	        "require_council_on_high_impact": {
+	          "type": "boolean",
+	          "default": true
+	        },
+	        "require_independent_critic": {
+	          "type": "boolean",
+	          "default": true
+	        },
+	        "require_gate_runner": {
+	          "type": "boolean",
+	          "default": true
+	        },
+	        "preflight_command": {
+	          "type": "string",
+	          "default": "autocodex harness preflight --strict"
+	        },
+	        "role_pack_path": {
+	          "type": "string",
+	          "default": ".codex"
+	        },
+	        "eval": {
+	          "type": "object",
+	          "additionalProperties": false,
+	          "properties": {
+	            "enabled": {
+	              "type": "boolean",
+	              "default": true
+	            },
+	            "min_scenarios": {
+	              "type": "integer",
+	              "minimum": 0,
+	              "default": 6
+	            },
+	            "min_pass_rate": {
+	              "type": "number",
+	              "minimum": 0,
+	              "maximum": 1,
+	              "default": 1
+	            },
+	            "max_soft_failures": {
+	              "type": "integer",
+	              "minimum": 0,
+	              "default": 0
+	            }
+	          }
+	        }
+	      }
+	    },
+	        "stop_conditions": {
+	          "type": "object",
+	          "additionalProperties": false,
+	          "properties": {
             "max_fix_attempts": {
               "type": "integer",
               "minimum": 0,

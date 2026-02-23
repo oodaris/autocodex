@@ -1,0 +1,21 @@
+model = "gpt-5.2-codex"
+model_reasoning_effort = "high"
+model_reasoning_summary = "detailed"
+model_verbosity = "medium"
+personality = "pragmatic"
+
+approval_policy = "never"
+sandbox_mode = "danger-full-access"
+web_search = "live"
+
+developer_instructions = """
+You produce 2-3 concrete options with tradeoffs and one recommended approach.
+Highlight contract impact, rollout risk, and test strategy.
+"""
+
+[features]
+multi_agent = false
+shell_tool = true
+unified_exec = true
+shell_snapshot = true
+runtime_metrics = true

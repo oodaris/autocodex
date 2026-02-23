@@ -40,6 +40,10 @@ type ActionGates struct {
 	Tests          []string `json:"tests,omitempty"`
 	Evidence       []string `json:"evidence,omitempty"`
 	Verification   []string `json:"verification,omitempty"`
+	HighImpact     bool     `json:"high_impact,omitempty"`
+	CouncilVerdict string   `json:"council_verdict,omitempty"`
+	CriticVerdict  string   `json:"critic_verdict,omitempty"`
+	QualityPassed  *bool    `json:"quality_gate_passed,omitempty"`
 	Blocking       bool     `json:"blocking"`
 }
 
@@ -121,6 +125,38 @@ func (c *Controller) applyActions(beadID string, actions *Actions) (string, bool
 	if actions.Gates != nil {
 		if actions.Gates.Blocking || actions.Gates.ReviewRequired {
 			gateFailure = true
+		}
+	}
+	if c.Config.Autonomy.Harness.Enabled {
+		highImpact := c.Config.Autonomy.Harness.ImpactMode == "high"
+		if actions.Gates != nil && actions.Gates.HighImpact {
+			highImpact = true
+		}
+		if highImpact {
+			if c.Config.Autonomy.Harness.RequireCouncilOnHighImpact != nil && *c.Config.Autonomy.Harness.RequireCouncilOnHighImpact {
+				if actions.Gates == nil || actions.Gates.CouncilVerdict != "GREEN" {
+					gateFailure = true
+					if strings.TrimSpace(stopReason) == "" {
+						stopReason = "high-impact closure blocked: council_verdict must be GREEN"
+					}
+				}
+			}
+			if c.Config.Autonomy.Harness.RequireIndependentCritic != nil && *c.Config.Autonomy.Harness.RequireIndependentCritic {
+				if actions.Gates == nil || actions.Gates.CriticVerdict != "GO" {
+					gateFailure = true
+					if strings.TrimSpace(stopReason) == "" {
+						stopReason = "high-impact closure blocked: critic_verdict must be GO"
+					}
+				}
+			}
+			if c.Config.Autonomy.Harness.RequireGateRunner != nil && *c.Config.Autonomy.Harness.RequireGateRunner {
+				if actions.Gates == nil || actions.Gates.QualityPassed == nil || !*actions.Gates.QualityPassed {
+					gateFailure = true
+					if strings.TrimSpace(stopReason) == "" {
+						stopReason = "high-impact closure blocked: quality_gate_passed must be true"
+					}
+				}
+			}
 		}
 	}
 

@@ -102,6 +102,20 @@
             "type": "string"
           }
         },
+        "high_impact": {
+          "type": "boolean"
+        },
+        "council_verdict": {
+          "type": "string",
+          "enum": ["GREEN", "YELLOW", "RED"]
+        },
+        "critic_verdict": {
+          "type": "string",
+          "enum": ["GO", "NO_GO"]
+        },
+        "quality_gate_passed": {
+          "type": "boolean"
+        },
         "blocking": {
           "type": "boolean"
         }

@@ -60,6 +60,8 @@ func main() {
 		printVersion()
 	case "config":
 		runConfig(os.Args[2:])
+	case "harness":
+		runHarness(os.Args[2:])
 	default:
 		usage()
 		os.Exit(1)
@@ -68,13 +70,13 @@ func main() {
 
 func usage() {
 	fmt.Println("Usage: autocodex <command> [args]")
-	fmt.Println("Commands: bootstrap, init, run, once, resume, doctor, kill, snapshot, runs, cleanup, status, beads, plugins, api, ui, version, config")
+	fmt.Println("Commands: bootstrap, init, run, once, resume, doctor, harness, kill, snapshot, runs, cleanup, status, beads, plugins, api, ui, version, config")
 	fmt.Println("Shortcut: autocodex \"<task>\" (implicit run with --task)")
 }
 
 func isCommand(value string) bool {
 	switch value {
-	case "bootstrap", "init", "run", "once", "resume", "doctor", "kill", "snapshot", "runs", "cleanup", "status", "beads", "plugins", "api", "ui", "version", "config":
+	case "bootstrap", "init", "run", "once", "resume", "doctor", "harness", "kill", "snapshot", "runs", "cleanup", "status", "beads", "plugins", "api", "ui", "version", "config":
 		return true
 	default:
 		return false

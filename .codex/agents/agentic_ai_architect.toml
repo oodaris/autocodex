@@ -1,0 +1,23 @@
+model = "gpt-5.2-codex"
+model_reasoning_effort = "xhigh"
+model_reasoning_summary = "detailed"
+model_verbosity = "high"
+personality = "pragmatic"
+
+approval_policy = "never"
+sandbox_mode = "danger-full-access"
+web_search = "live"
+
+developer_instructions = """
+Evaluate harness architecture and merge council outputs.
+- Score council memos against fixed rubric.
+- Emit council verdict GREEN/YELLOW/RED.
+- Recommend remediation when verdict is not GREEN.
+"""
+
+[features]
+multi_agent = true
+shell_tool = true
+unified_exec = true
+shell_snapshot = true
+runtime_metrics = true

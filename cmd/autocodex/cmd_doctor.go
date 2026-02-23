@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"flag"
 	"fmt"
 	"net"
@@ -55,6 +56,7 @@ func runDoctorChecks(cfg config.Config, configPath string) []checkResult {
 	results = append(results, checkGitRepo())
 	results = append(results, checkCommandOnPath("codex"))
 	results = append(results, checkCodexVersion())
+	results = append(results, checkCodexFeatures())
 	if cfg.Autonomy.RequireBD != nil && *cfg.Autonomy.RequireBD {
 		results = append(results, checkCommandOnPath("bd"))
 	} else {
@@ -184,6 +186,68 @@ func checkCodexVersion() checkResult {
 		}
 	}
 	return checkResult{Name: "codex-version", Status: "ok", Details: versionText, Required: false}
+}
+
+func checkCodexFeatures() checkResult {
+	path, err := exec.LookPath("codex")
+	if err != nil {
+		return checkResult{Name: "codex-features", Status: "warn", Details: "codex not found; skipping feature checks", Required: false}
+	}
+	out, err := exec.Command(path, "features", "list").CombinedOutput()
+	if err != nil {
+		return checkResult{Name: "codex-features", Status: "warn", Details: fmt.Sprintf("codex features list failed: %v", err), Required: false}
+	}
+	features := parseCodexFeatureList(string(out))
+	if len(features) == 0 {
+		return checkResult{Name: "codex-features", Status: "warn", Details: "no feature rows parsed from codex features list", Required: false}
+	}
+
+	required := []string{"shell_tool", "unified_exec", "shell_snapshot", "collaboration_modes"}
+	recommended := []string{"multi_agent", "runtime_metrics", "memory_tool", "child_agents_md"}
+	missingRequired := []string{}
+	missingRecommended := []string{}
+	for _, name := range required {
+		if !features[name] {
+			missingRequired = append(missingRequired, name)
+		}
+	}
+	for _, name := range recommended {
+		if !features[name] {
+			missingRecommended = append(missingRecommended, name)
+		}
+	}
+
+	if len(missingRequired) > 0 {
+		details := fmt.Sprintf("missing required features: %s", strings.Join(missingRequired, ", "))
+		if len(missingRecommended) > 0 {
+			details += fmt.Sprintf("; missing recommended features: %s", strings.Join(missingRecommended, ", "))
+		}
+		return checkResult{Name: "codex-features", Status: "warn", Details: details, Required: false}
+	}
+	details := "required feature set available"
+	if len(missingRecommended) > 0 {
+		details += fmt.Sprintf("; missing recommended features: %s", strings.Join(missingRecommended, ", "))
+	}
+	return checkResult{Name: "codex-features", Status: "ok", Details: details, Required: false}
+}
+
+func parseCodexFeatureList(raw string) map[string]bool {
+	rows := map[string]bool{}
+	scanner := bufio.NewScanner(strings.NewReader(raw))
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if line == "" {
+			continue
+		}
+		fields := strings.Fields(line)
+		if len(fields) < 3 {
+			continue
+		}
+		name := fields[0]
+		enabled := strings.EqualFold(fields[len(fields)-1], "true")
+		rows[name] = enabled
+	}
+	return rows
 }
 
 func checkMemoryDir(cfg config.Config) checkResult {

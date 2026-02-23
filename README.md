@@ -21,6 +21,7 @@ autocodex orchestrates a structured loop: ideate → plan → implement → revi
 - Hub mode for multi-repo dashboards
 - Terminal sessions (websocket PTY)
 - Optional token auth for the API/UI
+- Optional Harness v2 policy pack (preflight/lint gates + high-impact closure enforcement)
 
 ## Install
 
@@ -67,7 +68,7 @@ autocodex plugins --action list
   - Recommended: `codex-cli >= 0.94.0` (older versions may work but have different defaults around approvals/search/modes)
 - Beads (`bd`) optional, required when `autonomy.require_bd: true`
   - Tested with: `bd 0.50.3`
-  - Repo note (contributors): this repo's `.beads` uses the Dolt backend (`.beads/dolt`, gitignored). Verify with `bd backend show --json`.
+  - Repo note (contributors): this repo's `.beads` uses the Dolt backend (`.beads/dolt`, gitignored). Verify with `bd info --json` (or `bd backend show --json` on newer bd versions).
 
 **Build / contributor requirements**
 - Go 1.26+ (only if installing via `go install` or building from source)
@@ -95,6 +96,12 @@ brew install steveyegge/beads/bd
 **Docs**
 - CLI reference: `docs/CLI.md`
 - Parallelism & collaboration: `docs/parallelism-and-collaboration.md`
+
+**Harness readiness (recommended before high-impact autonomy work)**
+```bash
+autocodex harness preflight --strict
+python3 scripts/harness_config_lint.py
+```
 
 ### What happens on run
 ```
@@ -144,6 +151,7 @@ autocodex ui
 > ⚡ **Parallelism vs collaboration**
 > `--swarm` uses the autocodex coordinator to run **multiple Codex processes** in parallel.
 > Codex `collaboration_mode/preset` controls **role‑style collaboration inside a single process**.
+> Codex `multi_agent` capabilities are treated as optional acceleration, not the source of scheduling truth.
 > Use both if you want parallel beads **and** in‑process collaboration.
 
 Disable collaboration for a single run:
@@ -242,6 +250,8 @@ Notes:
 - Memory docs are isolated per bead under `memory/beads/<id>`.
 - Codex CLI must be installed and reachable (`codex` on PATH or `codex.cli_path`).
 - `bd` is optional; without it, bead creation/updates are skipped with a warning.
+- Harness mode is opt-in via `autonomy.harness.enabled`.
+- In `autonomy.harness.impact_mode: high`, closure requires council `GREEN`, critic `GO`, and `quality_gate_passed: true` in ACTIONS gates.
 </details>
 
 ## Configuration

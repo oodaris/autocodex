@@ -31,6 +31,9 @@ func TestIsCommand(t *testing.T) {
 	if !isCommand("run") {
 		t.Fatalf("expected run to be a command")
 	}
+	if !isCommand("harness") {
+		t.Fatalf("expected harness to be a command")
+	}
 	if isCommand("nope") {
 		t.Fatalf("expected unknown command to be false")
 	}
@@ -195,7 +198,6 @@ func TestLimitRunStatuses(t *testing.T) {
 		t.Fatalf("expected no limit when <=0")
 	}
 }
-
 
 func TestLatestRunID(t *testing.T) {
 	base := t.TempDir()

@@ -1,0 +1,182 @@
+{
+  "version": "1.0",
+  "generated_at": "2026-02-23T00:00:00Z",
+  "source_plan": "docs/plans/autocodex-harness-v2-rollout-rfc.md",
+  "tasks": [
+    {
+      "id": "autocodex-hv2-0",
+      "title": "Draft Harness v2 RFC/spec/tasks artifacts",
+      "goal": "Create the rollout spec, RFC plan, and machine-readable tasks to drive implementation and evidence.",
+      "files": [
+        "docs/specs/autocodex-harness-v2-rollout.md",
+        "docs/plans/autocodex-harness-v2-rollout-rfc.md",
+        "docs/plans/autocodex-harness-v2-rollout-tasks.json"
+      ],
+      "acceptance_criteria": [
+        "RFC includes phase backlog, dependencies, acceptance criteria, and rollout/rollback notes.",
+        "Tasks JSON validates against docs/contracts/autonomy-tasks.schema.json."
+      ],
+      "gates": {
+        "verification": [
+          "go test ./internal/contracts -run TestAutonomyTasksSchema -v"
+        ],
+        "evidence": [
+          "docs/specs/autocodex-harness-v2-rollout.md",
+          "docs/plans/autocodex-harness-v2-rollout-rfc.md"
+        ]
+      },
+      "dependencies": [],
+      "status": "done",
+      "priority": 1
+    },
+    {
+      "id": "autocodex-hv2-1",
+      "title": "Add full .codex Harness v2 role pack",
+      "goal": "Introduce project-scoped role configs and orchestration policy pack for Harness v2 operation.",
+      "files": [
+        ".codex/config.toml",
+        ".codex/agents/"
+      ],
+      "acceptance_criteria": [
+        "All required role TOMLs exist and are referenced from .codex/config.toml.",
+        "Operating pack documents patterns A/E and gate requirements for high-impact work."
+      ],
+      "dependencies": [
+        "autocodex-hv2-0"
+      ],
+      "status": "done",
+      "priority": 1
+    },
+    {
+      "id": "autocodex-hv2-2",
+      "title": "Add harness lint, preflight, and eval docs",
+      "goal": "Provide executable governance checks and deterministic eval assets for Harness policy changes.",
+      "files": [
+        "scripts/harness_config_lint.py",
+        "scripts/dev/harness-cli-preflight.sh",
+        "docs/runbooks/harness-cli-preflight.md",
+        "docs/agents/harness-evals/README.md",
+        "docs/agents/harness-evals/golden-task-catalog.md",
+        "docs/agents/harness-evals/failure-mode-catalog.md"
+      ],
+      "acceptance_criteria": [
+        "Harness lint validates pack invariants and exits non-zero on policy drift.",
+        "Preflight runs doctor + lint and emits pass/fail summary.",
+        "Eval docs define deterministic run protocol and thresholds."
+      ],
+      "dependencies": [
+        "autocodex-hv2-1"
+      ],
+      "status": "done",
+      "priority": 1
+    },
+    {
+      "id": "autocodex-hv2-3",
+      "title": "Add autonomy.harness config model + schema + docs",
+      "goal": "Add first-class harness configuration in runtime model, defaults, validation, schema, and docs.",
+      "files": [
+        "internal/config/config.go",
+        "internal/config/config_defaults.go",
+        "internal/config/config_validate.go",
+        "docs/contracts/config.schema.json",
+        "docs/config/README.md",
+        "config.example.yaml",
+        "cmd/autocodex/embedded_config.example.yaml"
+      ],
+      "acceptance_criteria": [
+        "autonomy.harness keys load with safe defaults.",
+        "Invalid harness config values are rejected by validation and schema."
+      ],
+      "dependencies": [
+        "autocodex-hv2-0"
+      ],
+      "status": "done",
+      "priority": 1
+    },
+    {
+      "id": "autocodex-hv2-4",
+      "title": "Add harness preflight command and feature-aware doctor checks",
+      "goal": "Add `autocodex harness preflight` and Codex feature capability checks in doctor.",
+      "files": [
+        "cmd/autocodex/main.go",
+        "cmd/autocodex/cmd_harness.go",
+        "cmd/autocodex/cmd_doctor.go",
+        "cmd/autocodex/cmd_doctor_test.go",
+        "cmd/autocodex/main_test.go"
+      ],
+      "acceptance_criteria": [
+        "`autocodex harness preflight --strict` executes doctor + harness lint checks.",
+        "Doctor surfaces missing required Codex features as warnings/errors with actionable details."
+      ],
+      "dependencies": [
+        "autocodex-hv2-2",
+        "autocodex-hv2-3"
+      ],
+      "status": "done",
+      "priority": 1
+    },
+    {
+      "id": "autocodex-hv2-5",
+      "title": "Enforce high-impact council/critic/quality gate policy",
+      "goal": "Block autonomy closure in high-impact harness mode unless council GREEN, critic GO, and non-blocking gates are present.",
+      "files": [
+        "docs/contracts/autonomy-actions.schema.json",
+        "internal/autonomy/actions.go",
+        "internal/autonomy/controller.go",
+        "internal/autonomy/coordinator.go",
+        "internal/autonomy/actions_test.go",
+        "internal/autonomy/strictness_test.go"
+      ],
+      "acceptance_criteria": [
+        "High-impact runs fail with clear reason when gate verdicts are missing or negative.",
+        "Low-impact/default runs remain backward compatible."
+      ],
+      "dependencies": [
+        "autocodex-hv2-4"
+      ],
+      "status": "done",
+      "priority": 1
+    },
+    {
+      "id": "autocodex-hv2-6",
+      "title": "Add lifecycle and admission metadata to run events",
+      "goal": "Emit deterministic lifecycle/admission metadata and event types for replay/debugging.",
+      "files": [
+        "internal/state/events.go",
+        "internal/state/runs.go",
+        "internal/state/control.go",
+        "internal/orchestrator/orchestrator.go",
+        "internal/orchestrator/orchestrator_test.go"
+      ],
+      "acceptance_criteria": [
+        "Run events include run_id, idempotency_key, attempt, admission_decision, queue_state, retry_backoff_ms.",
+        "Lifecycle event set includes thread_started/turn_started/item_started/item_completed/turn_completed/thread_completed/thread_failed."
+      ],
+      "dependencies": [
+        "autocodex-hv2-5"
+      ],
+      "status": "done",
+      "priority": 1
+    },
+    {
+      "id": "autocodex-hv2-7",
+      "title": "Finalize verification, docs, and rollout notes",
+      "goal": "Complete gate matrix, finalize docs updates, and produce rollout/rollback evidence for closure.",
+      "files": [
+        "README.md",
+        "docs/AGENTS.md",
+        "docs/parallelism-and-collaboration.md",
+        "docs/plans/autocodex-harness-v2-rollout-rfc.md"
+      ],
+      "acceptance_criteria": [
+        "Phase gate matrix and evidence checklist are completed.",
+        "Docs clearly describe harness mode and how it differs from coordinator/collaboration."
+      ],
+      "dependencies": [
+        "autocodex-hv2-6"
+      ],
+      "status": "done",
+      "priority": 2
+    }
+  ]
+}

@@ -21,7 +21,7 @@ AGENTS.md is the agent-focused companion to README. Keep it short, prescriptive,
 - Backend: Dolt (embedded). Database state lives under `.beads/dolt` (gitignored).
 - Sync branch: `beads-sync` (configured via `.beads/config.yaml` `sync-branch`).
 - Canonical issue log: `.beads/issues.jsonl` is tracked on the `beads-sync` branch (not `main`). Run `bd sync` before `git push` so beads data is committed/pushed.
-- Health checks: `bd backend show --json` and `bd doctor --migration=post`.
+- Health checks: `bd info --json` (or `bd backend show --json` on newer bd) and `bd doctor --migration=post`.
 
 ### bd task template
 ```md
@@ -72,6 +72,17 @@ autocodex "Add a quick summary to memory docs."
 - The **test** phase should emit an `ACTIONS` JSON block (per `docs/contracts/autonomy-actions.schema.json`) so autocodex can update bead status and select the next bead.
 - Gate failures stop the loop and auto-create a fix bead when enabled.
 - Plans must include explicit must-have gates (tests, runtime verification, evidence paths) so autonomy can enforce completion.
+
+## 2.3) Harness v2 flow (repo default policy)
+- Run preflight before high-impact autonomy changes:
+  - `autocodex harness preflight --strict`
+  - `python3 scripts/harness_config_lint.py`
+- Harness controls live under `autonomy.harness.*` in config.
+- High-impact closure requires ACTIONS gates with:
+  - `council_verdict: GREEN`
+  - `critic_verdict: GO`
+  - `quality_gate_passed: true`
+- The autocodex coordinator is still the deterministic outer scheduler for parallelism; Codex multi-agent features are optional acceleration only.
 
 ## 3) Commands
 - Go tests: `go test ./...`

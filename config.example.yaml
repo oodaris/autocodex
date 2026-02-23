@@ -116,6 +116,20 @@ autonomy:
     max_parallel: 2 # 0 = unlimited
     strategy: bead
     fail_fast: false
+  harness:
+    enabled: false
+    impact_mode: normal
+    strict_tracking_mode: bd_strict
+    require_council_on_high_impact: true
+    require_independent_critic: true
+    require_gate_runner: true
+    preflight_command: autocodex harness preflight --strict
+    role_pack_path: .codex
+    eval:
+      enabled: true
+      min_scenarios: 6
+      min_pass_rate: 1.0
+      max_soft_failures: 0
   stop_conditions:
     max_fix_attempts: 3
     max_beads: 0

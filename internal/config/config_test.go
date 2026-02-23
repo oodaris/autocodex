@@ -69,6 +69,36 @@ func TestLoadAppliesDefaults(t *testing.T) {
 	if cfg.Autonomy.Coordinator.MaxParallel == nil || *cfg.Autonomy.Coordinator.MaxParallel == 0 {
 		t.Fatalf("expected autonomy coordinator max_parallel default")
 	}
+	if cfg.Autonomy.Harness.ImpactMode != "normal" {
+		t.Fatalf("expected harness impact_mode default normal")
+	}
+	if cfg.Autonomy.Harness.StrictTrackingMode != "bd_strict" {
+		t.Fatalf("expected harness strict_tracking_mode default bd_strict")
+	}
+	if cfg.Autonomy.Harness.RequireCouncilOnHighImpact == nil || !*cfg.Autonomy.Harness.RequireCouncilOnHighImpact {
+		t.Fatalf("expected harness require_council_on_high_impact default true")
+	}
+	if cfg.Autonomy.Harness.RequireIndependentCritic == nil || !*cfg.Autonomy.Harness.RequireIndependentCritic {
+		t.Fatalf("expected harness require_independent_critic default true")
+	}
+	if cfg.Autonomy.Harness.RequireGateRunner == nil || !*cfg.Autonomy.Harness.RequireGateRunner {
+		t.Fatalf("expected harness require_gate_runner default true")
+	}
+	if cfg.Autonomy.Harness.PreflightCommand == "" {
+		t.Fatalf("expected harness preflight command default")
+	}
+	if cfg.Autonomy.Harness.RolePackPath != ".codex" {
+		t.Fatalf("expected harness role pack path default .codex")
+	}
+	if cfg.Autonomy.Harness.Eval.Enabled == nil || !*cfg.Autonomy.Harness.Eval.Enabled {
+		t.Fatalf("expected harness eval enabled default true")
+	}
+	if cfg.Autonomy.Harness.Eval.MinScenarios != 6 {
+		t.Fatalf("expected harness eval min scenarios default 6")
+	}
+	if cfg.Autonomy.Harness.Eval.MinPassRate != 1.0 {
+		t.Fatalf("expected harness eval min pass rate default 1.0")
+	}
 }
 
 func TestValidateRejectsInvalidMode(t *testing.T) {
@@ -151,6 +181,24 @@ func TestValidateRejectsInvalidCoordinatorStrategy(t *testing.T) {
 	cfg := Config{Version: "v1", Mode: "yolo"}
 	cfg.ApplyDefaults()
 	cfg.Autonomy.Coordinator.Strategy = "nope"
+	if err := cfg.Validate(); err == nil {
+		t.Fatalf("expected validation error")
+	}
+}
+
+func TestValidateRejectsInvalidHarnessImpactMode(t *testing.T) {
+	cfg := Config{Version: "v1", Mode: "yolo"}
+	cfg.ApplyDefaults()
+	cfg.Autonomy.Harness.ImpactMode = "critical"
+	if err := cfg.Validate(); err == nil {
+		t.Fatalf("expected validation error")
+	}
+}
+
+func TestValidateRejectsInvalidHarnessTrackingMode(t *testing.T) {
+	cfg := Config{Version: "v1", Mode: "yolo"}
+	cfg.ApplyDefaults()
+	cfg.Autonomy.Harness.StrictTrackingMode = "jira_strict"
 	if err := cfg.Validate(); err == nil {
 		t.Fatalf("expected validation error")
 	}

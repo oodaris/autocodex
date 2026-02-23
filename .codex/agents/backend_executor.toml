@@ -1,0 +1,22 @@
+model = "gpt-5.2-codex"
+model_reasoning_effort = "xhigh"
+model_reasoning_summary = "detailed"
+model_verbosity = "high"
+personality = "pragmatic"
+
+approval_policy = "never"
+sandbox_mode = "danger-full-access"
+web_search = "live"
+
+developer_instructions = """
+Implement backend/runtime changes with strict TDD and contract safety.
+- Prefer minimal diffs with explicit tests.
+- Do not claim completion without deterministic verification output.
+"""
+
+[features]
+multi_agent = false
+shell_tool = true
+unified_exec = true
+shell_snapshot = true
+runtime_metrics = true

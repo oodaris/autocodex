@@ -2,6 +2,7 @@ package orchestrator
 
 import (
 	"context"
+	"errors"
 	"io"
 	"log/slog"
 	"os"
@@ -23,6 +24,14 @@ type fakeExecutor struct {
 func (f *fakeExecutor) Exec(ctx context.Context, prompt string) (codex.ExecResult, error) {
 	f.called++
 	return codex.ExecResult{Stdout: "ok"}, nil
+}
+
+type failingExecutor struct {
+	err error
+}
+
+func (f *failingExecutor) Exec(ctx context.Context, prompt string) (codex.ExecResult, error) {
+	return codex.ExecResult{}, f.err
 }
 
 type orchestratorLogRecord struct {
@@ -377,4 +386,148 @@ func TestReviewGuardrailSkipsExec(t *testing.T) {
 	if _, err := os.Stat(skippedPath); err != nil {
 		t.Fatalf("expected review-skipped.txt: %v", err)
 	}
+}
+
+func TestRunEmitsLifecycleMetadata(t *testing.T) {
+	base := t.TempDir()
+	store := state.NewStore(
+		filepath.Join(base, "state"),
+		filepath.Join(base, "runs"),
+		filepath.Join(base, "memory"),
+		filepath.Join(base, "logs"),
+		filepath.Join(base, "artifacts"),
+	)
+	if err := store.InitDirs(); err != nil {
+		t.Fatalf("init dirs: %v", err)
+	}
+	if err := store.EnsureMemoryDocs(); err != nil {
+		t.Fatalf("ensure memory docs: %v", err)
+	}
+
+	var cfg config.Config
+	cfg.ApplyDefaults()
+	cfg.Loop.Mode = "single"
+	cfg.Loop.Phases = []string{"ideate"}
+	cfg.Codex.TimeoutSeconds = 1
+
+	exec := &fakeExecutor{}
+	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
+	orch := Orchestrator{Config: cfg, Store: store, Logger: logger, Codex: exec}
+
+	run, err := orch.Run(context.Background())
+	if err != nil {
+		t.Fatalf("run: %v", err)
+	}
+	events, err := store.ListEvents(run.ID)
+	if err != nil {
+		t.Fatalf("list events: %v", err)
+	}
+
+	requiredTypes := []string{
+		"run_start",
+		"thread_started",
+		"phase_start",
+		"turn_started",
+		"item_started",
+		"phase_complete",
+		"item_completed",
+		"turn_completed",
+		"thread_completed",
+		"run_complete",
+	}
+	requiredMetaKeys := []string{
+		"run_id",
+		"idempotency_key",
+		"attempt",
+		"admission_decision",
+		"queue_state",
+		"retry_backoff_ms",
+		"thread_id",
+		"turn_id",
+		"item_id",
+	}
+
+	for _, eventType := range requiredTypes {
+		event := findEventByType(events, eventType)
+		if event == nil {
+			t.Fatalf("missing event type: %s", eventType)
+		}
+		for _, key := range requiredMetaKeys {
+			value, ok := event.Meta[key]
+			if !ok || strings.TrimSpace(value) == "" {
+				t.Fatalf("event %s missing required meta key %s", eventType, key)
+			}
+		}
+	}
+}
+
+func TestRunFailureEmitsThreadFailedLifecycle(t *testing.T) {
+	base := t.TempDir()
+	store := state.NewStore(
+		filepath.Join(base, "state"),
+		filepath.Join(base, "runs"),
+		filepath.Join(base, "memory"),
+		filepath.Join(base, "logs"),
+		filepath.Join(base, "artifacts"),
+	)
+	if err := store.InitDirs(); err != nil {
+		t.Fatalf("init dirs: %v", err)
+	}
+	if err := store.EnsureMemoryDocs(); err != nil {
+		t.Fatalf("ensure memory docs: %v", err)
+	}
+
+	var cfg config.Config
+	cfg.ApplyDefaults()
+	cfg.Loop.Mode = "single"
+	cfg.Loop.Phases = []string{"ideate"}
+	cfg.Codex.TimeoutSeconds = 1
+
+	exec := &failingExecutor{err: errors.New("boom")}
+	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
+	orch := Orchestrator{Config: cfg, Store: store, Logger: logger, Codex: exec}
+
+	run, err := orch.Run(context.Background())
+	if err == nil {
+		t.Fatalf("expected run failure")
+	}
+	if run == nil {
+		t.Fatalf("expected run metadata on failure")
+	}
+	events, listErr := store.ListEvents(run.ID)
+	if listErr != nil {
+		t.Fatalf("list events: %v", listErr)
+	}
+	requiredMetaKeys := []string{
+		"run_id",
+		"idempotency_key",
+		"attempt",
+		"admission_decision",
+		"queue_state",
+		"retry_backoff_ms",
+		"thread_id",
+		"turn_id",
+		"item_id",
+	}
+	for _, eventType := range []string{"phase_failed", "item_completed", "turn_completed", "thread_failed"} {
+		event := findEventByType(events, eventType)
+		if event == nil {
+			t.Fatalf("missing event type: %s", eventType)
+		}
+		for _, key := range requiredMetaKeys {
+			value, ok := event.Meta[key]
+			if !ok || strings.TrimSpace(value) == "" {
+				t.Fatalf("event %s missing required meta key %s", eventType, key)
+			}
+		}
+	}
+}
+
+func findEventByType(events []state.RunEvent, eventType string) *state.RunEvent {
+	for i := range events {
+		if events[i].Type == eventType {
+			return &events[i]
+		}
+	}
+	return nil
 }

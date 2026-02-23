@@ -93,3 +93,20 @@ func TestSemverLess(t *testing.T) {
 		t.Fatalf("expected 0.93.1 !< 0.93.0")
 	}
 }
+
+func TestParseCodexFeatureList(t *testing.T) {
+	raw := `shell_tool stable true
+unified_exec stable true
+multi_agent experimental false
+`
+	features := parseCodexFeatureList(raw)
+	if !features["shell_tool"] {
+		t.Fatalf("expected shell_tool=true")
+	}
+	if !features["unified_exec"] {
+		t.Fatalf("expected unified_exec=true")
+	}
+	if features["multi_agent"] {
+		t.Fatalf("expected multi_agent=false")
+	}
+}

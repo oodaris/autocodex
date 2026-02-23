@@ -136,6 +136,7 @@ type AutonomyConfig struct {
 	TasksOutputTemplate string                    `yaml:"tasks_output_template"`
 	StopConditions      AutonomyStopConditions    `yaml:"stop_conditions"`
 	Coordinator         AutonomyCoordinatorConfig `yaml:"coordinator"`
+	Harness             AutonomyHarnessConfig     `yaml:"harness"`
 }
 
 type AutonomyStopConditions struct {
@@ -149,6 +150,25 @@ type AutonomyCoordinatorConfig struct {
 	MaxParallel *int   `yaml:"max_parallel"`
 	Strategy    string `yaml:"strategy"`
 	FailFast    bool   `yaml:"fail_fast"`
+}
+
+type AutonomyHarnessConfig struct {
+	Enabled                    bool                      `yaml:"enabled"`
+	ImpactMode                 string                    `yaml:"impact_mode"`
+	StrictTrackingMode         string                    `yaml:"strict_tracking_mode"`
+	RequireCouncilOnHighImpact *bool                     `yaml:"require_council_on_high_impact"`
+	RequireIndependentCritic   *bool                     `yaml:"require_independent_critic"`
+	RequireGateRunner          *bool                     `yaml:"require_gate_runner"`
+	PreflightCommand           string                    `yaml:"preflight_command"`
+	RolePackPath               string                    `yaml:"role_pack_path"`
+	Eval                       AutonomyHarnessEvalConfig `yaml:"eval"`
+}
+
+type AutonomyHarnessEvalConfig struct {
+	Enabled         *bool   `yaml:"enabled"`
+	MinScenarios    int     `yaml:"min_scenarios"`
+	MinPassRate     float64 `yaml:"min_pass_rate"`
+	MaxSoftFailures int     `yaml:"max_soft_failures"`
 }
 
 type StopConditionsConfig struct {

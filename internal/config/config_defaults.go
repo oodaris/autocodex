@@ -201,6 +201,43 @@ func (c *Config) ApplyDefaults() {
 		enabled := true
 		c.Autonomy.StopConditions.StopOnGateFailure = &enabled
 	}
+	if c.Autonomy.Harness.ImpactMode == "" {
+		c.Autonomy.Harness.ImpactMode = "normal"
+	}
+	if c.Autonomy.Harness.StrictTrackingMode == "" {
+		c.Autonomy.Harness.StrictTrackingMode = "bd_strict"
+	}
+	if c.Autonomy.Harness.RequireCouncilOnHighImpact == nil {
+		enabled := true
+		c.Autonomy.Harness.RequireCouncilOnHighImpact = &enabled
+	}
+	if c.Autonomy.Harness.RequireIndependentCritic == nil {
+		enabled := true
+		c.Autonomy.Harness.RequireIndependentCritic = &enabled
+	}
+	if c.Autonomy.Harness.RequireGateRunner == nil {
+		enabled := true
+		c.Autonomy.Harness.RequireGateRunner = &enabled
+	}
+	if c.Autonomy.Harness.PreflightCommand == "" {
+		c.Autonomy.Harness.PreflightCommand = "autocodex harness preflight --strict"
+	}
+	if c.Autonomy.Harness.RolePackPath == "" {
+		c.Autonomy.Harness.RolePackPath = ".codex"
+	}
+	if c.Autonomy.Harness.Eval.Enabled == nil {
+		enabled := true
+		c.Autonomy.Harness.Eval.Enabled = &enabled
+	}
+	if c.Autonomy.Harness.Eval.MinScenarios == 0 {
+		c.Autonomy.Harness.Eval.MinScenarios = 6
+	}
+	if c.Autonomy.Harness.Eval.MinPassRate == 0 {
+		c.Autonomy.Harness.Eval.MinPassRate = 1.0
+	}
+	if c.Autonomy.Harness.Eval.MaxSoftFailures == 0 {
+		c.Autonomy.Harness.Eval.MaxSoftFailures = 0
+	}
 }
 
 func defaultPluginPaths() []string {

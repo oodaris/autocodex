@@ -152,3 +152,59 @@ func configWithActionsSchema(path string) config.Config {
 func writeArtifact(path, payload string) error {
 	return os.WriteFile(path, []byte(payload), 0o644)
 }
+
+func TestApplyActionsHighImpactRequiresGateVerdicts(t *testing.T) {
+	cfg := config.Config{}
+	cfg.ApplyDefaults()
+	cfg.Autonomy.Harness.Enabled = true
+	cfg.Autonomy.Harness.ImpactMode = "high"
+	cfg.Beads.AutoUpdate = false
+
+	ctrl := Controller{Config: cfg}
+	stopReason, gateFailure, _, err := ctrl.applyActions("", &Actions{
+		Version: "1.0",
+		Summary: "test",
+		Next:    ActionNext{Type: "none"},
+		Gates:   &ActionGates{Blocking: false},
+	})
+	if err != nil {
+		t.Fatalf("apply actions: %v", err)
+	}
+	if !gateFailure {
+		t.Fatalf("expected gate failure when high-impact verdicts are missing")
+	}
+	if stopReason == "" {
+		t.Fatalf("expected stop reason for high-impact gate failure")
+	}
+}
+
+func TestApplyActionsHighImpactPassesWithRequiredVerdicts(t *testing.T) {
+	cfg := config.Config{}
+	cfg.ApplyDefaults()
+	cfg.Autonomy.Harness.Enabled = true
+	cfg.Autonomy.Harness.ImpactMode = "high"
+	cfg.Beads.AutoUpdate = false
+
+	qualityPassed := true
+	ctrl := Controller{Config: cfg}
+	stopReason, gateFailure, _, err := ctrl.applyActions("", &Actions{
+		Version: "1.0",
+		Summary: "test",
+		Next:    ActionNext{Type: "none"},
+		Gates: &ActionGates{
+			Blocking:       false,
+			CouncilVerdict: "GREEN",
+			CriticVerdict:  "GO",
+			QualityPassed:  &qualityPassed,
+		},
+	})
+	if err != nil {
+		t.Fatalf("apply actions: %v", err)
+	}
+	if gateFailure {
+		t.Fatalf("did not expect gate failure when required high-impact verdicts are present")
+	}
+	if stopReason != "" {
+		t.Fatalf("expected empty stop reason, got %q", stopReason)
+	}
+}

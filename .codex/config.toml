@@ -1,0 +1,111 @@
+#:schema https://developers.openai.com/codex/config-schema.json
+
+profile = "max_capability"
+
+model = "gpt-5.2-codex"
+review_model = "gpt-5.2-codex"
+model_reasoning_effort = "xhigh"
+model_reasoning_summary = "detailed"
+model_verbosity = "high"
+personality = "pragmatic"
+
+approval_policy = "never"
+sandbox_mode = "danger-full-access"
+web_search = "live"
+project_doc_max_bytes = 524288
+tool_output_token_limit = 120000
+
+[features]
+multi_agent = true
+unified_exec = true
+shell_snapshot = true
+shell_tool = true
+collaboration_modes = true
+runtime_metrics = true
+memory_tool = true
+sqlite = true
+child_agents_md = true
+enable_request_compression = true
+steer = true
+personality = true
+
+[agents]
+max_threads = 64
+
+[agents.workflow_orchestrator]
+description = "Canonical control plane for Harness v2 in autocodex."
+config_file = "agents/workflow_orchestrator.toml"
+
+[agents.requirements_clarifier]
+description = "Resolves ambiguity before implementation."
+config_file = "agents/requirements_clarifier.toml"
+
+[agents.design_strategist]
+description = "Produces options + recommendation with tradeoffs."
+config_file = "agents/design_strategist.toml"
+
+[agents.tracking_operator]
+description = "Maintains BD task graph, file claims, and evidence pointers."
+config_file = "agents/tracking_operator.toml"
+
+[agents.backend_executor]
+description = "Implements backend/runtime changes with TDD discipline."
+config_file = "agents/backend_executor.toml"
+
+[agents.frontend_executor]
+description = "Implements frontend/UI changes with typed contracts."
+config_file = "agents/frontend_executor.toml"
+
+[agents.browser_validator]
+description = "Runs deterministic browser checks when UI behavior changes."
+config_file = "agents/browser_validator.toml"
+
+[agents.quality_gate_runner]
+description = "Runs non-bypassable verification gate matrix."
+config_file = "agents/quality_gate_runner.toml"
+
+[agents.independent_critic]
+description = "Independent severity-ranked review gate."
+config_file = "agents/independent_critic.toml"
+
+[agents.commit_curator]
+description = "Produces clean conventional commits and commit hygiene checks."
+config_file = "agents/commit_curator.toml"
+
+[agents.release_evidence_operator]
+description = "Verifies closure evidence and rollout/rollback notes."
+config_file = "agents/release_evidence_operator.toml"
+
+[agents.agentic_ai_architect]
+description = "Runs council rubric merge and Harness-v2 architecture checks."
+config_file = "agents/agentic_ai_architect.toml"
+
+[profiles.max_capability]
+model = "gpt-5.2-codex"
+review_model = "gpt-5.2-codex"
+model_reasoning_effort = "xhigh"
+model_reasoning_summary = "detailed"
+model_verbosity = "high"
+personality = "pragmatic"
+approval_policy = "never"
+sandbox_mode = "danger-full-access"
+web_search = "live"
+project_doc_max_bytes = 524288
+tool_output_token_limit = 120000
+
+[profiles.max_capability.features]
+multi_agent = true
+unified_exec = true
+shell_snapshot = true
+shell_tool = true
+collaboration_modes = true
+runtime_metrics = true
+memory_tool = true
+sqlite = true
+child_agents_md = true
+enable_request_compression = true
+steer = true
+personality = true
+
+[profiles.max_capability.agents]
+max_threads = 64

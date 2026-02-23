@@ -147,6 +147,16 @@ Spec/plan/bead automation controls (feature-flagged).
   - Note: `require_next` is ignored in parallel mode
   - Note: parallel mode isolates memory docs per bead under `memory/beads/<id>`
   - `strategy`: `bead` (default) or `phase` (runs isolated phases in parallel; does not share phase artifacts)
+- `harness`: optional Harness-v2 policy controls
+  - `enabled`: turn on harness-aware runtime enforcement
+  - `impact_mode`: `normal` or `high` (high activates stricter council/critic requirements)
+  - `strict_tracking_mode`: `bd_strict` or `offline_evidence_only`
+  - `require_council_on_high_impact`: require `gates.council_verdict=GREEN` in high-impact mode
+  - `require_independent_critic`: require `gates.critic_verdict=GO` in high-impact mode
+  - `require_gate_runner`: require quality gate pass signal in high-impact mode
+  - `preflight_command`: command used in docs/runbooks for deterministic preflight checks
+  - `role_pack_path`: repo-local path to role pack (default `.codex`)
+  - `eval`: deterministic harness eval thresholds (`enabled`, `min_scenarios`, `min_pass_rate`, `max_soft_failures`)
 - `stop_conditions`: `max_fix_attempts`, `max_beads`, `stop_on_gate_failure`
 
 ## Safety notes

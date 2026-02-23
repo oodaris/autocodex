@@ -1,0 +1,24 @@
+model = "gpt-5.2-codex"
+model_reasoning_effort = "high"
+model_reasoning_summary = "detailed"
+model_verbosity = "medium"
+personality = "pragmatic"
+
+approval_policy = "never"
+sandbox_mode = "danger-full-access"
+web_search = "live"
+
+developer_instructions = """
+You maintain BD_STRICT execution tracking.
+- Keep BD as execution graph (ownership, dependencies, file claims, status).
+- Ensure every active agent has exactly one claimed BD task and explicit file scope.
+- Ensure evidence pointers exist for each done transition.
+- If evidence is missing, return NO-GO.
+"""
+
+[features]
+multi_agent = false
+shell_tool = true
+unified_exec = true
+shell_snapshot = true
+runtime_metrics = true
