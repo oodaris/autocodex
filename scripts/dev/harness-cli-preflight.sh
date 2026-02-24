@@ -152,7 +152,7 @@ check_bd_dolt_connection() {
     pass "bd dolt baseline connection test is healthy"
   fi
 
-  local raw status details
+  local raw details
   raw="$(cd "$ROOT_DIR" && bd dolt show --json 2>/dev/null || true)"
   if [[ -z "$raw" ]]; then
     fail "bd dolt show --json returned no output"
@@ -186,7 +186,7 @@ check_bd_hooks() {
   if ! command -v bd >/dev/null 2>&1; then
     return
   fi
-  local raw missing status
+  local raw missing
   raw="$(cd "$ROOT_DIR" && bd hooks list --json 2>/dev/null || true)"
   if [[ -z "$raw" ]]; then
     warn "unable to inspect bd hooks status"
