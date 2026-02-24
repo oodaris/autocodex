@@ -9,9 +9,12 @@ Semantic Versioning.
 
 ### Added
 - `autocodex bootstrap --profile` support with `max_capability`, `balanced`, and `max_throughput` presets.
+- `autocodex bootstrap --ready` to run strict harness readiness checks as part of bootstrap.
+- `autocodex bootstrap --smoke-task "<task>"` to execute an optional post-bootstrap smoke task with the configured profile.
 
 ### Changed
 - Config now includes a top-level `profile` field (default `max_capability`) and bootstrap applies selected profile defaults automatically for new configs or explicit `--profile` runs.
+- Bootstrap now supports an end-to-end readiness workflow (repo setup -> strict preflight/lint -> optional smoke run) for faster onboarding validation.
 
 ## [0.8.5] - 2026-02-24
 

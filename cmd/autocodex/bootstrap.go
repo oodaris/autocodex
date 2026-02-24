@@ -10,19 +10,116 @@ import (
 	"github.com/oodaris/autocodex/internal/state"
 )
 
+var (
+	bootstrapRepoRunner        = bootstrapRepo
+	bootstrapReadyChecksRunner = runBootstrapReadyChecks
+	bootstrapSmokeTaskRunner   = runBootstrapSmokeTask
+)
+
 func runBootstrap(args []string) {
 	fs := flag.NewFlagSet("bootstrap", flag.ExitOnError)
 	configPath := fs.String("config", config.ResolveConfigPath(), "Config file path")
 	profile := fs.String("profile", "", "bootstrap profile: max_capability|balanced|max_throughput (default: profile from config or max_capability)")
+	ready := fs.Bool("ready", false, "run strict readiness checks after bootstrap (harness preflight + harness lint)")
+	smokeTask := fs.String("smoke-task", "", "optional task to run after bootstrap using current config/profile")
 	force := fs.Bool("force", false, "overwrite existing templates, schemas, and skills")
 	initGit := fs.Bool("init-git", true, "initialize a git repo if missing")
 	initBD := fs.Bool("init-bd", true, "initialize beads if missing")
 	fs.Parse(args)
 
-	if err := bootstrapRepo(*configPath, strings.TrimSpace(*profile), *force, *initGit, *initBD); err != nil {
+	if err := runBootstrapWorkflow(
+		*configPath,
+		strings.TrimSpace(*profile),
+		*force,
+		*initGit,
+		*initBD,
+		*ready,
+		strings.TrimSpace(*smokeTask),
+	); err != nil {
 		exitErr(err)
 	}
 	fmt.Printf("Bootstrap complete. Config: %s\n", *configPath)
+}
+
+func runBootstrapWorkflow(
+	configPath string,
+	requestedProfile string,
+	force bool,
+	initGit bool,
+	initBD bool,
+	ready bool,
+	smokeTask string,
+) error {
+	if err := bootstrapRepoRunner(configPath, requestedProfile, force, initGit, initBD); err != nil {
+		return err
+	}
+	if ready {
+		if err := bootstrapReadyChecksRunner(configPath); err != nil {
+			return err
+		}
+	}
+	if strings.TrimSpace(smokeTask) != "" {
+		if err := bootstrapSmokeTaskRunner(configPath, smokeTask); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func runBootstrapReadyChecks(configPath string) error {
+	fmt.Println("Running bootstrap readiness checks...")
+
+	cfg, err := config.Load(configPath)
+	if err != nil {
+		return err
+	}
+
+	checks, hasFailure := runHarnessPreflightChecks(cfg, configPath, true)
+	if err := printHarnessPreflightChecks(checks, false); err != nil {
+		return err
+	}
+	if hasFailure {
+		return fmt.Errorf("harness preflight found issues")
+	}
+
+	// Keep an explicit standalone lint pass so bootstrap --ready mirrors the
+	// documented sequence and captures a separate lint result.
+	lintResult := runHarnessLint()
+	lintResult.Name = "harness.lint-standalone"
+	if err := printHarnessPreflightChecks([]harnessCheck{lintResult}, false); err != nil {
+		return err
+	}
+	if lintResult.Status == "error" {
+		return fmt.Errorf("harness lint failed: %s", lintResult.Details)
+	}
+
+	fmt.Println("Bootstrap readiness checks passed.")
+	return nil
+}
+
+func runBootstrapSmokeTask(configPath, task string) error {
+	task = strings.TrimSpace(task)
+	if task == "" {
+		return nil
+	}
+
+	fmt.Printf("Running bootstrap smoke task: %s\n", task)
+
+	cfg, err := config.Load(configPath)
+	if err != nil {
+		return err
+	}
+
+	taskPayload, err := applyTaskInput(&cfg, task)
+	if err != nil {
+		return err
+	}
+	if err := runLoopWithTask(cfg, taskPayload); err != nil {
+		return err
+	}
+
+	fmt.Println("Bootstrap smoke task completed.")
+	return nil
 }
 
 func bootstrapRepo(configPath string, requestedProfile string, force bool, initGit bool, initBD bool) error {

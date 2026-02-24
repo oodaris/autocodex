@@ -72,6 +72,17 @@ autocodex bootstrap --profile balanced
 autocodex bootstrap --profile max_throughput
 ```
 
+Readiness-checked bootstrap (recommended for contributor onboarding):
+```bash
+autocodex bootstrap --profile max_capability --ready
+```
+
+Optional one-command bootstrap + smoke run:
+```bash
+autocodex bootstrap --profile max_capability --ready \
+  --smoke-task "Review backend API and fix issues."
+```
+
 ## Run a loop
 
 After `init` or `bootstrap`, you can run the loop:

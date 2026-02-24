@@ -7,7 +7,7 @@
 autocodex orchestrates a structured loop: ideate → plan → implement → review → test. It uses Beads for task tracking, runs the local Codex CLI, and supports external plugins via JSON‑RPC.
 
 > 🚀 **Quickstart**
-> 1) `autocodex bootstrap --profile max_capability`  
+> 1) `autocodex bootstrap --profile max_capability --ready`  
 > 2) `autocodex "Review backend API and fix issues."`  
 > 3) `autocodex ui`
 
@@ -150,6 +150,17 @@ autocodex bootstrap --profile balanced
 autocodex bootstrap --profile max_throughput
 ```
 
+Run strict harness readiness checks as part of bootstrap:
+```bash
+autocodex bootstrap --profile max_capability --ready
+```
+
+Optional: run a post-bootstrap smoke task with your current config/profile:
+```bash
+autocodex bootstrap --profile max_capability --ready \
+  --smoke-task "Review backend API and fix issues."
+```
+
 ### Run a task
 ```bash
 autocodex "Review backend API and fix issues."
@@ -235,6 +246,9 @@ autocodex cleanup --run <run-id>
 | `--start-phase` | run/once/resume | start at a specific phase |
 | `--use-latest-artifacts` | run/once/resume | reuse latest spec/plan |
 | `--swarm` | run/once/resume | force coordinator (parallel beads) |
+| `--profile` | bootstrap | apply a config profile preset |
+| `--ready` | bootstrap | run strict harness readiness checks post-bootstrap |
+| `--smoke-task` | bootstrap | run one optional smoke task post-bootstrap |
 | `--no-collaboration` | run/once/resume | disable collaboration defaults |
 | `--collaboration-mode` / `--preset` | run/once/resume | collaboration settings |
 | `--run` | resume/snapshot/kill/cleanup | run id |

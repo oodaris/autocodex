@@ -147,6 +147,12 @@ func runOnce(args []string) {
 }
 
 func runLoop(cfg config.Config, taskPayload string) {
+	if err := runLoopWithTask(cfg, taskPayload); err != nil {
+		exitErr(err)
+	}
+}
+
+func runLoopWithTask(cfg config.Config, taskPayload string) error {
 	logger := logging.NewLogger(cfg.Logging.Level, cfg.Logging.Format)
 	store := state.NewStore(cfg.StateDir(), cfg.RunsDir(), cfg.MemoryDir(), cfg.LogsDir(), cfg.ArtifactsDir())
 	loader := skills.Loader{Paths: cfg.Skills.Paths}
@@ -196,13 +202,14 @@ func runLoop(cfg config.Config, taskPayload string) {
 			Codex:  runner,
 		}
 		if _, err := controller.Run(ctx, autonomy.Input{Task: taskPayload}); err != nil {
-			exitErr(err)
+			return err
 		}
-		return
+		return nil
 	}
 	if _, err := orch.Run(ctx); err != nil {
-		exitErr(err)
+		return err
 	}
+	return nil
 }
 
 func ensureConfig(path string) error {
