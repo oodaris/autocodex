@@ -5,7 +5,7 @@
 id: beads-0.56.1-upgrade-spike
 spec: docs/specs/beads-0.56.1-upgrade-spike.md
 owner: platform-core
-status: in_progress
+status: done
 created: 2026-02-24
 updated: 2026-02-24
 ```
