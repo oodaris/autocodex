@@ -53,6 +53,10 @@ Flags:
 - `--start-phase`: start at a specific phase (ideate/plan/implement/review/test)
 - `--use-latest-artifacts`: when starting after ideate, append latest spec/plan paths to the task (default true)
 - `--swarm`: force bead-parallel coordinator and set max_parallel to unlimited for the run (enables autonomy)
+- `--bead-scope`: override coordinator selection mode (`run_scoped|all_ready`)
+- `--allow-all-ready-fallback`: allow fallback to all ready beads when scoped selection has no matches
+- `--bead`: optional comma-separated bead ids to run
+- `--bead-prefix`: optional bead id prefix filter
 - `--no-collaboration`: disable Codex collaboration for this run
 - `--collaboration-mode`: override Codex collaboration mode (passed via `-c collaboration_mode=...`)
 - `--preset`: override Codex collaboration preset (passed via `-c collaboration_mode_preset=...`, requires `--collaboration-mode`)
@@ -80,6 +84,10 @@ Flags:
 - `--force`: resume even if run is still running, or to resume a completed run
 - `--list`: list runs and exit (TTY selection if run id not provided)
 - `--swarm`: force bead-parallel coordinator and set max_parallel to unlimited for the run (enables autonomy)
+- `--bead-scope`: override coordinator selection mode (`run_scoped|all_ready`)
+- `--allow-all-ready-fallback`: allow fallback to all ready beads when scoped selection has no matches
+- `--bead`: optional comma-separated bead ids to run
+- `--bead-prefix`: optional bead id prefix filter
 - `--no-collaboration`: disable Codex collaboration for this run
 - `--collaboration-mode`: override Codex collaboration mode (passed via `-c collaboration_mode=...`)
 - `--preset`: override Codex collaboration preset (passed via `-c collaboration_mode_preset=...`, requires `--collaboration-mode`)

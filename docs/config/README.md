@@ -146,9 +146,16 @@ Spec/plan/bead automation controls (feature-flagged).
   - `max_parallel`: max concurrent beads (default 2, `0` = unlimited)
   - `strategy`: `bead` runs beads in parallel; `phase` runs isolated phases in parallel and does not share artifacts between phases
   - `fail_fast`: stop all parallel beads on the first error (default false)
-  - Note: `require_next` is ignored in parallel mode
+  - `selection_mode`: `run_scoped` (default) or `all_ready`
+  - `allow_all_ready_fallback`: allow fallback to all ready beads when scoped selection has no matches (default false)
+  - `failure_summary_limit`: cap for aggregated bead failure summaries in coordinator errors (default 5)
+  - `bead_ids`, `bead_prefix`: optional runtime selectors for narrowed execution
+  - Note: when `require_next=true`, coordinator forces single-worker execution to preserve explicit-next semantics
   - Note: parallel mode isolates memory docs per bead under `memory/beads/<id>`
   - `strategy`: `bead` (default) or `phase` (runs isolated phases in parallel; does not share phase artifacts)
+ - `gate`: gate-policy controls
+   - `max_fix_attempts_scope`: `global` (default) persists fix attempts across runs, `run` resets attempts per run
+   - `fix_attempts_store`: JSON store path for persisted fix attempts (default `artifacts/autonomy/fix_attempts.json`, resolved under `paths.state_dir` when relative)
 - `harness`: optional Harness-v2 policy controls
   - `enabled`: turn on harness-aware runtime enforcement
   - `impact_mode`: `normal` or `high` (high activates stricter council/critic requirements)

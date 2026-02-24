@@ -7,6 +7,20 @@ Semantic Versioning.
 
 ## [Unreleased]
 
+### Added
+- Autonomy coordinator controls for run-scoped bead selection (`selection_mode`), selector filters (`bead_ids`, `bead_prefix`), and bounded failure aggregation (`failure_summary_limit`).
+- CLI overrides for coordinator scoping/filtering on `run`, `once`, and `resume` (`--bead-scope`, `--allow-all-ready-fallback`, `--bead`, `--bead-prefix`).
+- Persistent fix-attempt tracking controls under `autonomy.gate.*` with configurable run/global scope and store path.
+
+### Changed
+- High-impact Harness v2 gating now enforces eval metrics from ACTIONS (`eval_scenarios`, `eval_pass_rate`, `eval_soft_failures`) against configured thresholds.
+- Coordinator `require_next` now enforces single-worker execution when parallelism is configured.
+- Default fix-attempt store path is now `artifacts/autonomy/fix_attempts.json` and resolves under `paths.state_dir` when relative.
+
+### Fixed
+- Gate failures now report bead-scoped errors and aggregated coordinator failure summaries instead of only returning the first error.
+- Fix-bead generation now uses deterministic IDs, avoids nested `fix-fix-*` prefixes, and links fix beads to parent dependencies.
+
 ## [0.8.7] - 2026-02-24
 
 ### Fixed
