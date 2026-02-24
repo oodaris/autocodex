@@ -38,7 +38,7 @@ curl -fsSL https://raw.githubusercontent.com/oodaris/autocodex/main/scripts/inst
 > 💡 **Tip**
 > Pin a version or install to a custom path:
 > ```bash
-> VERSION=0.5.1 DEST=~/.local/bin \
+> VERSION=0.8.5 DEST=~/.local/bin \
 >   curl -fsSL https://raw.githubusercontent.com/oodaris/autocodex/main/scripts/install.sh | bash
 > ```
 
@@ -64,12 +64,12 @@ autocodex plugins --action list
 
 **Runtime requirements (binary users)**
 - Codex CLI on PATH (`codex --version`)
-  - Tested with: `codex-cli 0.101.0`
+  - Tested with: `codex-cli 0.104.0`
   - Recommended: `codex-cli >= 0.94.0` (older versions may work but have different defaults around approvals/search/modes)
 - Beads (`bd`) optional, required when `autonomy.require_bd: true`
   - Tested with: `bd 0.56.1`
   - Recommended: `bd >= 0.56.1` for strict doctor/preflight checks in this repo
-  - Repo note (contributors): this repo's `.beads` uses the Dolt backend (`.beads/dolt`, gitignored). Verify with `bd info --json` and `bd dolt show --json`.
+  - Repo note (contributors): this repo's `.beads` uses the Dolt backend (`.beads/dolt`, gitignored). Verify with `bd backend show --json` and `bd dolt show --json`.
   - If `bd` reports Dolt server unreachable, start: `dolt sql-server --data-dir "$(pwd)/.beads/dolt" --host 127.0.0.1 --port 3307`
   - `bd sync` is deprecated/no-op in this setup; use Dolt-native workflow (`bd dolt test`, optional `bd dolt pull/push` when remotes are configured).
   - Treat `.beads/issues.jsonl` as a compatibility mirror only, not source-of-truth state.
@@ -99,7 +99,9 @@ brew install steveyegge/beads/bd
 
 **Docs**
 - CLI reference: `docs/CLI.md`
+- Config reference + profiles: `docs/config/README.md` (`max_capability`, `balanced`, `max_throughput`)
 - Parallelism & collaboration: `docs/parallelism-and-collaboration.md`
+- Harness preflight runbook: `docs/runbooks/harness-cli-preflight.md`
 
 **Harness readiness (recommended before high-impact autonomy work)**
 ```bash
@@ -176,6 +178,11 @@ Use profile-style settings from `docs/config/README.md`:
 - `max_throughput`: lower latency/cost with collaboration disabled.
 
 See the exact YAML snippets in `docs/config/README.md#recommended-profiles`.
+
+Repo default profile (as of `v0.8.5`):
+- `autonomy.coordinator.enabled: true`
+- `autonomy.coordinator.max_parallel: 4`
+- `autonomy.harness.enabled: true`
 
 ## Parallelism & collaboration
 - **Guaranteed parallelism**: `autocodex run --swarm`  
