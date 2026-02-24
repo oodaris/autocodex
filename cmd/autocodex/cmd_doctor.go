@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"context"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -12,6 +13,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/oodaris/autocodex/internal/config"
 )
@@ -22,6 +24,8 @@ type checkResult struct {
 	Details  string
 	Required bool
 }
+
+const doctorCommandTimeout = 15 * time.Second
 
 func runDoctor(args []string) {
 	fs := flag.NewFlagSet("doctor", flag.ExitOnError)
@@ -172,7 +176,7 @@ func checkCodexVersion() checkResult {
 		return checkResult{Name: "codex-version", Status: "warn", Details: "codex not found; skipping version check", Required: false}
 	}
 
-	out, err := exec.Command(path, "--version").CombinedOutput()
+	out, err := runCommandOutput(path, "--version")
 	if err != nil {
 		return checkResult{Name: "codex-version", Status: "warn", Details: fmt.Sprintf("codex --version failed: %v", err), Required: false}
 	}
@@ -200,7 +204,7 @@ func checkCodexVersion() checkResult {
 }
 
 func checkBDVersion(path string) checkResult {
-	out, err := exec.Command(path, "--version").CombinedOutput()
+	out, err := runCommandOutput(path, "--version")
 	if err != nil {
 		return checkResult{Name: "bd-version", Status: "warn", Details: fmt.Sprintf("bd --version failed: %v", err), Required: false}
 	}
@@ -225,7 +229,7 @@ func assessBDVersionOutput(raw string) (string, string) {
 }
 
 func checkBDDoltReadiness(path string) checkResult {
-	out, err := exec.Command(path, "dolt", "show", "--json").CombinedOutput()
+	out, err := runCommandOutput(path, "dolt", "show", "--json")
 	text := strings.TrimSpace(string(out))
 	if err != nil {
 		details := text
@@ -260,7 +264,7 @@ func assessBDDoltShowOutput(raw string) (string, string) {
 	case strings.Contains(lower, "server reachable"), strings.Contains(text, "✓"):
 		return "ok", summary + " (server reachable)"
 	case mode == "server":
-		return "ok", summary + " (server mode)"
+		return "warn", summary + " (server mode; reachability unknown)"
 	default:
 		return "warn", summary + " (unable to determine server reachability)"
 	}
@@ -303,7 +307,7 @@ func assessBDDoltShowJSON(raw string) (string, string, bool) {
 				return "ok", summary + " (server reachable)", true
 			}
 		}
-		return "ok", summary + " (server mode)", true
+		return "warn", summary + " (server mode; reachability unknown)", true
 	}
 	if mode != "" {
 		return "warn", summary + fmt.Sprintf(" (unsupported mode %q)", mode), true
@@ -444,7 +448,7 @@ func checkCodexFeatures() checkResult {
 	if err != nil {
 		return checkResult{Name: "codex-features", Status: "warn", Details: "codex not found; skipping feature checks", Required: false}
 	}
-	out, err := exec.Command(path, "features", "list").CombinedOutput()
+	out, err := runCommandOutput(path, "features", "list")
 	if err != nil {
 		return checkResult{Name: "codex-features", Status: "warn", Details: fmt.Sprintf("codex features list failed: %v", err), Required: false}
 	}
@@ -480,6 +484,12 @@ func checkCodexFeatures() checkResult {
 		details += fmt.Sprintf("; missing recommended features: %s", strings.Join(missingRecommended, ", "))
 	}
 	return checkResult{Name: "codex-features", Status: "ok", Details: details, Required: false}
+}
+
+func runCommandOutput(path string, args ...string) ([]byte, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), doctorCommandTimeout)
+	defer cancel()
+	return exec.CommandContext(ctx, path, args...).CombinedOutput()
 }
 
 func parseCodexFeatureList(raw string) map[string]bool {

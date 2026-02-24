@@ -26,7 +26,8 @@ autocodex harness preflight --strict
 
 ## Troubleshooting
 1. If `bd` is uninitialized in this clone, run:
-   - `bd init --from-jsonl`
+   - `bd onboard`
+   - optional mirror setup: `bd migrate sync beads-sync`
 2. If `bd --version` is below `0.56.1`, upgrade before strict preflight:
    - `go install github.com/steveyegge/beads/cmd/bd@v0.56.1`
    - or `npm i -g @beads/bd`

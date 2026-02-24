@@ -42,7 +42,7 @@ check_bd_state() {
     if [[ "$single_line" == *"Dolt server unreachable"* ]] || [[ "$single_line" == *"connect: connection refused"* ]]; then
       fail "bd cannot reach Dolt server (run: dolt sql-server --data-dir \"$ROOT_DIR/.beads/dolt\" --host 127.0.0.1 --port 3307)"
     elif [[ "$single_line" == *"bd init"* ]]; then
-      fail "bd repository is not initialized (run: cd \"$ROOT_DIR\" && bd init --from-jsonl)"
+      fail "bd repository is not initialized (run: cd \"$ROOT_DIR\" && bd onboard; optional mirror setup: bd migrate sync beads-sync)"
     else
       fail "bd repository check failed ($single_line)"
     fi
@@ -105,11 +105,37 @@ except Exception:
 backend = data.get("backend", "")
 host = data.get("host", "")
 port = data.get("port", "")
+mode = str(data.get("mode", "")).strip().lower()
 ok = data.get("connection_ok")
-if ok is True:
-    print(f"backend={backend} host={host} port={port}")
+reachable = data.get("server_reachable", data.get("reachable"))
+
+def as_bool(value):
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        text = value.strip().lower()
+        if text in {"true", "1", "yes", "ok", "reachable", "connected"}:
+            return True
+        if text in {"false", "0", "no", "unreachable", "failed", "disconnected"}:
+            return False
+    return None
+
+if mode == "embedded":
+    print(f"backend={backend} mode=embedded host={host} port={port}")
     sys.exit(0)
-print(f"backend={backend} host={host} port={port}")
+
+if as_bool(ok) is True or as_bool(reachable) is True:
+    print(f"backend={backend} mode={mode} host={host} port={port}")
+    sys.exit(0)
+if as_bool(ok) is False or as_bool(reachable) is False:
+    print(f"backend={backend} mode={mode} host={host} port={port}")
+    sys.exit(1)
+
+if mode == "server":
+    print(f"backend={backend} mode=server host={host} port={port}")
+    sys.exit(1)
+
+print(f"backend={backend} mode={mode} host={host} port={port}")
 sys.exit(1)
 PY
 )"
@@ -176,20 +202,26 @@ PY
 }
 
 check_harness_preflight() {
-  if command -v autocodex >/dev/null 2>&1; then
-    if (cd "$ROOT_DIR" && autocodex harness preflight --config "$ROOT_DIR/config.example.yaml" --strict >/dev/null 2>&1); then
-      pass "autocodex harness preflight passes"
-    else
-      fail "autocodex harness preflight failed"
-    fi
-  else
-    warn "autocodex binary not on PATH; using go run harness preflight"
+  if command -v go >/dev/null 2>&1; then
     if (cd "$ROOT_DIR" && go run ./cmd/autocodex harness preflight --config "$ROOT_DIR/config.example.yaml" --strict >/dev/null 2>&1); then
       pass "go-run harness preflight passes"
     else
       fail "go-run harness preflight failed"
     fi
+    return
   fi
+
+  if command -v autocodex >/dev/null 2>&1; then
+    warn "go not found; using autocodex from PATH (may not match repo source)"
+    if (cd "$ROOT_DIR" && autocodex harness preflight --config "$ROOT_DIR/config.example.yaml" --strict >/dev/null 2>&1); then
+      pass "autocodex harness preflight passes"
+    else
+      fail "autocodex harness preflight failed"
+    fi
+    return
+  fi
+
+  fail "neither go nor autocodex command is available to run harness preflight"
 }
 
 check_harness_lint() {

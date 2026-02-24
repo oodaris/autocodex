@@ -1,7 +1,10 @@
 package main
 
 import (
+	"encoding/json"
+	"io"
 	"os"
+	"strings"
 	"testing"
 )
 
@@ -34,5 +37,47 @@ func TestRunHarnessLintMissingScript(t *testing.T) {
 	result := runHarnessLint()
 	if result.Status != "error" {
 		t.Fatalf("expected lint error when script missing, got %s", result.Status)
+	}
+}
+
+func TestIsHarnessHelpArg(t *testing.T) {
+	if !isHarnessHelpArg("-h") || !isHarnessHelpArg("--help") {
+		t.Fatalf("expected harness help args to be true")
+	}
+	if isHarnessHelpArg("help") {
+		t.Fatalf("expected bare help to be false for help-arg helper")
+	}
+}
+
+func TestRunHarnessUsageOnHelp(t *testing.T) {
+	out := captureStdout(t, func() {
+		runHarness([]string{"--help"})
+	})
+	if !strings.Contains(out, "Usage: autocodex harness <subcommand> [args]") {
+		t.Fatalf("expected harness usage output")
+	}
+}
+
+func TestHarnessPreflightJSONOutputIsParseable(t *testing.T) {
+	checks := []harnessCheck{
+		{Name: "doctor.config", Status: "ok", Details: "validated"},
+		{Name: "harness.lint", Status: "ok", Details: "ok"},
+	}
+	out := captureStdout(t, func() {
+		if err := printHarnessPreflightChecks(checks, true); err != nil {
+			t.Fatalf("print checks: %v", err)
+		}
+	})
+	decoder := json.NewDecoder(strings.NewReader(out))
+	var parsed []harnessCheck
+	if err := decoder.Decode(&parsed); err != nil {
+		t.Fatalf("expected parseable json output, got error: %v", err)
+	}
+	if len(parsed) != 2 {
+		t.Fatalf("expected two checks, got %d", len(parsed))
+	}
+	var tail any
+	if err := decoder.Decode(&tail); err != io.EOF {
+		t.Fatalf("expected no trailing output after json, got: %v", err)
 	}
 }

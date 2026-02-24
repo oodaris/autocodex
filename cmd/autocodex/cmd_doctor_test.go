@@ -181,6 +181,21 @@ func TestAssessBDDoltShowOutput(t *testing.T) {
 		t.Fatalf("unexpected server details: %q", details)
 	}
 
+	serverJSONUnknown := `{
+  "backend": "dolt",
+  "database": "beads",
+  "mode": "server",
+  "host": "127.0.0.1",
+  "port": 3307
+}`
+	status, details = assessBDDoltShowOutput(serverJSONUnknown)
+	if status != "warn" {
+		t.Fatalf("expected warn for server mode with unknown reachability, got %s", status)
+	}
+	if !strings.Contains(details, "reachability unknown") {
+		t.Fatalf("unexpected server unknown details: %q", details)
+	}
+
 	reachable := `Dolt Configuration
 ==================
   Mode:     server
@@ -211,6 +226,20 @@ func TestAssessBDDoltShowOutput(t *testing.T) {
 	}
 	if !strings.Contains(details, "server not reachable") {
 		t.Fatalf("unexpected unreachable details: %q", details)
+	}
+
+	serverUnknown := `Dolt Configuration
+==================
+  Mode:     server
+  Database: beads
+  Host:     127.0.0.1
+  Port:     3307`
+	status, details = assessBDDoltShowOutput(serverUnknown)
+	if status != "warn" {
+		t.Fatalf("expected warn for text server mode with unknown reachability, got %s", status)
+	}
+	if !strings.Contains(details, "reachability unknown") {
+		t.Fatalf("unexpected unknown reachability details: %q", details)
 	}
 
 	embedded := `Dolt Configuration

@@ -23,15 +23,32 @@ type harnessCheck struct {
 
 func runHarness(args []string) {
 	if len(args) == 0 {
-		fmt.Println("Usage: autocodex harness <subcommand> [args]")
-		fmt.Println("Subcommands: preflight")
+		printHarnessUsage()
 		exitErr(errors.New("harness subcommand required"))
+	}
+	if isHarnessHelpArg(args[0]) || args[0] == "help" {
+		printHarnessUsage()
+		return
 	}
 	switch args[0] {
 	case "preflight":
 		runHarnessPreflight(args[1:])
 	default:
 		exitErr(fmt.Errorf("unknown harness subcommand: %s", args[0]))
+	}
+}
+
+func printHarnessUsage() {
+	fmt.Println("Usage: autocodex harness <subcommand> [args]")
+	fmt.Println("Subcommands: preflight")
+}
+
+func isHarnessHelpArg(value string) bool {
+	switch value {
+	case "-h", "--help":
+		return true
+	default:
+		return false
 	}
 }
 
@@ -49,22 +66,31 @@ func runHarnessPreflight(args []string) {
 
 	checks, hasFailure := runHarnessPreflightChecks(cfg, *configPath, *strict)
 
-	if *jsonOutput {
-		data, err := json.MarshalIndent(checks, "", "  ")
-		if err != nil {
-			exitErr(err)
-		}
-		fmt.Println(string(data))
-	} else {
-		for _, check := range checks {
-			fmt.Printf("%-22s %-6s %s\n", check.Name, strings.ToUpper(check.Status), check.Details)
-		}
+	if err := printHarnessPreflightChecks(checks, *jsonOutput); err != nil {
+		exitErr(err)
 	}
 
 	if hasFailure {
 		exitErr(fmt.Errorf("harness preflight found issues"))
 	}
-	fmt.Println("Harness preflight passed.")
+	if !*jsonOutput {
+		fmt.Println("Harness preflight passed.")
+	}
+}
+
+func printHarnessPreflightChecks(checks []harnessCheck, jsonOutput bool) error {
+	if jsonOutput {
+		data, err := json.MarshalIndent(checks, "", "  ")
+		if err != nil {
+			return err
+		}
+		fmt.Println(string(data))
+		return nil
+	}
+	for _, check := range checks {
+		fmt.Printf("%-22s %-6s %s\n", check.Name, strings.ToUpper(check.Status), check.Details)
+	}
+	return nil
 }
 
 func runHarnessPreflightChecks(cfg config.Config, configPath string, strict bool) ([]harnessCheck, bool) {
