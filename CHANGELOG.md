@@ -7,6 +7,9 @@ Semantic Versioning.
 
 ## [Unreleased]
 
+### Changed
+- Repo default config profile now enables Harness v2 and coordinator-based multi-agent execution (`autonomy.harness.enabled: true`, `autonomy.coordinator.enabled: true`, `max_parallel: 4`).
+
 ## [0.8.4] - 2026-02-24
 
 ### Fixed

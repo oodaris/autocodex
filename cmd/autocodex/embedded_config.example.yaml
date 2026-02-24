@@ -111,13 +111,14 @@ autonomy:
   tasks_schema: docs/contracts/autonomy-tasks.schema.json
   actions_schema: docs/contracts/autonomy-actions.schema.json
   tasks_output_template: docs/plans/%s-tasks.json
+  # Harness v2 multi-agent default profile for this repo.
   coordinator:
-    enabled: false
-    max_parallel: 2 # 0 = unlimited
+    enabled: true
+    max_parallel: 4 # set higher for stronger hosts; 0 = unlimited
     strategy: bead
     fail_fast: false
   harness:
-    enabled: false
+    enabled: true
     impact_mode: normal
     strict_tracking_mode: bd_strict
     require_council_on_high_impact: true

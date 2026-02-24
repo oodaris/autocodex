@@ -244,7 +244,7 @@ Parallel coordinator (optional):
 autonomy:
   coordinator:
     enabled: true
-    max_parallel: 2   # 0 = unlimited
+    max_parallel: 4   # 0 = unlimited
     strategy: bead    # or "phase" for isolated phases
     fail_fast: false  # stop all beads on first error
 ```
@@ -254,7 +254,7 @@ Notes:
 - Memory docs are isolated per bead under `memory/beads/<id>`.
 - Codex CLI must be installed and reachable (`codex` on PATH or `codex.cli_path`).
 - `bd` is optional; without it, bead creation/updates are skipped with a warning.
-- Harness mode is opt-in via `autonomy.harness.enabled`.
+- This repo's default config profile enables Harness mode (`autonomy.harness.enabled: true`).
 - In `autonomy.harness.impact_mode: high`, closure requires council `GREEN`, critic `GO`, and `quality_gate_passed: true` in ACTIONS gates.
 </details>
 

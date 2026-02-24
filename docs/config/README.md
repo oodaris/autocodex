@@ -159,6 +159,12 @@ Spec/plan/bead automation controls (feature-flagged).
   - `eval`: deterministic harness eval thresholds (`enabled`, `min_scenarios`, `min_pass_rate`, `max_soft_failures`)
 - `stop_conditions`: `max_fix_attempts`, `max_beads`, `stop_on_gate_failure`
 
+Repo profile note:
+- The repo-shipped bootstrap/example config enables both coordinator and harness by default:
+  - `autonomy.coordinator.enabled: true`
+  - `autonomy.coordinator.max_parallel: 4`
+  - `autonomy.harness.enabled: true`
+
 ## Safety notes
 
 - `mode: yolo` always runs the Codex CLI with `--yolo`. Use intentionally.

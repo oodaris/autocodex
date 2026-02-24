@@ -26,7 +26,7 @@ autonomy:
   coordinator:
     enabled: true
     strategy: bead   # or phase
-    max_parallel: 2  # 0 = unlimited
+    max_parallel: 4  # 0 = unlimited
     fail_fast: false
 ```
 
@@ -136,7 +136,7 @@ artifacts between phases. Use only when phases are truly independent.
 
 Parallel runs can saturate CPU and memory.
 
-- Start with `max_parallel: 2` or `3`
+- Start with `max_parallel: 3` or `4`
 - Increase only if the host has spare CPU/memory
 - Use `fail_fast: true` to stop all on first error if you prefer strict gating
 
