@@ -7,6 +7,26 @@ Semantic Versioning.
 
 ## [Unreleased]
 
+## [0.8.1] - 2026-02-24
+
+### Added
+- Harness v2 operating pack assets under `.codex/agents/` and repo harness documentation/eval catalogs.
+- `autocodex harness preflight` command and strict preflight runbook tooling.
+- Beads 0.56.1 upgrade/runbook artifacts for Dolt-backed readiness checks.
+
+### Changed
+- Doctor checks now include Codex feature-capability validation plus Beads version (`>=0.56.1`) and Dolt readiness assessment.
+- Harness strict mode now promotes actionable doctor warnings to blocking preflight failures.
+- Preflight script now validates Beads hooks status, prefers repo-local `go run` CLI checks, and supports enforced JSONL hook gating (`ENFORCE_JSONL_HOOKS=1`).
+
+### Fixed
+- `autocodex harness --help` now returns harness usage instead of unknown-subcommand failure.
+- `autocodex harness preflight --json` now emits parseable JSON without trailing non-JSON text.
+- Dolt readiness reporting now treats ambiguous server-mode reachability as warning (not pass) and avoids indefinite subprocess hangs via command timeouts.
+
+### Docs
+- Updated release and operator docs for Beads 0.56.1 (`bd sync` deprecated/no-op, Dolt canonical state, hook-enforced JSONL mirror guidance).
+
 ## [0.8.0] - 2026-02-15
 
 ### Added
