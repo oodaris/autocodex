@@ -71,7 +71,8 @@ autocodex plugins --action list
   - Recommended: `bd >= 0.56.1` for strict doctor/preflight checks in this repo
   - Repo note (contributors): this repo's `.beads` uses the Dolt backend (`.beads/dolt`, gitignored). Verify with `bd info --json` and `bd dolt show --json`.
   - If `bd` reports Dolt server unreachable, start: `dolt sql-server --data-dir "$(pwd)/.beads/dolt" --host 127.0.0.1 --port 3307`
-  - `bd sync` refreshes `.beads/issues.jsonl` from Dolt; git commit/push still uses normal git commands.
+  - `bd sync` is deprecated/no-op in this setup; use Dolt-native workflow (`bd dolt test`, optional `bd dolt pull/push` when remotes are configured).
+  - Treat `.beads/issues.jsonl` as a compatibility mirror only, not source-of-truth state.
 
 **Build / contributor requirements**
 - Go 1.26+ (only if installing via `go install` or building from source)

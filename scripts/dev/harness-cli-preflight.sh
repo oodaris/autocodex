@@ -4,6 +4,7 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 FAILURES=0
 TARGET_BD_VERSION="0.56.1"
+ENFORCE_JSONL_HOOKS="${ENFORCE_JSONL_HOOKS:-0}"
 
 pass() {
   printf 'PASS: %s\n' "$1"
@@ -32,10 +33,19 @@ check_bd_state() {
   if ! command -v bd >/dev/null 2>&1; then
     return
   fi
-  if bd info --json >/dev/null 2>&1; then
+  local output
+  if output="$(cd "$ROOT_DIR" && bd info --json 2>&1)"; then
     pass "bd repository state is initialized"
   else
-    fail "bd repository is not initialized (run: bd init --from-jsonl)"
+    local single_line
+    single_line="$(printf '%s' "$output" | tr '\n' ' ')"
+    if [[ "$single_line" == *"Dolt server unreachable"* ]] || [[ "$single_line" == *"connect: connection refused"* ]]; then
+      fail "bd cannot reach Dolt server (run: dolt sql-server --data-dir \"$ROOT_DIR/.beads/dolt\" --host 127.0.0.1 --port 3307)"
+    elif [[ "$single_line" == *"bd init"* ]]; then
+      fail "bd repository is not initialized (run: cd \"$ROOT_DIR\" && bd init --from-jsonl)"
+    else
+      fail "bd repository check failed ($single_line)"
+    fi
   fi
 }
 
@@ -67,16 +77,114 @@ PY
   fi
 }
 
+check_bd_dolt_connection() {
+  if ! command -v bd >/dev/null 2>&1; then
+    return
+  fi
+  local raw status details
+  raw="$(cd "$ROOT_DIR" && bd dolt show --json 2>/dev/null || true)"
+  if [[ -z "$raw" ]]; then
+    fail "bd dolt show --json returned no output"
+    return
+  fi
+
+  set +e
+  details="$(
+    BD_DOLT_SHOW_JSON="$raw" python3 - <<'PY'
+import json
+import os
+import sys
+
+raw = os.environ.get("BD_DOLT_SHOW_JSON", "")
+try:
+    data = json.loads(raw)
+except Exception:
+    print("invalid-json")
+    sys.exit(2)
+
+backend = data.get("backend", "")
+host = data.get("host", "")
+port = data.get("port", "")
+ok = data.get("connection_ok")
+if ok is True:
+    print(f"backend={backend} host={host} port={port}")
+    sys.exit(0)
+print(f"backend={backend} host={host} port={port}")
+sys.exit(1)
+PY
+)"
+  status=$?
+  set -e
+
+  if [[ "$status" -eq 0 ]]; then
+    pass "bd dolt connection is healthy ($details)"
+  elif [[ "$status" -eq 1 ]]; then
+    fail "bd dolt connection is not ready ($details). Start Dolt SQL server: dolt sql-server --data-dir \"$ROOT_DIR/.beads/dolt\" --host 127.0.0.1 --port 3307"
+  else
+    fail "unable to parse bd dolt show --json output"
+  fi
+}
+
+check_bd_hooks() {
+  if ! command -v bd >/dev/null 2>&1; then
+    return
+  fi
+  local raw missing status
+  raw="$(cd "$ROOT_DIR" && bd hooks list --json 2>/dev/null || true)"
+  if [[ -z "$raw" ]]; then
+    warn "unable to inspect bd hooks status"
+    return
+  fi
+
+  set +e
+  missing="$(
+    BD_HOOKS_JSON="$raw" python3 - <<'PY'
+import json
+import os
+import sys
+
+raw = os.environ.get("BD_HOOKS_JSON", "")
+try:
+    data = json.loads(raw)
+except Exception:
+    sys.exit(2)
+
+hooks = data.get("hooks", [])
+missing = [h.get("Name", "") for h in hooks if not h.get("Installed", False)]
+if missing:
+    print(", ".join([name for name in missing if name]))
+    sys.exit(1)
+sys.exit(0)
+PY
+)"
+  status=$?
+  set -e
+  if [[ "$status" -eq 0 ]]; then
+    pass "bd hooks are installed"
+    return
+  fi
+  if [[ "$status" -eq 2 ]]; then
+    warn "unable to parse bd hooks list --json output"
+    return
+  fi
+
+  if [[ "$ENFORCE_JSONL_HOOKS" == "1" ]]; then
+    fail "bd hooks missing ($missing). Run: cd \"$ROOT_DIR\" && bd hooks install"
+  else
+    warn "bd hooks missing ($missing). JSONL mirror may drift; set ENFORCE_JSONL_HOOKS=1 to require hooks"
+  fi
+}
+
 check_harness_preflight() {
   if command -v autocodex >/dev/null 2>&1; then
-    if autocodex harness preflight --config "$ROOT_DIR/config.example.yaml" --strict >/dev/null 2>&1; then
+    if (cd "$ROOT_DIR" && autocodex harness preflight --config "$ROOT_DIR/config.example.yaml" --strict >/dev/null 2>&1); then
       pass "autocodex harness preflight passes"
     else
       fail "autocodex harness preflight failed"
     fi
   else
     warn "autocodex binary not on PATH; using go run harness preflight"
-    if go run ./cmd/autocodex harness preflight --config "$ROOT_DIR/config.example.yaml" --strict >/dev/null 2>&1; then
+    if (cd "$ROOT_DIR" && go run ./cmd/autocodex harness preflight --config "$ROOT_DIR/config.example.yaml" --strict >/dev/null 2>&1); then
       pass "go-run harness preflight passes"
     else
       fail "go-run harness preflight failed"
@@ -99,6 +207,8 @@ main() {
 
   check_bd_state
   check_bd_version
+  check_bd_dolt_connection
+  check_bd_hooks
   check_harness_preflight
   check_harness_lint
 

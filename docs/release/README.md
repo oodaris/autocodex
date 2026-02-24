@@ -12,11 +12,17 @@ Release archives now include prebuilt plugins under `plugins/`.
 
 ## Publish a release
 
-1) Refresh Beads export (`bd sync` updates `.beads/issues.jsonl` from Dolt and does not push git branches):
+1) Validate Beads/Dolt health in this repo:
 ```bash
-bd sync
+bd dolt test --json
+bd vc status
 ```
-   If your team mirrors issue history on `beads-sync`, commit/push that branch with normal git commands after this step.
+   Optional when a Dolt remote is configured:
+```bash
+bd dolt pull
+bd dolt push
+```
+   Note: `bd sync` is deprecated/no-op in `bd 0.56.1`; do not rely on it for release gating.
 2) Update `CHANGELOG.md`.
 3) Smoke test a snapshot build:
 ```bash

@@ -70,9 +70,15 @@ Success criteria:
 - Harness preflight exits successfully.
 
 ## Notes on `bd sync`
-- `bd sync` now refreshes `.beads/issues.jsonl` from Dolt.
-- `bd sync` does not commit or push git branches.
-- If your team maintains a `beads-sync` mirror branch, commit/push that branch explicitly with normal git commands after `bd sync`.
+- `bd sync` is deprecated/no-op in this setup; do not rely on it for data movement.
+- Canonical state is Dolt (`.beads/dolt`), not `.beads/issues.jsonl`.
+- If your team still needs JSONL mirror files, install and enforce hooks:
+```bash
+bd hooks install
+bd hooks list --json
+ENFORCE_JSONL_HOOKS=1 bash scripts/dev/harness-cli-preflight.sh
+```
+- Use `bd dolt pull` / `bd dolt push` only when a Dolt remote is configured.
 
 ## Rollback
 If you need to revert to an older local Beads version for troubleshooting:

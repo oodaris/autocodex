@@ -68,7 +68,7 @@ This plan executes a focused Beads `v0.56.1` compatibility spike for `autocodex`
 - [x] Harness preflight strict mode enforces Beads readiness findings.
 - [x] Docs and runbooks updated for Beads `0.56.1` guidance.
 - [x] Verification gates pass and are recorded.
-- [x] BD tasks closed and `bd sync` executed.
+- [x] BD tasks closed and Dolt health validated (`bd dolt test --json`).
 
 ## Verification evidence
 - `go test ./...` -> pass (2026-02-24).

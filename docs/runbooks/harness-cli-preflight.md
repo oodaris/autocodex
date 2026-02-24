@@ -13,12 +13,13 @@ autocodex harness preflight --strict
 ```
 
 ## Checks
-1. `bd` command availability and initialized repo state.
+1. `bd` command availability and repo-state probe (`bd info --json` from repo root).
 2. `bd --version` meets this repo baseline (`>=0.56.1`).
 3. Dolt readiness (`bd dolt show --json`) via doctor checks.
-4. `codex` CLI availability and version/capability checks.
-5. `autocodex harness preflight --strict` (or go-run fallback), which includes doctor + harness lint checks.
-6. Standalone harness config lint (`python3 scripts/harness_config_lint.py`) as explicit policy-pack validation.
+4. Optional hook audit (`bd hooks list --json`) to detect JSONL mirror drift risk.
+5. `codex` CLI availability and version/capability checks.
+6. `autocodex harness preflight --strict` (or go-run fallback), which includes doctor + harness lint checks.
+7. Standalone harness config lint (`python3 scripts/harness_config_lint.py`) as explicit policy-pack validation.
 
 ## Success marker
 `Harness preflight passed.`
@@ -34,5 +35,8 @@ autocodex harness preflight --strict
    - `bd doctor --migration=post`
    - if `connection_ok` is false, start Dolt SQL server for this repo:
      - `dolt sql-server --data-dir "$(pwd)/.beads/dolt" --host 127.0.0.1 --port 3307`
-4. If lint fails, resolve missing role/config/doc markers.
-5. If doctor fails feature checks, align Codex CLI and config assumptions.
+4. If hooks are missing and your workflow requires JSONL mirror files:
+   - `bd hooks install`
+   - `ENFORCE_JSONL_HOOKS=1 bash scripts/dev/harness-cli-preflight.sh`
+5. If lint fails, resolve missing role/config/doc markers.
+6. If doctor fails feature checks, align Codex CLI and config assumptions.

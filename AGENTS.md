@@ -5,7 +5,8 @@ This project uses **bd** (beads) for issue tracking. Run `bd onboard` to get sta
 Repo note: this repo's `.beads` is on the Dolt backend. Verify with `bd info --json` and `bd dolt show --json` (if `connection_ok` is false, run `dolt sql-server --data-dir "$(pwd)/.beads/dolt" --host 127.0.0.1 --port 3307`).
 
 Beads sync-branch: this repo is configured to sync beads data via the dedicated `beads-sync` branch (see `.beads/config.yaml`).
-- `bd sync` refreshes `.beads/issues.jsonl` from Dolt; it does not commit/push git branches.
+- `bd sync` is deprecated/no-op on `bd 0.56.1` in this repo; do not rely on it for state propagation.
+- Canonical issue state is Dolt (`.beads/dolt`). Treat `.beads/issues.jsonl` as an optional compatibility mirror only.
 - In a fresh clone, run `bd migrate sync beads-sync` once if you need the local sync-branch worktree (`.git/beads-worktrees/beads-sync`).
 
 ## Quick Reference
@@ -17,7 +18,7 @@ bd ready              # Find available work
 bd show <id>          # View issue details
 bd update <id> --status in_progress  # Claim work
 bd close <id>         # Complete work
-bd sync               # Refresh JSONL export from Dolt (no git commit/push)
+bd dolt test --json   # Validate Dolt connectivity for this repo
 ```
 
 ## autocodex defaults (for agents)
@@ -43,7 +44,10 @@ Use `autocodex init` for a minimal setup (config + `.autocodex/` only).
 4. **PUSH TO REMOTE** - This is MANDATORY:
    ```bash
    git pull --rebase
-   bd sync
+   bd dolt test --json
+   # Optional when a Dolt remote is configured:
+   # bd dolt pull
+   # bd dolt push
    git push
    git status  # MUST show "up to date with origin"
    ```

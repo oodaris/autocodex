@@ -100,7 +100,7 @@
       "acceptance_criteria": [
         "go test ./... and go vet ./... pass.",
         "Doctor and harness preflight strict evidence captured.",
-        "BD tasks are closed and bd sync is executed."
+        "BD tasks are closed and Dolt health is validated (`bd dolt test --json`; optional `bd dolt pull/push` when remotes are configured)."
       ],
       "dependencies": [
         "beads-0561-3"
