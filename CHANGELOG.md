@@ -7,6 +7,14 @@ Semantic Versioning.
 
 ## [Unreleased]
 
+## [0.8.3] - 2026-02-24
+
+### Fixed
+- Web build now restores `web/dist/.gitkeep` after Vite output cleanup so release/build hooks no longer leave tracked-file deletions behind.
+
+### Docs
+- Release runbook now documents the standard validated `goreleaser release --clean -f goreleaser.yml` path for this repo.
+
 ## [0.8.2] - 2026-02-24
 
 ### Fixed

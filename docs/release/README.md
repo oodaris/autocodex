@@ -42,11 +42,12 @@ git push origin vX.Y.Z
 goreleaser release -f goreleaser.yml
 ```
 
-### Known issue (tracked)
-- Issue: `autocodex-yxq`
-- Symptom: in this repo, `goreleaser release --clean` can remove tracked `web/dist/.gitkeep`, which causes a dirty git state and fails release validation.
-- Temporary workaround used for `v0.8.1`: rerun with `--skip=validate`, then restore `web/dist/.gitkeep` if needed.
-- Target end-state: standard `goreleaser release --clean -f goreleaser.yml` should pass without validation bypass.
+### Release validation note
+- `web/dist/.gitkeep` is restored at the end of `npm run build --prefix web` to keep the git worktree clean after GoReleaser pre-build hooks.
+- Standard release command should pass without validation bypass:
+```bash
+goreleaser release --clean -f goreleaser.yml
+```
 
 ## macOS signing + notarization (public releases)
 
