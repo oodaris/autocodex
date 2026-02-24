@@ -18,6 +18,13 @@ Semantic Versioning.
 - Bootstrap now supports an end-to-end readiness workflow (repo setup -> strict preflight/lint -> optional smoke run) for faster onboarding validation.
 - Harness lint checks are now Go-native (no direct `python3 scripts/harness_config_lint.py` invocation required for CLI/bootstrap/preflight workflows).
 
+### Fixed
+- Harness preflight hook auditing now warns on malformed `bd hooks list --json` output instead of incorrectly passing hooks status.
+- `autocodex harness lint` now resolves the repo root deterministically from config/git ancestry so behavior is consistent from nested working directories.
+
+### Docs
+- README Beads verification guidance now references `bd dolt show --json` and `bd dolt test --json` (removing stale `bd backend show --json` guidance).
+
 ## [0.8.5] - 2026-02-24
 
 ### Changed

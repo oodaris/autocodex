@@ -186,27 +186,59 @@ check_bd_hooks() {
   if ! command -v bd >/dev/null 2>&1; then
     return
   fi
-  local raw missing
+  local raw missing normalized parse_output status
   raw="$(cd "$ROOT_DIR" && bd hooks list --json 2>/dev/null || true)"
   if [[ -z "$raw" ]]; then
     warn "unable to inspect bd hooks status"
     return
   fi
+  if ! printf '%s' "$raw" | grep -q '"hooks"'; then
+    warn "unable to parse bd hooks list --json output"
+    return
+  fi
+  normalized="$(printf '%s' "$raw" | sed 's/"Name":/\n"Name":/g; s/"Installed":/\n"Installed":/g')"
 
-  missing="$(
-    printf '%s\n' "$raw" | awk '
+  set +e
+  parse_output="$(
+    printf '%s\n' "$normalized" | awk '
       /"Name":/ {
-        name = $2
-        gsub(/[",]/, "", name)
+        line = $0
+        sub(/^.*"Name":[[:space:]]*"/, "", line)
+        sub(/".*$/, "", line)
+        name = line
       }
       /"Installed":[[:space:]]*false/ {
         if (name != "") {
-          print name
-          name = ""
+          missing = (missing == "" ? name : missing "," name)
+        }
+        parsed = 1
+        name = ""
+      }
+      /"Installed":[[:space:]]*true/ {
+        parsed = 1
+        name = ""
+      }
+      END {
+        if (parsed != 1) {
+          exit 2
+        }
+        if (missing != "") {
+          print missing
         }
       }
     ' | paste -sd, -
   )"
+  status=$?
+  set -e
+  if [[ "$status" -eq 2 ]]; then
+    warn "unable to parse bd hooks list --json output"
+    return
+  fi
+  if [[ "$status" -ne 0 ]]; then
+    warn "unable to parse bd hooks list --json output"
+    return
+  fi
+  missing="${parse_output// /}"
   if [[ -z "$missing" ]]; then
     pass "bd hooks are installed"
     return

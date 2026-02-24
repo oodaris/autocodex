@@ -84,7 +84,7 @@ func runBootstrapReadyChecks(configPath string) error {
 
 	// Keep an explicit standalone lint pass so bootstrap --ready mirrors the
 	// documented sequence and captures a separate lint result.
-	lintResult := runHarnessLint(cfg)
+	lintResult := runHarnessLint(cfg, configPath)
 	lintResult.Name = "harness.lint-standalone"
 	if err := printHarnessPreflightChecks([]harnessCheck{lintResult}, false); err != nil {
 		return err

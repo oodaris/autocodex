@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -38,7 +39,7 @@ func TestRunHarnessLintMissingRolePackConfig(t *testing.T) {
 
 	cfg := config.Config{Version: "v1", Mode: "yolo"}
 	cfg.ApplyDefaults()
-	result := runHarnessLint(cfg)
+	result := runHarnessLint(cfg, filepath.Join(tmp, "autocodex.yaml"))
 	if result.Status != "error" {
 		t.Fatalf("expected lint error when role pack is missing, got %s", result.Status)
 	}
@@ -85,6 +86,29 @@ func TestHarnessPreflightJSONOutputIsParseable(t *testing.T) {
 	}
 	if len(parsed) != 2 {
 		t.Fatalf("expected two checks, got %d", len(parsed))
+	}
+	var tail any
+	if err := decoder.Decode(&tail); err != io.EOF {
+		t.Fatalf("expected no trailing output after json, got: %v", err)
+	}
+}
+
+func TestHarnessLintJSONOutputIsParseable(t *testing.T) {
+	checks := []harnessCheck{
+		{Name: "harness.lint", Status: "ok", Details: "lint ok"},
+	}
+	out := captureStdout(t, func() {
+		if err := printHarnessPreflightChecks(checks, true); err != nil {
+			t.Fatalf("print checks: %v", err)
+		}
+	})
+	decoder := json.NewDecoder(strings.NewReader(out))
+	var parsed []harnessCheck
+	if err := decoder.Decode(&parsed); err != nil {
+		t.Fatalf("expected parseable json output, got error: %v", err)
+	}
+	if len(parsed) != 1 || parsed[0].Name != "harness.lint" {
+		t.Fatalf("unexpected parsed checks: %#v", parsed)
 	}
 	var tail any
 	if err := decoder.Decode(&tail); err != io.EOF {

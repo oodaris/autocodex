@@ -88,7 +88,7 @@ func runHarnessLintCommand(args []string) {
 		exitErr(err)
 	}
 
-	result := runHarnessLint(cfg)
+	result := runHarnessLint(cfg, *configPath)
 	if err := printHarnessPreflightChecks([]harnessCheck{result}, *jsonOutput); err != nil {
 		exitErr(err)
 	}
@@ -154,7 +154,7 @@ func runHarnessPreflightChecks(cfg config.Config, configPath string, strict bool
 		})
 	}
 
-	lintResult := runHarnessLint(cfg)
+	lintResult := runHarnessLint(cfg, configPath)
 	checks = append(checks, lintResult)
 	if lintResult.Status == "error" {
 		hasFailure = true

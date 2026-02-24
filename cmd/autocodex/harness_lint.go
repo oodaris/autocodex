@@ -52,16 +52,55 @@ var (
 	}
 )
 
-func runHarnessLint(cfg config.Config) harnessCheck {
-	repoRoot, err := os.Getwd()
+func runHarnessLint(cfg config.Config, configPath string) harnessCheck {
+	repoRoot, err := resolveHarnessLintRepoRoot(configPath)
 	if err != nil {
-		return harnessCheck{Name: "harness.lint", Status: "error", Details: fmt.Sprintf("get working directory: %v", err)}
+		return harnessCheck{Name: "harness.lint", Status: "error", Details: err.Error()}
 	}
 	issues := lintHarnessConfig(cfg, repoRoot)
 	if len(issues) > 0 {
 		return harnessCheck{Name: "harness.lint", Status: "error", Details: formatHarnessLintIssues(issues)}
 	}
 	return harnessCheck{Name: "harness.lint", Status: "ok", Details: harnessLintPassMessage}
+}
+
+func resolveHarnessLintRepoRoot(configPath string) (string, error) {
+	trimmedConfigPath := strings.TrimSpace(configPath)
+	if trimmedConfigPath != "" {
+		absConfigPath, err := filepath.Abs(trimmedConfigPath)
+		if err != nil {
+			return "", fmt.Errorf("resolve config path: %w", err)
+		}
+		configDir := filepath.Dir(absConfigPath)
+		if root, ok := findGitRoot(configDir); ok {
+			return root, nil
+		}
+		return configDir, nil
+	}
+
+	cwd, err := os.Getwd()
+	if err != nil {
+		return "", fmt.Errorf("get working directory: %w", err)
+	}
+	if root, ok := findGitRoot(cwd); ok {
+		return root, nil
+	}
+	return cwd, nil
+}
+
+func findGitRoot(start string) (string, bool) {
+	dir := filepath.Clean(start)
+	for {
+		if _, err := os.Stat(filepath.Join(dir, ".git")); err == nil {
+			return dir, true
+		}
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			break
+		}
+		dir = parent
+	}
+	return "", false
 }
 
 func lintHarnessConfig(cfg config.Config, repoRoot string) []string {

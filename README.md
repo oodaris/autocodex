@@ -69,7 +69,7 @@ autocodex plugins --action list
 - Beads (`bd`) optional, required when `autonomy.require_bd: true`
   - Tested with: `bd 0.56.1`
   - Recommended: `bd >= 0.56.1` for strict doctor/preflight checks in this repo
-  - Repo note (contributors): this repo's `.beads` uses the Dolt backend (`.beads/dolt`, gitignored). Verify with `bd backend show --json` and `bd dolt show --json`.
+  - Repo note (contributors): this repo's `.beads` uses the Dolt backend (`.beads/dolt`, gitignored). Verify with `bd dolt show --json` and `bd dolt test --json`.
   - If `bd` reports Dolt server unreachable, start: `dolt sql-server --data-dir "$(pwd)/.beads/dolt" --host 127.0.0.1 --port 3307`
   - `bd sync` is deprecated/no-op in this setup; use Dolt-native workflow (`bd dolt test`, optional `bd dolt pull/push` when remotes are configured).
   - Treat `.beads/issues.jsonl` as a compatibility mirror only, not source-of-truth state.
