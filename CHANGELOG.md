@@ -7,6 +7,8 @@ Semantic Versioning.
 
 ## [Unreleased]
 
+## [0.8.4] - 2026-02-24
+
 ### Fixed
 - Orchestrator heartbeat loop now exits before writing when its context is already canceled, preventing late heartbeat file writes that could trigger flaky test tempdir cleanup failures in CI.
 
