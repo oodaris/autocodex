@@ -7,6 +7,8 @@ Semantic Versioning.
 
 ## [Unreleased]
 
+## [0.8.6] - 2026-02-24
+
 ### Added
 - `autocodex bootstrap --profile` support with `max_capability`, `balanced`, and `max_throughput` presets.
 - `autocodex bootstrap --ready` to run strict harness readiness checks as part of bootstrap.

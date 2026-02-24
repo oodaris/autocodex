@@ -38,7 +38,7 @@ curl -fsSL https://raw.githubusercontent.com/oodaris/autocodex/main/scripts/inst
 > 💡 **Tip**
 > Pin a version or install to a custom path:
 > ```bash
-> VERSION=0.8.5 DEST=~/.local/bin \
+> VERSION=0.8.6 DEST=~/.local/bin \
 >   curl -fsSL https://raw.githubusercontent.com/oodaris/autocodex/main/scripts/install.sh | bash
 > ```
 
@@ -196,7 +196,7 @@ Use profile-style settings from `docs/config/README.md`:
 
 See the exact YAML snippets in `docs/config/README.md#recommended-profiles`.
 
-Repo default profile (as of `v0.8.5`):
+Repo default profile (as of `v0.8.6`):
 - `autonomy.coordinator.enabled: true`
 - `autonomy.coordinator.max_parallel: 4`
 - `autonomy.harness.enabled: true`
