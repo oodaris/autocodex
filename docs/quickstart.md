@@ -79,6 +79,9 @@ multiple Codex CLI processes at once. Codex `collaboration_mode/preset` controls
 role‑style behavior inside a single process. Use both if you want parallel beads
 and in‑process collaboration.
 
+Need a fast starting point? Use the profile matrix in `docs/config/README.md#recommended-profiles`
+to choose `max_capability`, `balanced`, or `max_throughput`.
+
 Example:
 ```bash
 autocodex run --swarm --task "Execute all ready beads in parallel"

@@ -169,6 +169,14 @@ Use these settings to reduce compute:
 - `autonomy.coordinator.max_parallel`: limit concurrent bead runs
 - `autonomy.stop_conditions.max_fix_attempts` and `max_beads`: cap retries and total beads
 
+### Capability vs performance profiles
+Use profile-style settings from `docs/config/README.md`:
+- `max_capability`: highest reasoning quality + strongest governance defaults.
+- `balanced`: recommended default for most daily engineering tasks.
+- `max_throughput`: lower latency/cost with collaboration disabled.
+
+See the exact YAML snippets in `docs/config/README.md#recommended-profiles`.
+
 ## Parallelism & collaboration
 - **Guaranteed parallelism**: `autocodex run --swarm`  
 - **Role‑style collaboration**: `--collaboration-mode/--preset`  

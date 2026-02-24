@@ -139,6 +139,7 @@ Parallel runs can saturate CPU and memory.
 - Start with `max_parallel: 3` or `4`
 - Increase only if the host has spare CPU/memory
 - Use `fail_fast: true` to stop all on first error if you prefer strict gating
+- For an end-to-end preset choice (quality vs speed), use the profile matrix in `docs/config/README.md#recommended-profiles`
 
 ## Logging: how to verify parallelism
 

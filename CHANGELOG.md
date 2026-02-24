@@ -10,6 +10,10 @@ Semantic Versioning.
 ### Changed
 - Repo default config profile now enables Harness v2 and coordinator-based multi-agent execution (`autonomy.harness.enabled: true`, `autonomy.coordinator.enabled: true`, `max_parallel: 4`).
 
+### Docs
+- Added an explicit configuration profile matrix (`max_capability`, `balanced`, `max_throughput`) with copy-paste YAML snippets and host tuning guidance.
+- Linked profile guidance from README, quickstart, and parallelism docs so capability/performance tradeoffs are discoverable from primary entry points.
+
 ## [0.8.4] - 2026-02-24
 
 ### Fixed

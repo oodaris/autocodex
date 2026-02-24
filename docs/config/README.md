@@ -165,6 +165,74 @@ Repo profile note:
   - `autonomy.coordinator.max_parallel: 4`
   - `autonomy.harness.enabled: true`
 
+## Recommended Profiles
+
+Use these presets as a starting point depending on your goal.
+
+| Profile | Goal | Core settings |
+| --- | --- | --- |
+| `max_capability` | Highest reasoning quality + strongest governance | `codex.reasoning_effort: xhigh`, `codex.collaboration_enabled: true`, `autonomy.coordinator.enabled: true`, `autonomy.coordinator.max_parallel: 4`, `autonomy.harness.enabled: true` |
+| `balanced` | Good quality/speed for daily use | `codex.reasoning_effort: high`, `codex.collaboration_enabled: true`, `autonomy.coordinator.enabled: true`, `autonomy.coordinator.max_parallel: 2`, `autonomy.harness.enabled: true` |
+| `max_throughput` | Lower latency/cost and predictable runtime | `codex.reasoning_effort: medium`, `codex.collaboration_enabled: false`, `autonomy.coordinator.enabled: true`, `autonomy.coordinator.max_parallel: 1-2`, `autonomy.harness.enabled: true` |
+
+Suggested snippets:
+
+`max_capability` (repo default profile)
+
+```yaml
+codex:
+  reasoning_effort: xhigh
+  collaboration_enabled: true
+  collaboration_mode: auto
+  preset: default
+autonomy:
+  coordinator:
+    enabled: true
+    max_parallel: 4
+  harness:
+    enabled: true
+    impact_mode: normal
+```
+
+`balanced`
+
+```yaml
+codex:
+  reasoning_effort: high
+  collaboration_enabled: true
+  collaboration_mode: auto
+  preset: default
+autonomy:
+  coordinator:
+    enabled: true
+    max_parallel: 2
+  harness:
+    enabled: true
+    impact_mode: normal
+```
+
+`max_throughput`
+
+```yaml
+codex:
+  reasoning_effort: medium
+  collaboration_enabled: false
+autonomy:
+  coordinator:
+    enabled: true
+    max_parallel: 2
+  harness:
+    enabled: true
+    impact_mode: normal
+  stop_conditions:
+    max_fix_attempts: 2
+```
+
+Host tuning note:
+- Keep `max_parallel` conservative on laptops (`2-4`).
+- On stronger hosts, raise gradually while monitoring memory/CPU.
+- `--swarm` overrides `max_parallel` to unlimited for that run; use it only when many beads are independent.
+
 ## Safety notes
 
 - `mode: yolo` always runs the Codex CLI with `--yolo`. Use intentionally.
