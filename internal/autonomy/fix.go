@@ -1,9 +1,9 @@
 package autonomy
 
 import (
+	"crypto/sha1"
 	"fmt"
 	"strings"
-	"time"
 )
 
 func (c *Controller) createFixBead(parentID, reason string) error {
@@ -14,9 +14,9 @@ func (c *Controller) createFixBead(parentID, reason string) error {
 	if prefix == "" {
 		prefix = defaultBeadPrefix
 	}
-	timestamp := time.Now().UTC().Format("150405")
 	fixShort := fixBeadShort(parentID, prefix)
-	fixID := fmt.Sprintf("%s-%s%s", prefix, fixShort, timestamp)
+	signature := fixReasonSignature(parentID, reason)
+	fixID := fmt.Sprintf("%s-fix-%s-%s", prefix, fixShort, signature)
 	task := Task{
 		ID:    fixID,
 		Title: fmt.Sprintf("Fix gate failure for %s", parentID),
@@ -26,22 +26,31 @@ func (c *Controller) createFixBead(parentID, reason string) error {
 	if beadExists(fixID) {
 		return nil
 	}
-	return createBead(fixID, task)
+	if err := createBead(fixID, task); err != nil {
+		return err
+	}
+	parentID = sanitizeBeadID(parentID)
+	if parentID != "" {
+		_ = addDependency(fixID, parentID)
+	}
+	return nil
 }
 
 func fixBeadShort(parentID, prefix string) string {
 	parentShort := strings.TrimSpace(parentID)
 	if parentShort == "" {
-		return "fix"
+		return "unknown"
 	}
 	if prefix != "" && strings.HasPrefix(parentShort, prefix+"-") {
 		parentShort = strings.TrimPrefix(parentShort, prefix+"-")
 	}
+	parentShort = strings.TrimPrefix(parentShort, "fix-")
+	parentShort = strings.TrimPrefix(parentShort, "fix")
 	parentShort = normalizeFixBeadSuffix(parentShort)
 	if parentShort == "" {
-		return "fix"
+		return "unknown"
 	}
-	return "fix" + parentShort
+	return parentShort
 }
 
 func normalizeFixBeadSuffix(value string) string {
@@ -60,4 +69,10 @@ func normalizeFixBeadSuffix(value string) string {
 		out = out[:8]
 	}
 	return out
+}
+
+func fixReasonSignature(parentID, reason string) string {
+	input := strings.TrimSpace(parentID) + "|" + strings.ToLower(strings.TrimSpace(reason))
+	sum := sha1.Sum([]byte(input))
+	return fmt.Sprintf("%x", sum[:3])
 }

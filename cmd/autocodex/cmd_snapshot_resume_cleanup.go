@@ -87,6 +87,10 @@ func runResume(args []string) {
 	preset := fs.String("preset", "", "codex collaboration preset override (passed via -c collaboration_mode_preset=...)")
 	noCollab := fs.Bool("no-collaboration", false, "disable codex collaboration for this run")
 	swarm := fs.Bool("swarm", false, "force bead-parallel coordinator with unlimited max_parallel (enables autonomy)")
+	beadScope := fs.String("bead-scope", "", "coordinator bead selection mode override (run_scoped|all_ready)")
+	allowAllReadyFallback := fs.Bool("allow-all-ready-fallback", false, "allow fallback to all ready beads when run_scoped selection has no matches")
+	beadIDs := fs.String("bead", "", "optional comma-separated bead id selectors")
+	beadPrefix := fs.String("bead-prefix", "", "optional bead id prefix selector")
 	fs.Parse(args)
 
 	extraArgs := fs.Args()
@@ -109,6 +113,7 @@ func runResume(args []string) {
 		disableCollaboration(&cfg)
 	}
 	applySwarmOverrides(&cfg, *swarm)
+	applyCoordinatorOverrides(&cfg, *beadScope, *allowAllReadyFallback, *beadIDs, *beadPrefix)
 	if err := applyStartPhase(&cfg, *startPhase); err != nil {
 		exitErr(err)
 	}

@@ -141,8 +141,21 @@ func (c Config) Validate() error {
 			return fmt.Errorf("invalid autonomy.coordinator.strategy: %s", c.Autonomy.Coordinator.Strategy)
 		}
 	}
+	if c.Autonomy.Coordinator.SelectionMode != "" {
+		if !oneOf(c.Autonomy.Coordinator.SelectionMode, []string{"run_scoped", "all_ready"}) {
+			return fmt.Errorf("invalid autonomy.coordinator.selection_mode: %s", c.Autonomy.Coordinator.SelectionMode)
+		}
+	}
 	if c.Autonomy.Coordinator.MaxParallel != nil && *c.Autonomy.Coordinator.MaxParallel < 0 {
 		return fmt.Errorf("invalid autonomy.coordinator.max_parallel: %d", *c.Autonomy.Coordinator.MaxParallel)
+	}
+	if c.Autonomy.Coordinator.FailureSummaryLimit < 0 {
+		return fmt.Errorf("invalid autonomy.coordinator.failure_summary_limit: %d", c.Autonomy.Coordinator.FailureSummaryLimit)
+	}
+	if c.Autonomy.Gate.MaxFixAttemptsScope != "" {
+		if !oneOf(c.Autonomy.Gate.MaxFixAttemptsScope, []string{"run", "global"}) {
+			return fmt.Errorf("invalid autonomy.gate.max_fix_attempts_scope: %s", c.Autonomy.Gate.MaxFixAttemptsScope)
+		}
 	}
 	if c.Autonomy.Harness.ImpactMode != "" {
 		if !oneOf(c.Autonomy.Harness.ImpactMode, []string{"normal", "high"}) {

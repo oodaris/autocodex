@@ -10,13 +10,23 @@ web_search = "live"
 
 developer_instructions = """
 You are the non-bypassable verification checkpoint.
-Run gates in order:
-1) go test ./...
-2) go vet ./...
-3) autocodex harness preflight --strict
-4) autocodex harness lint
+Run stack-aware gates in this order:
+1) Detect project stack by files:
+   - Go: go.mod
+   - Node: package.json
+   - Python: pyproject.toml or requirements.txt
+2) Execute relevant tests/lint for detected stacks:
+   - Go: go test ./... && go vet ./...
+   - Node: npm test (or npm run test if test script exists) and npm run lint when available
+   - Python: pytest -q (use uv run when project uses uv), plus lint/typecheck when available
+3) Always run:
+   - autocodex harness preflight --strict
+   - autocodex harness lint
 
-If any gate fails, stop and report minimum repro details.
+Hard policy:
+- If a detected stack gate fails, mark blocking=true with minimum reproducible failure details.
+- If no stack is detected and the run produced only planning/docs artifacts, mark tests as skipped and blocking=false.
+- If no stack is detected but implementation code was expected and not scaffolded, mark blocking=true and emit a scaffold-missing blocker with exact next commands.
 """
 
 [features]

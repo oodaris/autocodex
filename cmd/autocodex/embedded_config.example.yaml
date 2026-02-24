@@ -118,6 +118,12 @@ autonomy:
     max_parallel: 4 # set higher for stronger hosts; 0 = unlimited
     strategy: bead
     fail_fast: false
+    selection_mode: run_scoped
+    allow_all_ready_fallback: false
+    failure_summary_limit: 5
+  gate:
+    max_fix_attempts_scope: global
+    fix_attempts_store: artifacts/autonomy/fix_attempts.json
   harness:
     enabled: true
     impact_mode: normal

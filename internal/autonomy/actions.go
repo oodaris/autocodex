@@ -44,6 +44,9 @@ type ActionGates struct {
 	CouncilVerdict string   `json:"council_verdict,omitempty"`
 	CriticVerdict  string   `json:"critic_verdict,omitempty"`
 	QualityPassed  *bool    `json:"quality_gate_passed,omitempty"`
+	EvalScenarios  *int     `json:"eval_scenarios,omitempty"`
+	EvalPassRate   *float64 `json:"eval_pass_rate,omitempty"`
+	EvalSoftFails  *int     `json:"eval_soft_failures,omitempty"`
 	Blocking       bool     `json:"blocking"`
 }
 
@@ -154,6 +157,26 @@ func (c *Controller) applyActions(beadID string, actions *Actions) (string, bool
 					gateFailure = true
 					if strings.TrimSpace(stopReason) == "" {
 						stopReason = "high-impact closure blocked: quality_gate_passed must be true"
+					}
+				}
+			}
+			if c.Config.Autonomy.Harness.Eval.Enabled != nil && *c.Config.Autonomy.Harness.Eval.Enabled {
+				if actions.Gates == nil || actions.Gates.EvalScenarios == nil || *actions.Gates.EvalScenarios < c.Config.Autonomy.Harness.Eval.MinScenarios {
+					gateFailure = true
+					if strings.TrimSpace(stopReason) == "" {
+						stopReason = fmt.Sprintf("high-impact closure blocked: eval_scenarios must be >= %d", c.Config.Autonomy.Harness.Eval.MinScenarios)
+					}
+				}
+				if actions.Gates == nil || actions.Gates.EvalPassRate == nil || *actions.Gates.EvalPassRate < c.Config.Autonomy.Harness.Eval.MinPassRate {
+					gateFailure = true
+					if strings.TrimSpace(stopReason) == "" {
+						stopReason = fmt.Sprintf("high-impact closure blocked: eval_pass_rate must be >= %.2f", c.Config.Autonomy.Harness.Eval.MinPassRate)
+					}
+				}
+				if actions.Gates == nil || actions.Gates.EvalSoftFails == nil || *actions.Gates.EvalSoftFails > c.Config.Autonomy.Harness.Eval.MaxSoftFailures {
+					gateFailure = true
+					if strings.TrimSpace(stopReason) == "" {
+						stopReason = fmt.Sprintf("high-impact closure blocked: eval_soft_failures must be <= %d", c.Config.Autonomy.Harness.Eval.MaxSoftFailures)
 					}
 				}
 			}

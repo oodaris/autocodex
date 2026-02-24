@@ -136,6 +136,7 @@ type AutonomyConfig struct {
 	ActionsSchema       string                    `yaml:"actions_schema"`
 	TasksOutputTemplate string                    `yaml:"tasks_output_template"`
 	StopConditions      AutonomyStopConditions    `yaml:"stop_conditions"`
+	Gate                AutonomyGateConfig        `yaml:"gate"`
 	Coordinator         AutonomyCoordinatorConfig `yaml:"coordinator"`
 	Harness             AutonomyHarnessConfig     `yaml:"harness"`
 }
@@ -147,10 +148,20 @@ type AutonomyStopConditions struct {
 }
 
 type AutonomyCoordinatorConfig struct {
-	Enabled     bool   `yaml:"enabled"`
-	MaxParallel *int   `yaml:"max_parallel"`
-	Strategy    string `yaml:"strategy"`
-	FailFast    bool   `yaml:"fail_fast"`
+	Enabled               bool     `yaml:"enabled"`
+	MaxParallel           *int     `yaml:"max_parallel"`
+	Strategy              string   `yaml:"strategy"`
+	FailFast              bool     `yaml:"fail_fast"`
+	SelectionMode         string   `yaml:"selection_mode"`
+	AllowAllReadyFallback bool     `yaml:"allow_all_ready_fallback"`
+	FailureSummaryLimit   int      `yaml:"failure_summary_limit"`
+	BeadIDs               []string `yaml:"bead_ids"`
+	BeadPrefix            string   `yaml:"bead_prefix"`
+}
+
+type AutonomyGateConfig struct {
+	MaxFixAttemptsScope string `yaml:"max_fix_attempts_scope"`
+	FixAttemptsStore    string `yaml:"fix_attempts_store"`
 }
 
 type AutonomyHarnessConfig struct {

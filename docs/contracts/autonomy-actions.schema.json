@@ -116,6 +116,19 @@
         "quality_gate_passed": {
           "type": "boolean"
         },
+        "eval_scenarios": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "eval_pass_rate": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "eval_soft_failures": {
+          "type": "integer",
+          "minimum": 0
+        },
         "blocking": {
           "type": "boolean"
         }

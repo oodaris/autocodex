@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -14,11 +15,22 @@ import (
 )
 
 func (c *Controller) runCoordinator(ctx context.Context, specPath, planPath, tasksPath string) (*state.Run, error) {
-	ready, err := listReadyBeads()
+	scopeIDs, err := buildBeadScopeFromTasksPath(tasksPath)
 	if err != nil {
 		return nil, err
 	}
-	readyTotal := len(ready)
+	ready, readyTotal, err := listReadyBeadsWithScope(
+		scopeIDs,
+		c.Config.Autonomy.Coordinator.SelectionMode,
+		c.Config.Autonomy.Coordinator.AllowAllReadyFallback,
+	)
+	if err != nil {
+		return nil, err
+	}
+	ready = filterReadyBeadsBySelectors(ready, c.Config.Autonomy.Coordinator.BeadIDs, c.Config.Autonomy.Coordinator.BeadPrefix)
+	if len(ready) == 0 && (len(c.Config.Autonomy.Coordinator.BeadIDs) > 0 || strings.TrimSpace(c.Config.Autonomy.Coordinator.BeadPrefix) != "") {
+		return nil, fmt.Errorf("autonomy coordinator: no ready beads match selector filters (bead_ids=%v bead_prefix=%q)", c.Config.Autonomy.Coordinator.BeadIDs, c.Config.Autonomy.Coordinator.BeadPrefix)
+	}
 	if readyTotal == 0 {
 		if c.Logger != nil {
 			c.Logger.Info("autonomy coordinator: no ready beads")
@@ -84,6 +96,12 @@ func (c *Controller) runCoordinator(ctx context.Context, specPath, planPath, tas
 
 func (c *Controller) runParallelBeads(ctx context.Context, beads []ReadyBead, phase string, applyActions bool, specPath, planPath, tasksPath string) (*state.Run, error) {
 	configuredMax, maxParallel := resolveMaxParallel(c.Config.Autonomy.Coordinator, len(beads))
+	if c.Config.Autonomy.RequireNext != nil && *c.Config.Autonomy.RequireNext && maxParallel > 1 {
+		if c.Logger != nil {
+			c.Logger.Warn("autonomy coordinator forcing single-worker mode to honor require_next", "configured_max_parallel", maxParallel)
+		}
+		maxParallel = 1
+	}
 
 	if c.Logger != nil && maxParallel > 1 {
 		fields := []any{
@@ -107,16 +125,12 @@ func (c *Controller) runParallelBeads(ctx context.Context, beads []ReadyBead, ph
 			"phase", phase,
 		)
 	}
-	if c.Config.Autonomy.RequireNext != nil && *c.Config.Autonomy.RequireNext && c.Logger != nil {
-		c.Logger.Warn("autonomy coordinator ignores require_next in parallel mode")
-	}
-
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
 	var lastRun *state.Run
 	var lastRunMu sync.Mutex
-	fixAttempts := newFixAttemptTracker()
+	fixAttempts := newFixAttemptTracker(c.Config, c.Logger)
 	maxFixAttempts := c.Config.Autonomy.StopConditions.MaxFixAttempts
 
 	beadCh := make(chan ReadyBead, len(beads))
@@ -166,7 +180,23 @@ func (c *Controller) runParallelBeads(ctx context.Context, beads []ReadyBead, ph
 
 	if len(errList) > 0 {
 		first := errList[0]
-		return lastRun, fmt.Errorf("autonomy coordinator completed with %d bead errors; first: %w", len(errList), first)
+		limit := c.Config.Autonomy.Coordinator.FailureSummaryLimit
+		if limit <= 0 {
+			limit = 5
+		}
+		summaries := make([]string, 0, len(errList))
+		for idx, err := range errList {
+			if idx >= limit {
+				break
+			}
+			summaries = append(summaries, err.Error())
+		}
+		return lastRun, fmt.Errorf(
+			"autonomy coordinator completed with %d bead errors; first: %w; failures: %s",
+			len(errList),
+			first,
+			strings.Join(summaries, " | "),
+		)
 	}
 	return lastRun, nil
 }
@@ -321,16 +351,19 @@ func (c *Controller) runBeadOnce(
 			}
 		}
 		if fixAttempts != nil && maxFixAttempts > 0 && fixAttempts.Increment(bead.ID) >= maxFixAttempts {
-			return run, fmt.Errorf("autonomy gate failed: max fix attempts reached (%d)", maxFixAttempts)
+			return run, fmt.Errorf("bead %s: autonomy gate failed: max fix attempts reached (%d)", bead.ID, maxFixAttempts)
 		}
 		if c.Config.Autonomy.StopConditions.StopOnGateFailure != nil && *c.Config.Autonomy.StopConditions.StopOnGateFailure {
-			return run, fmt.Errorf("autonomy gate failed: %s", stopReason)
+			return run, fmt.Errorf("bead %s: autonomy gate failed: %s", bead.ID, stopReason)
 		}
 		return run, nil
 	}
+	if fixAttempts != nil {
+		fixAttempts.Reset(bead.ID)
+	}
 
 	if stopReason != "" {
-		return run, fmt.Errorf("autonomy stop requested: %s", stopReason)
+		return run, fmt.Errorf("bead %s: autonomy stop requested: %s", bead.ID, stopReason)
 	}
 
 	if c.Config.Beads.AutoUpdate && !updatedCurrent {
@@ -401,22 +434,6 @@ func withBDLock(mu *sync.Mutex, fn func()) {
 	mu.Lock()
 	defer mu.Unlock()
 	fn()
-}
-
-type fixAttemptTracker struct {
-	mu       sync.Mutex
-	attempts map[string]int
-}
-
-func newFixAttemptTracker() *fixAttemptTracker {
-	return &fixAttemptTracker{attempts: map[string]int{}}
-}
-
-func (t *fixAttemptTracker) Increment(id string) int {
-	t.mu.Lock()
-	defer t.mu.Unlock()
-	t.attempts[id]++
-	return t.attempts[id]
 }
 
 func memoryDirForBead(cfg config.Config, beadID string) string {

@@ -560,21 +560,54 @@
           "default": 2,
           "description": "Maximum concurrent beads. 0 means unlimited."
         },
-        "strategy": {
-          "type": "string",
-          "enum": [
-            "bead",
-            "phase"
-          ],
-          "default": "bead"
-        },
-        "fail_fast": {
-          "type": "boolean",
-          "default": false,
-          "description": "Stop all parallel beads on first error."
-	        }
-	      }
-	    },
+	        "strategy": {
+	          "type": "string",
+	          "enum": [
+	            "bead",
+	            "phase"
+	          ],
+	          "default": "bead"
+	        },
+	        "fail_fast": {
+	          "type": "boolean",
+	          "default": false,
+	          "description": "Stop all parallel beads on first error."
+	        },
+	        "selection_mode": {
+	          "type": "string",
+	          "enum": [
+	            "run_scoped",
+	            "all_ready"
+	          ],
+	          "default": "run_scoped",
+	          "description": "Bead selection scope for coordinator runs."
+	        },
+	        "allow_all_ready_fallback": {
+	          "type": "boolean",
+	          "default": false,
+	          "description": "Fallback to all ready beads when run-scoped selection yields none."
+	        },
+	        "failure_summary_limit": {
+	          "type": "integer",
+	          "minimum": 0,
+	          "default": 5,
+	          "description": "Maximum number of bead failures to include in aggregate coordinator errors."
+	        },
+	        "bead_ids": {
+	          "type": "array",
+	          "items": {
+	            "type": "string"
+	          },
+	          "default": [],
+	          "description": "Optional allowlist of bead IDs for coordinator execution."
+	        },
+	        "bead_prefix": {
+	          "type": "string",
+	          "default": "",
+	          "description": "Optional bead ID prefix filter for coordinator execution."
+		        }
+		      }
+		    },
 	    "harness": {
 	      "type": "object",
 	      "additionalProperties": false,
@@ -647,10 +680,10 @@
 	        }
 	      }
 	    },
-	        "stop_conditions": {
-	          "type": "object",
-	          "additionalProperties": false,
-	          "properties": {
+		        "stop_conditions": {
+		          "type": "object",
+		          "additionalProperties": false,
+		          "properties": {
             "max_fix_attempts": {
               "type": "integer",
               "minimum": 0,
@@ -664,10 +697,30 @@
             "stop_on_gate_failure": {
               "type": "boolean",
               "default": true
-            }
-          }
-        }
-      }
-    }
+	            }
+	          }
+	        },
+	        "gate": {
+	          "type": "object",
+	          "additionalProperties": false,
+	          "properties": {
+	            "max_fix_attempts_scope": {
+	              "type": "string",
+	              "enum": [
+	                "run",
+	                "global"
+	              ],
+	              "default": "global",
+	              "description": "Scope for max fix-attempt counters."
+	            },
+	            "fix_attempts_store": {
+	              "type": "string",
+	              "default": "artifacts/autonomy/fix_attempts.json",
+	              "description": "Store path for persisted fix attempts (resolved under paths.state_dir when relative)."
+	            }
+	          }
+	        }
+	      }
+	    }
   }
 }

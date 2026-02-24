@@ -61,6 +61,15 @@ func (c *Config) ApplyDefaults() {
 		defaultMax := 2
 		c.Autonomy.Coordinator.MaxParallel = &defaultMax
 	}
+	if c.Autonomy.Coordinator.SelectionMode == "" {
+		c.Autonomy.Coordinator.SelectionMode = "run_scoped"
+	}
+	if c.Autonomy.Coordinator.FailureSummaryLimit == 0 {
+		c.Autonomy.Coordinator.FailureSummaryLimit = 5
+	}
+	if c.Autonomy.Coordinator.BeadIDs == nil {
+		c.Autonomy.Coordinator.BeadIDs = []string{}
+	}
 	if c.Paths.StateDir == "" {
 		c.Paths.StateDir = ".autocodex"
 	}
@@ -203,6 +212,12 @@ func (c *Config) ApplyDefaults() {
 	if c.Autonomy.StopConditions.StopOnGateFailure == nil {
 		enabled := true
 		c.Autonomy.StopConditions.StopOnGateFailure = &enabled
+	}
+	if c.Autonomy.Gate.MaxFixAttemptsScope == "" {
+		c.Autonomy.Gate.MaxFixAttemptsScope = "global"
+	}
+	if c.Autonomy.Gate.FixAttemptsStore == "" {
+		c.Autonomy.Gate.FixAttemptsStore = "artifacts/autonomy/fix_attempts.json"
 	}
 	if c.Autonomy.Harness.ImpactMode == "" {
 		c.Autonomy.Harness.ImpactMode = "normal"

@@ -83,7 +83,8 @@ func (c *Controller) Run(ctx context.Context, input Input) (*state.Run, error) {
 
 	var lastRun *state.Run
 	var nextHint string
-	var fixAttempts int
+	fixAttempts := newFixAttemptTracker(c.Config, c.Logger)
+	scopeIDs := buildBeadScopeFromTasks(tasksFile.Tasks)
 	maxBeads := c.Config.Autonomy.StopConditions.MaxBeads
 	maxFixAttempts := c.Config.Autonomy.StopConditions.MaxFixAttempts
 
@@ -94,7 +95,7 @@ func (c *Controller) Run(ctx context.Context, input Input) (*state.Run, error) {
 			}
 			return lastRun, nil
 		}
-		bead, err := c.selectBead(nextHint)
+		bead, err := c.selectBead(nextHint, scopeIDs)
 		nextHint = ""
 		if err != nil {
 			return lastRun, err
@@ -181,7 +182,6 @@ func (c *Controller) Run(ctx context.Context, input Input) (*state.Run, error) {
 		}
 
 		if gateFailure {
-			fixAttempts++
 			reason := stopReason
 			if strings.TrimSpace(reason) == "" {
 				reason = "gate failure"
@@ -191,15 +191,17 @@ func (c *Controller) Run(ctx context.Context, input Input) (*state.Run, error) {
 					c.Logger.Warn("autonomy fix bead create failed", "error", err.Error())
 				}
 			}
-			if maxFixAttempts > 0 && fixAttempts >= maxFixAttempts {
-				return run, fmt.Errorf("autonomy gate failed: max fix attempts reached (%d)", maxFixAttempts)
+			if fixAttempts != nil && maxFixAttempts > 0 && fixAttempts.Increment(bead.ID) >= maxFixAttempts {
+				return run, fmt.Errorf("bead %s: autonomy gate failed: max fix attempts reached (%d)", bead.ID, maxFixAttempts)
 			}
 			if c.Config.Autonomy.StopConditions.StopOnGateFailure != nil && *c.Config.Autonomy.StopConditions.StopOnGateFailure {
-				return run, fmt.Errorf("autonomy gate failed: %s", reason)
+				return run, fmt.Errorf("bead %s: autonomy gate failed: %s", bead.ID, reason)
 			}
 			continue
 		}
-		fixAttempts = 0
+		if fixAttempts != nil {
+			fixAttempts.Reset(bead.ID)
+		}
 
 		if stopReason != "" {
 			if c.Logger != nil {
