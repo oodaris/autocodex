@@ -90,6 +90,21 @@ Flags:
 - `--config`: config file path
 - `--strict`: treat warnings as errors
 
+### harness
+Run harness-specific readiness checks.
+```bash
+autocodex harness preflight [--config <path>] [--strict] [--json]
+autocodex harness --help
+```
+Flags:
+- `--config`: config file path
+- `--strict`: treat actionable doctor warnings as errors
+- `--json`: output only the check array as JSON (machine-readable)
+
+Notes:
+- `autocodex harness --help` prints harness subcommand usage.
+- `autocodex harness preflight --json` writes parseable JSON to stdout without trailing text.
+
 ### status
 Show run status.
 ```bash

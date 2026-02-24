@@ -28,15 +28,25 @@ bd dolt push
 ```bash
 goreleaser release --snapshot --clean -f goreleaser.yml
 ```
-4) Tag a version:
+4) Export release token for publishing:
 ```bash
-git tag -a v0.2.0 -m "v0.2.0"
-git push origin v0.2.0
+export GITHUB_TOKEN="$(gh auth token)"
 ```
-5) Run GoReleaser:
+5) Tag a version:
+```bash
+git tag -a vX.Y.Z -m "vX.Y.Z"
+git push origin vX.Y.Z
+```
+6) Run GoReleaser:
 ```bash
 goreleaser release -f goreleaser.yml
 ```
+
+### Known issue (tracked)
+- Issue: `autocodex-yxq`
+- Symptom: in this repo, `goreleaser release --clean` can remove tracked `web/dist/.gitkeep`, which causes a dirty git state and fails release validation.
+- Temporary workaround used for `v0.8.1`: rerun with `--skip=validate`, then restore `web/dist/.gitkeep` if needed.
+- Target end-state: standard `goreleaser release --clean -f goreleaser.yml` should pass without validation bypass.
 
 ## macOS signing + notarization (public releases)
 
