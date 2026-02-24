@@ -12,10 +12,11 @@ Release archives now include prebuilt plugins under `plugins/`.
 
 ## Publish a release
 
-1) Sync Beads (sync-branch mode: `bd sync` commits/pushes beads data to `beads-sync`):
+1) Refresh Beads export (`bd sync` updates `.beads/issues.jsonl` from Dolt and does not push git branches):
 ```bash
 bd sync
 ```
+   If your team mirrors issue history on `beads-sync`, commit/push that branch with normal git commands after this step.
 2) Update `CHANGELOG.md`.
 3) Smoke test a snapshot build:
 ```bash

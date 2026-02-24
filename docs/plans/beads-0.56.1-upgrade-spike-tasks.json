@@ -1,0 +1,112 @@
+{
+  "version": "1.0",
+  "generated_at": "2026-02-24T00:00:00Z",
+  "source_plan": "docs/plans/beads-0.56.1-upgrade-spike.md",
+  "tasks": [
+    {
+      "id": "beads-0561-0",
+      "title": "Create Beads 0.56.1 spike tracking artifacts",
+      "goal": "Create spec/plan/tasks artifacts and a dependency-backed BD execution graph for the upgrade spike.",
+      "files": [
+        "docs/specs/beads-0.56.1-upgrade-spike.md",
+        "docs/plans/beads-0.56.1-upgrade-spike.md",
+        "docs/plans/beads-0.56.1-upgrade-spike-tasks.json"
+      ],
+      "acceptance_criteria": [
+        "Spec and plan documents define scope, risks, acceptance criteria, and rollout/rollback.",
+        "Tasks JSON validates against docs/contracts/autonomy-tasks.schema.json.",
+        "BD epic + dependent child tasks exist and pass bd lint."
+      ],
+      "gates": {
+        "verification": [
+          "go test ./internal/contracts -run TestAutonomyTasksSchema -v"
+        ],
+        "evidence": [
+          "docs/specs/beads-0.56.1-upgrade-spike.md",
+          "docs/plans/beads-0.56.1-upgrade-spike.md"
+        ]
+      },
+      "dependencies": [],
+      "status": "done",
+      "priority": 1
+    },
+    {
+      "id": "beads-0561-1",
+      "title": "Add doctor checks for Beads version and Dolt readiness",
+      "goal": "Extend doctor checks to explicitly validate Beads 0.56.1 baseline and bd dolt readiness.",
+      "files": [
+        "cmd/autocodex/cmd_doctor.go",
+        "cmd/autocodex/cmd_doctor_test.go"
+      ],
+      "acceptance_criteria": [
+        "Doctor reports bd-version with minimum target >=0.56.1.",
+        "Doctor reports bd-dolt readiness from bd dolt show output.",
+        "Unit tests cover version and dolt-show parsing behavior."
+      ],
+      "dependencies": [
+        "beads-0561-0"
+      ],
+      "status": "done",
+      "priority": 1
+    },
+    {
+      "id": "beads-0561-2",
+      "title": "Wire harness preflight to Beads 0.56.1 readiness behavior",
+      "goal": "Ensure harness preflight strict mode enforces new doctor Beads checks and update shell preflight messaging.",
+      "files": [
+        "cmd/autocodex/cmd_harness.go",
+        "cmd/autocodex/cmd_harness_test.go",
+        "scripts/dev/harness-cli-preflight.sh"
+      ],
+      "acceptance_criteria": [
+        "Strict preflight treats bd-version and bd-dolt warnings as actionable failures.",
+        "Preflight script references target Beads version and delegates to harness preflight strict."
+      ],
+      "dependencies": [
+        "beads-0561-1"
+      ],
+      "status": "done",
+      "priority": 1
+    },
+    {
+      "id": "beads-0561-3",
+      "title": "Update docs for Beads 0.56.1 semantics",
+      "goal": "Align docs and runbooks with Beads 0.56.1 behavior and remove stale bd sync assumptions.",
+      "files": [
+        "AGENTS.md",
+        "README.md",
+        "docs/AGENTS.md",
+        "docs/release/README.md",
+        "docs/runbooks/harness-cli-preflight.md",
+        "docs/runbooks/beads-0.56.1-upgrade.md"
+      ],
+      "acceptance_criteria": [
+        "No updated docs claim bd sync commits/pushes to beads-sync.",
+        "Runbook provides explicit Beads 0.56.1 install, Dolt readiness, and validation flow."
+      ],
+      "dependencies": [
+        "beads-0561-2"
+      ],
+      "status": "done",
+      "priority": 1
+    },
+    {
+      "id": "beads-0561-4",
+      "title": "Run gates and close spike with evidence",
+      "goal": "Run verification gates, capture evidence in plan doc, and close BD tasks.",
+      "files": [
+        "docs/plans/beads-0.56.1-upgrade-spike.md"
+      ],
+      "acceptance_criteria": [
+        "go test ./... and go vet ./... pass.",
+        "Doctor and harness preflight strict evidence captured.",
+        "BD tasks are closed and bd sync is executed."
+      ],
+      "dependencies": [
+        "beads-0561-3"
+      ],
+      "status": "done",
+      "priority": 2
+    }
+  ]
+}

@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"net"
@@ -57,10 +58,16 @@ func runDoctorChecks(cfg config.Config, configPath string) []checkResult {
 	results = append(results, checkCommandOnPath("codex"))
 	results = append(results, checkCodexVersion())
 	results = append(results, checkCodexFeatures())
+	var bdCheck checkResult
 	if cfg.Autonomy.RequireBD != nil && *cfg.Autonomy.RequireBD {
-		results = append(results, checkCommandOnPath("bd"))
+		bdCheck = checkCommandOnPath("bd")
 	} else {
-		results = append(results, checkCommandOptional("bd"))
+		bdCheck = checkCommandOptional("bd")
+	}
+	results = append(results, bdCheck)
+	if bdCheck.Status == "ok" {
+		results = append(results, checkBDVersion(bdCheck.Details))
+		results = append(results, checkBDDoltReadiness(bdCheck.Details))
 	}
 	results = append(results, checkMemoryDir(cfg))
 	results = append(results, checkPortAvailability(cfg))
@@ -134,6 +141,10 @@ func recommendedMinCodexVersion() semver {
 	return semver{Major: 0, Minor: 94, Patch: 0}
 }
 
+func recommendedMinBDVersion() semver {
+	return semver{Major: 0, Minor: 56, Patch: 1}
+}
+
 func parseFirstSemver(text string) (semver, bool) {
 	re := regexp.MustCompile(`\b(\d+)\.(\d+)\.(\d+)\b`)
 	m := re.FindStringSubmatch(text)
@@ -186,6 +197,246 @@ func checkCodexVersion() checkResult {
 		}
 	}
 	return checkResult{Name: "codex-version", Status: "ok", Details: versionText, Required: false}
+}
+
+func checkBDVersion(path string) checkResult {
+	out, err := exec.Command(path, "--version").CombinedOutput()
+	if err != nil {
+		return checkResult{Name: "bd-version", Status: "warn", Details: fmt.Sprintf("bd --version failed: %v", err), Required: false}
+	}
+	status, details := assessBDVersionOutput(strings.TrimSpace(string(out)))
+	return checkResult{Name: "bd-version", Status: status, Details: details, Required: false}
+}
+
+func assessBDVersionOutput(raw string) (string, string) {
+	text := strings.TrimSpace(raw)
+	if text == "" {
+		return "warn", "bd --version returned empty output"
+	}
+	got, ok := parseFirstSemver(text)
+	if !ok {
+		return "warn", fmt.Sprintf("unrecognized bd version output: %q", text)
+	}
+	min := recommendedMinBDVersion()
+	if got.Less(min) {
+		return "warn", fmt.Sprintf("%s (requires >= %s for this repo's Beads 0.56.1 workflow)", text, min.String())
+	}
+	return "ok", fmt.Sprintf("%s (target >= %s)", text, min.String())
+}
+
+func checkBDDoltReadiness(path string) checkResult {
+	out, err := exec.Command(path, "dolt", "show", "--json").CombinedOutput()
+	text := strings.TrimSpace(string(out))
+	if err != nil {
+		details := text
+		if details == "" {
+			details = err.Error()
+		}
+		return checkResult{Name: "bd-dolt", Status: "warn", Details: fmt.Sprintf("bd dolt show --json failed: %s", details), Required: false}
+	}
+	status, details := assessBDDoltShowOutput(text)
+	return checkResult{Name: "bd-dolt", Status: status, Details: details, Required: false}
+}
+
+func assessBDDoltShowOutput(raw string) (string, string) {
+	text := strings.TrimSpace(raw)
+	if text == "" {
+		return "warn", "bd dolt show returned empty output"
+	}
+	if strings.HasPrefix(text, "{") {
+		if status, details, ok := assessBDDoltShowJSON(text); ok {
+			return status, details
+		}
+	}
+	summary := summarizeBDDoltShow(text)
+	lower := strings.ToLower(text)
+	mode := strings.ToLower(doltShowField(text, "Mode:"))
+	if mode == "embedded" {
+		return "ok", summary + " (embedded mode)"
+	}
+	switch {
+	case strings.Contains(lower, "server not reachable"), strings.Contains(lower, "server unreachable"), strings.Contains(text, "✗"):
+		return "warn", summary + " (server not reachable)"
+	case strings.Contains(lower, "server reachable"), strings.Contains(text, "✓"):
+		return "ok", summary + " (server reachable)"
+	case mode == "server":
+		return "ok", summary + " (server mode)"
+	default:
+		return "warn", summary + " (unable to determine server reachability)"
+	}
+}
+
+func assessBDDoltShowJSON(raw string) (string, string, bool) {
+	var payload map[string]any
+	if err := json.Unmarshal([]byte(raw), &payload); err != nil {
+		return "", "", false
+	}
+	summary := summarizeBDDoltShowJSON(payload)
+	mode := strings.ToLower(strings.TrimSpace(toString(payload["mode"])))
+	backend := strings.ToLower(strings.TrimSpace(toString(payload["backend"])))
+
+	if backend != "" && backend != "dolt" {
+		return "warn", summary + fmt.Sprintf(" (unexpected backend %q)", backend), true
+	}
+	if connectionOK, ok := jsonBool(payload, "connection_ok", "server_reachable", "reachable"); ok {
+		if connectionOK {
+			return "ok", summary + " (server reachable)", true
+		}
+		return "warn", summary + " (server not reachable)", true
+	}
+	if mode == "embedded" {
+		return "ok", summary + " (embedded mode)", true
+	}
+	if mode == "server" {
+		if reachable, ok := jsonBool(payload, "server_reachable", "reachable"); ok {
+			if reachable {
+				return "ok", summary + " (server reachable)", true
+			}
+			return "warn", summary + " (server not reachable)", true
+		}
+		if statusText, ok := jsonString(payload, "connection_status", "status", "connectivity"); ok {
+			lowerStatus := strings.ToLower(statusText)
+			switch {
+			case strings.Contains(lowerStatus, "unreachable"), strings.Contains(lowerStatus, "not reachable"), strings.Contains(lowerStatus, "failed"):
+				return "warn", summary + " (server not reachable)", true
+			case strings.Contains(lowerStatus, "reachable"), strings.Contains(lowerStatus, "ok"), strings.Contains(lowerStatus, "connected"):
+				return "ok", summary + " (server reachable)", true
+			}
+		}
+		return "ok", summary + " (server mode)", true
+	}
+	if mode != "" {
+		return "warn", summary + fmt.Sprintf(" (unsupported mode %q)", mode), true
+	}
+	return "warn", summary + " (unable to determine dolt mode)", true
+}
+
+func summarizeBDDoltShow(raw string) string {
+	parts := make([]string, 0, 4)
+	if mode := doltShowField(raw, "Mode:"); mode != "" {
+		parts = append(parts, "mode="+mode)
+	}
+	if db := doltShowField(raw, "Database:"); db != "" {
+		parts = append(parts, "database="+db)
+	}
+	if host := doltShowField(raw, "Host:"); host != "" {
+		parts = append(parts, "host="+host)
+	}
+	if port := doltShowField(raw, "Port:"); port != "" {
+		parts = append(parts, "port="+port)
+	}
+	if len(parts) == 0 {
+		return "bd dolt show"
+	}
+	return strings.Join(parts, " ")
+}
+
+func summarizeBDDoltShowJSON(payload map[string]any) string {
+	parts := make([]string, 0, 5)
+	if backend, ok := jsonString(payload, "backend"); ok {
+		parts = append(parts, "backend="+backend)
+	}
+	if mode, ok := jsonString(payload, "mode"); ok {
+		parts = append(parts, "mode="+mode)
+	}
+	if database, ok := jsonString(payload, "database"); ok {
+		parts = append(parts, "database="+database)
+	}
+	if host, ok := jsonString(payload, "host"); ok {
+		parts = append(parts, "host="+host)
+	}
+	if port, ok := jsonNumber(payload, "port"); ok {
+		parts = append(parts, "port="+port)
+	}
+	if len(parts) == 0 {
+		return "bd dolt show"
+	}
+	return strings.Join(parts, " ")
+}
+
+func jsonString(payload map[string]any, keys ...string) (string, bool) {
+	for _, key := range keys {
+		raw, ok := payload[key]
+		if !ok {
+			continue
+		}
+		value := strings.TrimSpace(toString(raw))
+		if value != "" {
+			return value, true
+		}
+	}
+	return "", false
+}
+
+func jsonNumber(payload map[string]any, keys ...string) (string, bool) {
+	for _, key := range keys {
+		raw, ok := payload[key]
+		if !ok {
+			continue
+		}
+		switch v := raw.(type) {
+		case float64:
+			return strconv.Itoa(int(v)), true
+		case int:
+			return strconv.Itoa(v), true
+		case int64:
+			return strconv.FormatInt(v, 10), true
+		case json.Number:
+			return v.String(), true
+		case string:
+			trimmed := strings.TrimSpace(v)
+			if trimmed != "" {
+				return trimmed, true
+			}
+		}
+	}
+	return "", false
+}
+
+func jsonBool(payload map[string]any, keys ...string) (bool, bool) {
+	for _, key := range keys {
+		raw, ok := payload[key]
+		if !ok {
+			continue
+		}
+		switch v := raw.(type) {
+		case bool:
+			return v, true
+		case string:
+			trimmed := strings.ToLower(strings.TrimSpace(v))
+			switch trimmed {
+			case "true", "yes", "1", "reachable", "ok", "connected":
+				return true, true
+			case "false", "no", "0", "unreachable", "failed", "disconnected":
+				return false, true
+			}
+		}
+	}
+	return false, false
+}
+
+func toString(value any) string {
+	switch v := value.(type) {
+	case string:
+		return v
+	case fmt.Stringer:
+		return v.String()
+	case nil:
+		return ""
+	default:
+		return fmt.Sprintf("%v", v)
+	}
+}
+
+func doltShowField(raw, prefix string) string {
+	for _, line := range strings.Split(raw, "\n") {
+		trimmed := strings.TrimSpace(line)
+		if !strings.HasPrefix(trimmed, prefix) {
+			continue
+		}
+		return strings.TrimSpace(strings.TrimPrefix(trimmed, prefix))
+	}
+	return ""
 }
 
 func checkCodexFeatures() checkResult {

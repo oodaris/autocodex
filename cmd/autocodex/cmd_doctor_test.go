@@ -110,3 +110,118 @@ multi_agent experimental false
 		t.Fatalf("expected multi_agent=false")
 	}
 }
+
+func TestAssessBDVersionOutput(t *testing.T) {
+	status, details := assessBDVersionOutput("bd version 0.55.4 (dev)")
+	if status != "warn" {
+		t.Fatalf("expected warn for old bd version, got %s", status)
+	}
+	if !strings.Contains(details, "requires >=") {
+		t.Fatalf("expected minimum-version guidance, got %q", details)
+	}
+
+	status, details = assessBDVersionOutput("bd version 0.56.1 (48bfaaad)")
+	if status != "ok" {
+		t.Fatalf("expected ok for target bd version, got %s", status)
+	}
+	if !strings.Contains(details, "target >=") {
+		t.Fatalf("expected target-version detail, got %q", details)
+	}
+
+	status, _ = assessBDVersionOutput("")
+	if status != "warn" {
+		t.Fatalf("expected warn for empty output, got %s", status)
+	}
+}
+
+func TestAssessBDDoltShowOutput(t *testing.T) {
+	embeddedJSON := `{
+  "backend": "dolt",
+  "database": "beads",
+  "host": "127.0.0.1",
+  "mode": "embedded",
+  "port": 3307,
+  "user": "root"
+}`
+	status, details := assessBDDoltShowOutput(embeddedJSON)
+	if status != "ok" {
+		t.Fatalf("expected ok for embedded json output, got %s", status)
+	}
+	if !strings.Contains(details, "mode=embedded") || !strings.Contains(details, "embedded mode") {
+		t.Fatalf("unexpected embedded details: %q", details)
+	}
+
+	serverJSONReachable := `{
+  "backend": "dolt",
+  "database": "beads",
+  "host": "127.0.0.1",
+  "port": 3307,
+  "connection_ok": true
+}`
+	status, details = assessBDDoltShowOutput(serverJSONReachable)
+	if status != "ok" {
+		t.Fatalf("expected ok for connection_ok=true json output, got %s", status)
+	}
+	if !strings.Contains(details, "server reachable") {
+		t.Fatalf("unexpected reachable connection details: %q", details)
+	}
+
+	serverJSONUnreachable := `{
+  "backend": "dolt",
+  "database": "beads",
+  "host": "127.0.0.1",
+  "port": 3307,
+  "connection_ok": false
+}`
+	status, details = assessBDDoltShowOutput(serverJSONUnreachable)
+	if status != "warn" {
+		t.Fatalf("expected warn for unreachable server json output, got %s", status)
+	}
+	if !strings.Contains(details, "server not reachable") {
+		t.Fatalf("unexpected server details: %q", details)
+	}
+
+	reachable := `Dolt Configuration
+==================
+  Mode:     server
+  Database: beads
+  Host:     127.0.0.1
+  Port:     3307
+
+  ✓ Server reachable`
+	status, details = assessBDDoltShowOutput(reachable)
+	if status != "ok" {
+		t.Fatalf("expected ok for reachable output, got %s", status)
+	}
+	if !strings.Contains(details, "database=beads") || !strings.Contains(details, "mode=server") || !strings.Contains(details, "server reachable") {
+		t.Fatalf("unexpected reachable details: %q", details)
+	}
+
+	unreachable := `Dolt Configuration
+==================
+  Mode:     server
+  Database: beads
+  Host:     127.0.0.1
+  Port:     3307
+
+  ✗ Server not reachable`
+	status, details = assessBDDoltShowOutput(unreachable)
+	if status != "warn" {
+		t.Fatalf("expected warn for unreachable output, got %s", status)
+	}
+	if !strings.Contains(details, "server not reachable") {
+		t.Fatalf("unexpected unreachable details: %q", details)
+	}
+
+	embedded := `Dolt Configuration
+==================
+  Mode:     embedded
+  Database: beads`
+	status, details = assessBDDoltShowOutput(embedded)
+	if status != "ok" {
+		t.Fatalf("expected ok for embedded text output, got %s", status)
+	}
+	if !strings.Contains(details, "embedded mode") {
+		t.Fatalf("unexpected embedded text details: %q", details)
+	}
+}

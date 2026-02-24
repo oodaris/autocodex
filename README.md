@@ -67,8 +67,11 @@ autocodex plugins --action list
   - Tested with: `codex-cli 0.101.0`
   - Recommended: `codex-cli >= 0.94.0` (older versions may work but have different defaults around approvals/search/modes)
 - Beads (`bd`) optional, required when `autonomy.require_bd: true`
-  - Tested with: `bd 0.50.3`
-  - Repo note (contributors): this repo's `.beads` uses the Dolt backend (`.beads/dolt`, gitignored). Verify with `bd info --json` (or `bd backend show --json` on newer bd versions).
+  - Tested with: `bd 0.56.1`
+  - Recommended: `bd >= 0.56.1` for strict doctor/preflight checks in this repo
+  - Repo note (contributors): this repo's `.beads` uses the Dolt backend (`.beads/dolt`, gitignored). Verify with `bd info --json` and `bd dolt show --json`.
+  - If `bd` reports Dolt server unreachable, start: `dolt sql-server --data-dir "$(pwd)/.beads/dolt" --host 127.0.0.1 --port 3307`
+  - `bd sync` refreshes `.beads/issues.jsonl` from Dolt; git commit/push still uses normal git commands.
 
 **Build / contributor requirements**
 - Go 1.26+ (only if installing via `go install` or building from source)

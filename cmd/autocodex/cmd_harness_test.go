@@ -12,6 +12,12 @@ func TestIsNonBlockingDoctorWarning(t *testing.T) {
 	if isNonBlockingDoctorWarning("codex") {
 		t.Fatalf("expected codex warning to be blocking")
 	}
+	if isNonBlockingDoctorWarning("bd-version") {
+		t.Fatalf("expected bd-version warning to be blocking")
+	}
+	if isNonBlockingDoctorWarning("bd-dolt") {
+		t.Fatalf("expected bd-dolt warning to be blocking")
+	}
 }
 
 func TestRunHarnessLintMissingScript(t *testing.T) {

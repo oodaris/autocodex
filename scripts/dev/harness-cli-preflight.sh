@@ -3,6 +3,7 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 FAILURES=0
+TARGET_BD_VERSION="0.56.1"
 
 pass() {
   printf 'PASS: %s\n' "$1"
@@ -38,6 +39,34 @@ check_bd_state() {
   fi
 }
 
+check_bd_version() {
+  if ! command -v bd >/dev/null 2>&1; then
+    return
+  fi
+  local raw version
+  raw="$(bd --version 2>/dev/null || true)"
+  version="$(printf '%s' "$raw" | sed -nE 's/.*([0-9]+\.[0-9]+\.[0-9]+).*/\1/p' | head -n1)"
+  if [[ -z "$version" ]]; then
+    warn "unable to parse bd version output ($raw)"
+    return
+  fi
+  if python3 - "$version" "$TARGET_BD_VERSION" <<'PY'
+import sys
+
+def parse(v: str) -> tuple[int, int, int]:
+    return tuple(int(part) for part in v.split("."))
+
+current = parse(sys.argv[1])
+target = parse(sys.argv[2])
+sys.exit(0 if current >= target else 1)
+PY
+  then
+    pass "bd version $version meets target >= $TARGET_BD_VERSION"
+  else
+    fail "bd version $version is below target >= $TARGET_BD_VERSION"
+  fi
+}
+
 check_harness_preflight() {
   if command -v autocodex >/dev/null 2>&1; then
     if autocodex harness preflight --config "$ROOT_DIR/config.example.yaml" --strict >/dev/null 2>&1; then
@@ -69,6 +98,7 @@ main() {
   require_cmd "python3" "python3 command available"
 
   check_bd_state
+  check_bd_version
   check_harness_preflight
   check_harness_lint
 
