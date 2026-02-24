@@ -8,7 +8,7 @@ ENFORCE_JSONL_HOOKS="${ENFORCE_JSONL_HOOKS:-0}"
 AUTO_START_DOLT_SERVER="${AUTO_START_DOLT_SERVER:-1}"
 DOLT_HOST="${DOLT_HOST:-127.0.0.1}"
 DOLT_PORT="${DOLT_PORT:-3307}"
-DOLT_LOG_PATH="${DOLT_LOG_PATH:-$ROOT_DIR/.beads/dolt-sql-server.log}"
+DOLT_LOG_PATH="${DOLT_LOG_PATH:-/tmp/autocodex-dolt-sql-server.log}"
 
 pass() {
   printf 'PASS: %s\n' "$1"
@@ -67,7 +67,7 @@ ensure_dolt_server() {
   fi
 
   warn "bd cannot reach Dolt server; attempting to auto-start local Dolt SQL server"
-  (cd "$ROOT_DIR" && dolt sql-server --data-dir "$ROOT_DIR/.beads/dolt" --host "$DOLT_HOST" --port "$DOLT_PORT" >"$DOLT_LOG_PATH" 2>&1 &)
+  nohup dolt sql-server --data-dir "$ROOT_DIR/.beads/dolt" --host "$DOLT_HOST" --port "$DOLT_PORT" >"$DOLT_LOG_PATH" 2>&1 < /dev/null &
 
   local i
   for i in {1..15}; do
