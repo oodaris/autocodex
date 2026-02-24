@@ -5,6 +5,10 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 FAILURES=0
 TARGET_BD_VERSION="0.56.1"
 ENFORCE_JSONL_HOOKS="${ENFORCE_JSONL_HOOKS:-0}"
+AUTO_START_DOLT_SERVER="${AUTO_START_DOLT_SERVER:-1}"
+DOLT_HOST="${DOLT_HOST:-127.0.0.1}"
+DOLT_PORT="${DOLT_PORT:-3307}"
+DOLT_LOG_PATH="${DOLT_LOG_PATH:-$ROOT_DIR/.beads/dolt-sql-server.log}"
 
 pass() {
   printf 'PASS: %s\n' "$1"
@@ -17,6 +21,65 @@ warn() {
 fail() {
   printf 'FAIL: %s\n' "$1"
   FAILURES=$((FAILURES + 1))
+}
+
+dolt_start_cmd() {
+  printf 'dolt sql-server --data-dir "%s/.beads/dolt" --host %s --port %s' "$ROOT_DIR" "$DOLT_HOST" "$DOLT_PORT"
+}
+
+bd_dolt_test_ok() {
+  local raw
+  raw="$(cd "$ROOT_DIR" && bd dolt test --json 2>/dev/null || true)"
+  if [[ -z "$raw" ]]; then
+    return 1
+  fi
+  BD_DOLT_TEST_JSON="$raw" python3 - <<'PY'
+import json
+import os
+import sys
+
+raw = os.environ.get("BD_DOLT_TEST_JSON", "")
+try:
+    data = json.loads(raw)
+except Exception:
+    sys.exit(1)
+
+if data.get("connection_ok") is True:
+    sys.exit(0)
+sys.exit(1)
+PY
+}
+
+ensure_dolt_server() {
+  if ! command -v bd >/dev/null 2>&1; then
+    return 1
+  fi
+  if bd_dolt_test_ok; then
+    return 0
+  fi
+
+  if [[ "$AUTO_START_DOLT_SERVER" != "1" ]]; then
+    return 1
+  fi
+  if ! command -v dolt >/dev/null 2>&1; then
+    warn "dolt command not found; cannot auto-start Dolt SQL server"
+    return 1
+  fi
+
+  warn "bd cannot reach Dolt server; attempting to auto-start local Dolt SQL server"
+  (cd "$ROOT_DIR" && dolt sql-server --data-dir "$ROOT_DIR/.beads/dolt" --host "$DOLT_HOST" --port "$DOLT_PORT" >"$DOLT_LOG_PATH" 2>&1 &)
+
+  local i
+  for i in {1..15}; do
+    sleep 0.2
+    if bd_dolt_test_ok; then
+      pass "auto-started Dolt SQL server ($DOLT_HOST:$DOLT_PORT)"
+      return 0
+    fi
+  done
+
+  warn "auto-start attempt did not make Dolt reachable (see $DOLT_LOG_PATH)"
+  return 1
 }
 
 require_cmd() {
@@ -40,7 +103,11 @@ check_bd_state() {
     local single_line
     single_line="$(printf '%s' "$output" | tr '\n' ' ')"
     if [[ "$single_line" == *"Dolt server unreachable"* ]] || [[ "$single_line" == *"connect: connection refused"* ]]; then
-      fail "bd cannot reach Dolt server (run: dolt sql-server --data-dir \"$ROOT_DIR/.beads/dolt\" --host 127.0.0.1 --port 3307)"
+      if ensure_dolt_server && output="$(cd "$ROOT_DIR" && bd info --json 2>&1)"; then
+        pass "bd repository state is initialized"
+        return
+      fi
+      fail "bd cannot reach Dolt server (run: $(dolt_start_cmd))"
     elif [[ "$single_line" == *"bd init"* ]]; then
       fail "bd repository is not initialized (run: cd \"$ROOT_DIR\" && bd onboard; optional mirror setup: bd migrate sync beads-sync)"
     else
@@ -81,6 +148,10 @@ check_bd_dolt_connection() {
   if ! command -v bd >/dev/null 2>&1; then
     return
   fi
+  if ensure_dolt_server; then
+    pass "bd dolt baseline connection test is healthy"
+  fi
+
   local raw status details
   raw="$(cd "$ROOT_DIR" && bd dolt show --json 2>/dev/null || true)"
   if [[ -z "$raw" ]]; then
@@ -145,7 +216,7 @@ PY
   if [[ "$status" -eq 0 ]]; then
     pass "bd dolt connection is healthy ($details)"
   elif [[ "$status" -eq 1 ]]; then
-    fail "bd dolt connection is not ready ($details). Start Dolt SQL server: dolt sql-server --data-dir \"$ROOT_DIR/.beads/dolt\" --host 127.0.0.1 --port 3307"
+    fail "bd dolt connection is not ready ($details). Start Dolt SQL server: $(dolt_start_cmd)"
   else
     fail "unable to parse bd dolt show --json output"
   fi

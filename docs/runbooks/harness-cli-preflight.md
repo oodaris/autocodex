@@ -7,6 +7,8 @@ Run deterministic checks before high-impact autonomy execution or harness policy
 bash scripts/dev/harness-cli-preflight.sh
 ```
 
+By default, the script attempts to auto-start a local Dolt SQL server for this repo when unreachable. Disable with `AUTO_START_DOLT_SERVER=0`.
+
 Optional strict mode:
 ```bash
 autocodex harness preflight --strict
@@ -34,7 +36,7 @@ autocodex harness preflight --strict
 3. If Dolt readiness fails, run:
    - `bd dolt show --json`
    - `bd doctor --migration=post`
-   - if `connection_ok` is false, start Dolt SQL server for this repo:
+   - if `connection_ok` is false and auto-start is disabled/unavailable, start Dolt SQL server for this repo:
      - `dolt sql-server --data-dir "$(pwd)/.beads/dolt" --host 127.0.0.1 --port 3307`
 4. If hooks are missing and your workflow requires JSONL mirror files:
    - `bd hooks install`
