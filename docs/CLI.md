@@ -24,7 +24,7 @@ autocodex bootstrap [--config <path>] [--profile <name>] [--ready] [--smoke-task
 Flags:
 - `--config`: config file path (default `autocodex.yaml`)
 - `--profile`: config profile to apply (`max_capability` | `balanced` | `max_throughput`)
-- `--ready`: run strict readiness checks after bootstrap (`harness preflight --strict` + standalone harness lint)
+- `--ready`: run strict readiness checks after bootstrap (`harness preflight --strict` + `harness lint`)
 - `--smoke-task`: optional task text to execute after bootstrap using the current config/profile
 - `--force`: overwrite existing templates/schemas/skills
 - `--init-git`: initialize a git repo if missing (default: true)
@@ -97,16 +97,18 @@ Flags:
 Run harness-specific readiness checks.
 ```bash
 autocodex harness preflight [--config <path>] [--strict] [--json]
+autocodex harness lint [--config <path>] [--json]
 autocodex harness --help
 ```
 Flags:
 - `--config`: config file path
-- `--strict`: treat actionable doctor warnings as errors
+- `--strict`: (`preflight` only) treat actionable doctor warnings as errors
 - `--json`: output only the check array as JSON (machine-readable)
 
 Notes:
 - `autocodex harness --help` prints harness subcommand usage.
 - `autocodex harness preflight --json` writes parseable JSON to stdout without trailing text.
+- `autocodex harness lint` runs the same policy-pack invariants as preflight's lint check.
 
 ### status
 Show run status.

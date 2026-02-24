@@ -21,7 +21,7 @@ autocodex harness preflight --strict
 4. Optional hook audit (`bd hooks list --json`) to detect JSONL mirror drift risk.
 5. `codex` CLI availability and version/capability checks.
 6. `autocodex harness preflight --strict` (or go-run fallback), which includes doctor + harness lint checks.
-7. Standalone harness config lint (`python3 scripts/harness_config_lint.py`) as explicit policy-pack validation.
+7. Standalone harness config lint (`autocodex harness lint` or go-run fallback) as explicit policy-pack validation.
 
 ## Success marker
 `Harness preflight passed.`

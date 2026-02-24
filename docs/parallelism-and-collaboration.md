@@ -101,7 +101,7 @@ Harness mode does not replace scheduling; it adds closure policy and evidence ga
 
 - Enable with `autonomy.harness.enabled: true`
 - Preflight command: `autocodex harness preflight --strict`
-- Lint command: `python3 scripts/harness_config_lint.py`
+- Lint command: `autocodex harness lint`
 - In `impact_mode: high`, ACTIONS closure must include:
   - `council_verdict: GREEN`
   - `critic_verdict: GO`

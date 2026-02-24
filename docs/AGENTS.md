@@ -77,7 +77,7 @@ autocodex "Add a quick summary to memory docs."
 ## 2.3) Harness v2 flow (repo default policy)
 - Run preflight before high-impact autonomy changes:
   - `autocodex harness preflight --strict`
-  - `python3 scripts/harness_config_lint.py`
+  - `autocodex harness lint`
 - Harness controls live under `autonomy.harness.*` in config.
 - High-impact closure requires ACTIONS gates with:
   - `council_verdict: GREEN`

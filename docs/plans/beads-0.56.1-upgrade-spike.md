@@ -42,7 +42,7 @@ This plan executes a focused Beads `v0.56.1` compatibility spike for `autocodex`
 - Runtime verification required:
   - `go run ./cmd/autocodex doctor --config config.example.yaml --strict`
   - `go run ./cmd/autocodex harness preflight --config config.example.yaml --strict`
-  - `python3 scripts/harness_config_lint.py`
+  - `autocodex harness lint`
 - Evidence required (paths):
   - `docs/plans/beads-0.56.1-upgrade-spike.md`
   - `docs/specs/beads-0.56.1-upgrade-spike.md`
@@ -73,7 +73,7 @@ This plan executes a focused Beads `v0.56.1` compatibility spike for `autocodex`
 ## Verification evidence
 - `go test ./...` -> pass (2026-02-24).
 - `go vet ./...` -> pass (2026-02-24).
-- `python3 scripts/harness_config_lint.py` -> pass (2026-02-24).
+- `autocodex harness lint` -> pass (2026-02-24).
 - `go run ./cmd/autocodex doctor --config config.example.yaml --strict` -> pass after creating `.autocodex/memory`.
 - `go run ./cmd/autocodex harness preflight --config config.example.yaml --strict` -> pass.
 - `bash scripts/dev/harness-cli-preflight.sh` -> pass with `bd 0.56.1`.

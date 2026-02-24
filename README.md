@@ -106,7 +106,7 @@ brew install steveyegge/beads/bd
 **Harness readiness (recommended before high-impact autonomy work)**
 ```bash
 autocodex harness preflight --strict
-python3 scripts/harness_config_lint.py
+autocodex harness lint
 ```
 
 ### What happens on run

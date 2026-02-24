@@ -54,7 +54,7 @@ Rules:
 1. `go test ./...`
 2. `go vet ./...`
 3. `autocodex harness preflight --strict`
-4. `python3 scripts/harness_config_lint.py`
+4. `autocodex harness lint`
 
 If any gate fails: stop, produce minimal repro, and create/claim fix bead.
 
@@ -80,7 +80,7 @@ Treat changes as high-impact when they affect:
 
 ## 8) Adoption checklist
 1. `.codex/config.toml` and required role files exist.
-2. `scripts/harness_config_lint.py` passes.
+2. `autocodex harness lint` passes.
 3. `bash scripts/dev/harness-cli-preflight.sh` passes.
 4. RFC backlog exists in `docs/plans/*-tasks.json` and BD tasks with dependencies.
 5. High-impact changes include council + critic gate evidence.

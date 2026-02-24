@@ -1,16 +1,13 @@
 package main
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"github.com/oodaris/autocodex/internal/config"
 )
@@ -33,6 +30,8 @@ func runHarness(args []string) {
 	switch args[0] {
 	case "preflight":
 		runHarnessPreflight(args[1:])
+	case "lint":
+		runHarnessLintCommand(args[1:])
 	default:
 		exitErr(fmt.Errorf("unknown harness subcommand: %s", args[0]))
 	}
@@ -40,7 +39,7 @@ func runHarness(args []string) {
 
 func printHarnessUsage() {
 	fmt.Println("Usage: autocodex harness <subcommand> [args]")
-	fmt.Println("Subcommands: preflight")
+	fmt.Println("Subcommands: preflight, lint")
 }
 
 func isHarnessHelpArg(value string) bool {
@@ -75,6 +74,29 @@ func runHarnessPreflight(args []string) {
 	}
 	if !*jsonOutput {
 		fmt.Println("Harness preflight passed.")
+	}
+}
+
+func runHarnessLintCommand(args []string) {
+	fs := flag.NewFlagSet("harness lint", flag.ExitOnError)
+	configPath := fs.String("config", config.ResolveConfigPath(), "Config file path")
+	jsonOutput := fs.Bool("json", false, "output check as JSON")
+	fs.Parse(args)
+
+	cfg, err := config.Load(*configPath)
+	if err != nil {
+		exitErr(err)
+	}
+
+	result := runHarnessLint(cfg)
+	if err := printHarnessPreflightChecks([]harnessCheck{result}, *jsonOutput); err != nil {
+		exitErr(err)
+	}
+	if result.Status == "error" {
+		exitErr(fmt.Errorf("harness lint found issues"))
+	}
+	if !*jsonOutput {
+		fmt.Println("Harness lint passed.")
 	}
 }
 
@@ -132,7 +154,7 @@ func runHarnessPreflightChecks(cfg config.Config, configPath string, strict bool
 		})
 	}
 
-	lintResult := runHarnessLint()
+	lintResult := runHarnessLint(cfg)
 	checks = append(checks, lintResult)
 	if lintResult.Status == "error" {
 		hasFailure = true
@@ -144,24 +166,4 @@ func runHarnessPreflightChecks(cfg config.Config, configPath string, strict bool
 func isNonBlockingDoctorWarning(name string) bool {
 	// Missing memory docs in a fresh clone is expected and should not block preflight.
 	return name == "memory"
-}
-
-func runHarnessLint() harnessCheck {
-	path := filepath.Join("scripts", "harness_config_lint.py")
-	if _, err := os.Stat(path); err != nil {
-		return harnessCheck{Name: "harness.lint", Status: "error", Details: fmt.Sprintf("missing (%s)", path)}
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), 45*time.Second)
-	defer cancel()
-	cmd := exec.CommandContext(ctx, "python3", path)
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		details := strings.TrimSpace(string(out))
-		if details == "" {
-			details = err.Error()
-		}
-		return harnessCheck{Name: "harness.lint", Status: "error", Details: details}
-	}
-	return harnessCheck{Name: "harness.lint", Status: "ok", Details: strings.TrimSpace(string(out))}
 }

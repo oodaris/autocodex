@@ -14,7 +14,7 @@ Run gates in order:
 1) go test ./...
 2) go vet ./...
 3) autocodex harness preflight --strict
-4) python3 scripts/harness_config_lint.py
+4) autocodex harness lint
 
 If any gate fails, stop and report minimum repro details.
 """

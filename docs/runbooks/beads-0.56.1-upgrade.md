@@ -61,7 +61,7 @@ Run strict readiness checks:
 ```bash
 autocodex doctor --config config.example.yaml --strict
 autocodex harness preflight --config config.example.yaml --strict
-python3 scripts/harness_config_lint.py
+autocodex harness lint --config config.example.yaml
 ```
 
 Success criteria:

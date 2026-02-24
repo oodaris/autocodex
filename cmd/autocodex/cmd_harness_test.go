@@ -6,6 +6,8 @@ import (
 	"os"
 	"strings"
 	"testing"
+
+	"github.com/oodaris/autocodex/internal/config"
 )
 
 func TestIsNonBlockingDoctorWarning(t *testing.T) {
@@ -23,7 +25,7 @@ func TestIsNonBlockingDoctorWarning(t *testing.T) {
 	}
 }
 
-func TestRunHarnessLintMissingScript(t *testing.T) {
+func TestRunHarnessLintMissingRolePackConfig(t *testing.T) {
 	cwd, err := os.Getwd()
 	if err != nil {
 		t.Fatalf("get wd: %v", err)
@@ -34,9 +36,14 @@ func TestRunHarnessLintMissingScript(t *testing.T) {
 	}
 	defer func() { _ = os.Chdir(cwd) }()
 
-	result := runHarnessLint()
+	cfg := config.Config{Version: "v1", Mode: "yolo"}
+	cfg.ApplyDefaults()
+	result := runHarnessLint(cfg)
 	if result.Status != "error" {
-		t.Fatalf("expected lint error when script missing, got %s", result.Status)
+		t.Fatalf("expected lint error when role pack is missing, got %s", result.Status)
+	}
+	if !strings.Contains(result.Details, ".codex/config.toml") {
+		t.Fatalf("expected missing role pack config in details, got: %s", result.Details)
 	}
 }
 
@@ -55,6 +62,9 @@ func TestRunHarnessUsageOnHelp(t *testing.T) {
 	})
 	if !strings.Contains(out, "Usage: autocodex harness <subcommand> [args]") {
 		t.Fatalf("expected harness usage output")
+	}
+	if !strings.Contains(out, "preflight, lint") {
+		t.Fatalf("expected lint subcommand in usage output")
 	}
 }
 

@@ -20,7 +20,7 @@ Tracking mode for this rollout is `BD_STRICT`: closure is blocked unless BD stat
 ### Phase 0: Governance and Policy Pack Foundation
 - Add rollout spec + this RFC + machine-readable task list.
 - Add `.codex/config.toml` and role configs for orchestrator, council, critic, gates, and release flow.
-- Add operating pack runbook, deterministic eval docs, and executable harness lint/preflight scripts.
+- Add operating pack runbook, deterministic eval docs, and executable harness lint/preflight checks.
 - Initialize and populate BD task graph with file scopes + dependencies.
 
 ### Phase 1: Product Integration (CLI/config/doctor)
@@ -40,10 +40,10 @@ Tracking mode for this rollout is `BD_STRICT`: closure is blocked unless BD stat
 - Backlog:
   - RFC/spec/tasks artifacts (`docs/specs/*`, `docs/plans/*`).
   - Harness role pack and policy config (`.codex/config.toml`, `.codex/agents/*.toml`).
-  - Harness governance assets (`scripts/harness_config_lint.py`, `scripts/dev/harness-cli-preflight.sh`, runbooks/eval docs).
+  - Harness governance assets (`autocodex harness lint`, `scripts/dev/harness-cli-preflight.sh`, runbooks/eval docs).
   - BD rollout epic + dependency graph.
 - Acceptance criteria:
-  - [x] Harness role pack exists and passes `python3 scripts/harness_config_lint.py`.
+  - [x] Harness role pack exists and passes `autocodex harness lint`.
   - [x] Preflight script and runbook exist with deterministic success marker.
   - [x] BD graph created with dependencies and lintable issue descriptions.
 
@@ -80,7 +80,7 @@ Tracking mode for this rollout is `BD_STRICT`: closure is blocked unless BD stat
   - `go vet ./...`
 - Runtime verification required:
   - `autocodex harness preflight --strict`
-  - `python3 scripts/harness_config_lint.py`
+  - `autocodex harness lint`
 - Evidence required (paths):
   - `docs/plans/autocodex-harness-v2-rollout-rfc.md`
   - `docs/specs/autocodex-harness-v2-rollout.md`
@@ -112,7 +112,7 @@ Tracking mode for this rollout is `BD_STRICT`: closure is blocked unless BD stat
 ## Verification Evidence (2026-02-23)
 - `go test ./...` -> pass.
 - `go vet ./...` -> pass.
-- `python3 scripts/harness_config_lint.py` -> pass.
+- `autocodex harness lint` -> pass.
 - `bash scripts/dev/harness-cli-preflight.sh` -> pass.
 - `go run ./cmd/autocodex harness preflight --config config.example.yaml --strict` -> pass.
 

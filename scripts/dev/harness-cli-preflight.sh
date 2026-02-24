@@ -10,6 +10,27 @@ DOLT_HOST="${DOLT_HOST:-127.0.0.1}"
 DOLT_PORT="${DOLT_PORT:-3307}"
 DOLT_LOG_PATH="${DOLT_LOG_PATH:-/tmp/autocodex-dolt-sql-server.log}"
 
+version_gte() {
+  local current="$1"
+  local target="$2"
+  local IFS=.
+  local -a current_parts target_parts
+  read -r -a current_parts <<<"$current"
+  read -r -a target_parts <<<"$target"
+  local i
+  for i in 0 1 2; do
+    local cv="${current_parts[$i]:-0}"
+    local tv="${target_parts[$i]:-0}"
+    if ((10#$cv > 10#$tv)); then
+      return 0
+    fi
+    if ((10#$cv < 10#$tv)); then
+      return 1
+    fi
+  done
+  return 0
+}
+
 pass() {
   printf 'PASS: %s\n' "$1"
 }
@@ -33,21 +54,10 @@ bd_dolt_test_ok() {
   if [[ -z "$raw" ]]; then
     return 1
   fi
-  BD_DOLT_TEST_JSON="$raw" python3 - <<'PY'
-import json
-import os
-import sys
-
-raw = os.environ.get("BD_DOLT_TEST_JSON", "")
-try:
-    data = json.loads(raw)
-except Exception:
-    sys.exit(1)
-
-if data.get("connection_ok") is True:
-    sys.exit(0)
-sys.exit(1)
-PY
+  if printf '%s' "$raw" | tr -d '\n\r\t ' | grep -q '"connection_ok":true'; then
+    return 0
+  fi
+  return 1
 }
 
 ensure_dolt_server() {
@@ -127,17 +137,7 @@ check_bd_version() {
     warn "unable to parse bd version output ($raw)"
     return
   fi
-  if python3 - "$version" "$TARGET_BD_VERSION" <<'PY'
-import sys
-
-def parse(v: str) -> tuple[int, int, int]:
-    return tuple(int(part) for part in v.split("."))
-
-current = parse(sys.argv[1])
-target = parse(sys.argv[2])
-sys.exit(0 if current >= target else 1)
-PY
-  then
+  if version_gte "$version" "$TARGET_BD_VERSION"; then
     pass "bd version $version meets target >= $TARGET_BD_VERSION"
   else
     fail "bd version $version is below target >= $TARGET_BD_VERSION"
@@ -159,66 +159,26 @@ check_bd_dolt_connection() {
     return
   fi
 
-  set +e
-  details="$(
-    BD_DOLT_SHOW_JSON="$raw" python3 - <<'PY'
-import json
-import os
-import sys
+  local compact backend mode host port connection_ok reachable
+  compact="$(printf '%s' "$raw" | tr -d '\n\r\t ')"
+  backend="$(printf '%s' "$compact" | sed -nE 's/.*"backend":"?([^",}]*)"?.*/\1/p' | head -n1)"
+  mode="$(printf '%s' "$compact" | sed -nE 's/.*"mode":"?([^",}]*)"?.*/\1/p' | head -n1)"
+  host="$(printf '%s' "$compact" | sed -nE 's/.*"host":"?([^",}]*)"?.*/\1/p' | head -n1)"
+  port="$(printf '%s' "$compact" | sed -nE 's/.*"port":([0-9]+).*/\1/p' | head -n1)"
+  connection_ok=0
+  reachable=0
+  if printf '%s' "$compact" | grep -Eq '"connection_ok":true|"server_reachable":true|"reachable":true'; then
+    connection_ok=1
+  fi
+  if printf '%s' "$compact" | grep -q '"mode":"embedded"'; then
+    reachable=1
+  fi
+  details="backend=${backend:-unknown} mode=${mode:-unknown} host=${host:-unknown} port=${port:-unknown}"
 
-raw = os.environ.get("BD_DOLT_SHOW_JSON", "")
-try:
-    data = json.loads(raw)
-except Exception:
-    print("invalid-json")
-    sys.exit(2)
-
-backend = data.get("backend", "")
-host = data.get("host", "")
-port = data.get("port", "")
-mode = str(data.get("mode", "")).strip().lower()
-ok = data.get("connection_ok")
-reachable = data.get("server_reachable", data.get("reachable"))
-
-def as_bool(value):
-    if isinstance(value, bool):
-        return value
-    if isinstance(value, str):
-        text = value.strip().lower()
-        if text in {"true", "1", "yes", "ok", "reachable", "connected"}:
-            return True
-        if text in {"false", "0", "no", "unreachable", "failed", "disconnected"}:
-            return False
-    return None
-
-if mode == "embedded":
-    print(f"backend={backend} mode=embedded host={host} port={port}")
-    sys.exit(0)
-
-if as_bool(ok) is True or as_bool(reachable) is True:
-    print(f"backend={backend} mode={mode} host={host} port={port}")
-    sys.exit(0)
-if as_bool(ok) is False or as_bool(reachable) is False:
-    print(f"backend={backend} mode={mode} host={host} port={port}")
-    sys.exit(1)
-
-if mode == "server":
-    print(f"backend={backend} mode=server host={host} port={port}")
-    sys.exit(1)
-
-print(f"backend={backend} mode={mode} host={host} port={port}")
-sys.exit(1)
-PY
-)"
-  status=$?
-  set -e
-
-  if [[ "$status" -eq 0 ]]; then
+  if [[ "$connection_ok" -eq 1 || "$reachable" -eq 1 ]]; then
     pass "bd dolt connection is healthy ($details)"
-  elif [[ "$status" -eq 1 ]]; then
-    fail "bd dolt connection is not ready ($details). Start Dolt SQL server: $(dolt_start_cmd)"
   else
-    fail "unable to parse bd dolt show --json output"
+    fail "bd dolt connection is not ready ($details). Start Dolt SQL server: $(dolt_start_cmd)"
   fi
 }
 
@@ -233,35 +193,22 @@ check_bd_hooks() {
     return
   fi
 
-  set +e
   missing="$(
-    BD_HOOKS_JSON="$raw" python3 - <<'PY'
-import json
-import os
-import sys
-
-raw = os.environ.get("BD_HOOKS_JSON", "")
-try:
-    data = json.loads(raw)
-except Exception:
-    sys.exit(2)
-
-hooks = data.get("hooks", [])
-missing = [h.get("Name", "") for h in hooks if not h.get("Installed", False)]
-if missing:
-    print(", ".join([name for name in missing if name]))
-    sys.exit(1)
-sys.exit(0)
-PY
-)"
-  status=$?
-  set -e
-  if [[ "$status" -eq 0 ]]; then
+    printf '%s\n' "$raw" | awk '
+      /"Name":/ {
+        name = $2
+        gsub(/[",]/, "", name)
+      }
+      /"Installed":[[:space:]]*false/ {
+        if (name != "") {
+          print name
+          name = ""
+        }
+      }
+    ' | paste -sd, -
+  )"
+  if [[ -z "$missing" ]]; then
     pass "bd hooks are installed"
-    return
-  fi
-  if [[ "$status" -eq 2 ]]; then
-    warn "unable to parse bd hooks list --json output"
     return
   fi
 
@@ -296,17 +243,31 @@ check_harness_preflight() {
 }
 
 check_harness_lint() {
-  if python3 "$ROOT_DIR/scripts/harness_config_lint.py" >/dev/null 2>&1; then
-    pass "harness config lint passes"
-  else
-    fail "harness config lint failed"
+  if command -v go >/dev/null 2>&1; then
+    if (cd "$ROOT_DIR" && go run ./cmd/autocodex harness lint --config "$ROOT_DIR/config.example.yaml" >/dev/null 2>&1); then
+      pass "go-run harness lint passes"
+    else
+      fail "go-run harness lint failed"
+    fi
+    return
   fi
+
+  if command -v autocodex >/dev/null 2>&1; then
+    warn "go not found; using autocodex from PATH (may not match repo source)"
+    if (cd "$ROOT_DIR" && autocodex harness lint --config "$ROOT_DIR/config.example.yaml" >/dev/null 2>&1); then
+      pass "autocodex harness lint passes"
+    else
+      fail "autocodex harness lint failed"
+    fi
+    return
+  fi
+
+  fail "neither go nor autocodex command is available to run harness lint"
 }
 
 main() {
   require_cmd "bd" "bd command available"
   require_cmd "codex" "codex command available"
-  require_cmd "python3" "python3 command available"
 
   check_bd_state
   check_bd_version

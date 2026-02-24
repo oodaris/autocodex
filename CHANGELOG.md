@@ -11,10 +11,12 @@ Semantic Versioning.
 - `autocodex bootstrap --profile` support with `max_capability`, `balanced`, and `max_throughput` presets.
 - `autocodex bootstrap --ready` to run strict harness readiness checks as part of bootstrap.
 - `autocodex bootstrap --smoke-task "<task>"` to execute an optional post-bootstrap smoke task with the configured profile.
+- `autocodex harness lint` as a first-class Go command for Harness v2 policy-pack validation.
 
 ### Changed
 - Config now includes a top-level `profile` field (default `max_capability`) and bootstrap applies selected profile defaults automatically for new configs or explicit `--profile` runs.
 - Bootstrap now supports an end-to-end readiness workflow (repo setup -> strict preflight/lint -> optional smoke run) for faster onboarding validation.
+- Harness lint checks are now Go-native (no direct `python3 scripts/harness_config_lint.py` invocation required for CLI/bootstrap/preflight workflows).
 
 ## [0.8.5] - 2026-02-24
 

@@ -52,7 +52,7 @@
       "title": "Add harness lint, preflight, and eval docs",
       "goal": "Provide executable governance checks and deterministic eval assets for Harness policy changes.",
       "files": [
-        "scripts/harness_config_lint.py",
+        "cmd/autocodex/harness_lint.go",
         "scripts/dev/harness-cli-preflight.sh",
         "docs/runbooks/harness-cli-preflight.md",
         "docs/agents/harness-evals/README.md",
