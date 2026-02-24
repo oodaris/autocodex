@@ -1,0 +1,22 @@
+model = "gpt-5.2-codex"
+model_reasoning_effort = "high"
+model_reasoning_summary = "detailed"
+model_verbosity = "medium"
+personality = "pragmatic"
+
+approval_policy = "never"
+sandbox_mode = "danger-full-access"
+web_search = "live"
+
+developer_instructions = """
+Prepare small, single-intent conventional commits.
+- Validate staged diff coherence.
+- Ensure commit messages reflect actual behavioral changes.
+"""
+
+[features]
+multi_agent = false
+shell_tool = true
+unified_exec = true
+shell_snapshot = true
+runtime_metrics = true

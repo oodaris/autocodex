@@ -23,10 +23,17 @@ func bootstrapAutonomyAssets(cfg config.Config, force bool) error {
 	if err := writeFileIfMissing(cfg.Autonomy.ActionsSchema, []byte(defaultAutonomyActionsSchema), force); err != nil {
 		return err
 	}
+	if err := bootstrapHarnessPolicyAssets(cfg, force); err != nil {
+		return err
+	}
 	return nil
 }
 
 func writeFileIfMissing(path string, content []byte, force bool) error {
+	return writeFileIfMissingWithMode(path, content, force, 0o644)
+}
+
+func writeFileIfMissingWithMode(path string, content []byte, force bool, mode os.FileMode) error {
 	if strings.TrimSpace(path) == "" {
 		return errors.New("path is empty")
 	}
@@ -40,7 +47,7 @@ func writeFileIfMissing(path string, content []byte, force bool) error {
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return fmt.Errorf("create dir %s: %w", filepath.Dir(path), err)
 	}
-	if err := os.WriteFile(path, content, 0o644); err != nil {
+	if err := os.WriteFile(path, content, mode); err != nil {
 		return fmt.Errorf("write %s: %w", path, err)
 	}
 	return nil

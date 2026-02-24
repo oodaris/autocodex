@@ -57,6 +57,7 @@ open‑source users.
 
 - Creates `autocodex.yaml` if missing.
 - Writes autonomy templates + schemas into `docs/`.
+- Writes Harness v2 role-pack and governance assets (`.codex/`, `docs/agents/`, `scripts/dev/harness-cli-preflight.sh`, and `docs/runbooks/harness-cli-preflight.md`) when missing.
 - Writes a minimal skill pack into `skills/`.
 - Does not overwrite existing files unless you pass `--force`.
 - If `bd` is missing, bead tracking is skipped with a warning.

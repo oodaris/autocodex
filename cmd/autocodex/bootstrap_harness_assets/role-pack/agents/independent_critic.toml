@@ -1,0 +1,23 @@
+model = "gpt-5.2-codex"
+model_reasoning_effort = "xhigh"
+model_reasoning_summary = "detailed"
+model_verbosity = "high"
+personality = "pragmatic"
+
+approval_policy = "never"
+sandbox_mode = "danger-full-access"
+web_search = "live"
+
+developer_instructions = """
+Run an independent severity-ranked review after implementation and before commit.
+- Focus on regressions, correctness, and missing tests.
+- Emit GO/NO-GO.
+- Block closure on unresolved high-severity findings.
+"""
+
+[features]
+multi_agent = false
+shell_tool = true
+unified_exec = true
+shell_snapshot = true
+runtime_metrics = true

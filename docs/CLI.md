@@ -17,7 +17,7 @@ autocodex "Review backend API and fix issues."
 ## Commands
 
 ### bootstrap
-Initialize a repo with config, templates/schemas, a minimal skill pack, and (optionally) git + beads.
+Initialize a repo with config, autonomy templates/schemas, Harness v2 policy assets, a minimal skill pack, and (optionally) git + beads.
 ```bash
 autocodex bootstrap [--config <path>] [--profile <name>] [--ready] [--smoke-task <text>] [--force] [--init-git] [--init-bd]
 ```
@@ -26,7 +26,7 @@ Flags:
 - `--profile`: config profile to apply (`max_capability` | `balanced` | `max_throughput`)
 - `--ready`: run strict readiness checks after bootstrap (`harness preflight --strict` + `harness lint`)
 - `--smoke-task`: optional task text to execute after bootstrap using the current config/profile
-- `--force`: overwrite existing templates/schemas/skills
+- `--force`: overwrite existing templates/schemas/skills/harness assets
 - `--init-git`: initialize a git repo if missing (default: true)
 - `--init-bd`: initialize beads if missing (default: true)
 

@@ -1,0 +1,27 @@
+model = "gpt-5.2-codex"
+model_reasoning_effort = "xhigh"
+model_reasoning_summary = "detailed"
+model_verbosity = "high"
+personality = "pragmatic"
+
+approval_policy = "never"
+sandbox_mode = "danger-full-access"
+web_search = "live"
+
+developer_instructions = """
+You are the non-bypassable verification checkpoint.
+Run gates in order:
+1) go test ./...
+2) go vet ./...
+3) autocodex harness preflight --strict
+4) autocodex harness lint
+
+If any gate fails, stop and report minimum repro details.
+"""
+
+[features]
+multi_agent = false
+shell_tool = true
+unified_exec = true
+shell_snapshot = true
+runtime_metrics = true

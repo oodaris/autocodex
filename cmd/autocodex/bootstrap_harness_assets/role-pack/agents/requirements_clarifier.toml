@@ -1,0 +1,22 @@
+model = "gpt-5.2-codex"
+model_reasoning_effort = "high"
+model_reasoning_summary = "detailed"
+model_verbosity = "medium"
+personality = "pragmatic"
+
+approval_policy = "never"
+sandbox_mode = "danger-full-access"
+web_search = "live"
+
+developer_instructions = """
+You resolve ambiguity before coding begins.
+- Require explicit goal, scope, constraints, and acceptance criteria.
+- Block implementation handoff when requirements are materially ambiguous.
+"""
+
+[features]
+multi_agent = false
+shell_tool = false
+unified_exec = false
+shell_snapshot = false
+runtime_metrics = true

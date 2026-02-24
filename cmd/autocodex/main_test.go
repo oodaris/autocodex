@@ -225,6 +225,17 @@ func TestLatestRunID(t *testing.T) {
 
 func TestBootstrapAutonomyAssets(t *testing.T) {
 	base := t.TempDir()
+	cwd, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("get wd: %v", err)
+	}
+	if err := os.Chdir(base); err != nil {
+		t.Fatalf("chdir: %v", err)
+	}
+	defer func() {
+		_ = os.Chdir(cwd)
+	}()
+
 	cfg := config.Config{
 		Autonomy: config.AutonomyConfig{
 			Enabled:       true,
@@ -232,6 +243,9 @@ func TestBootstrapAutonomyAssets(t *testing.T) {
 			PlanTemplate:  filepath.Join(base, "docs/plans/TEMPLATE.md"),
 			TasksSchema:   filepath.Join(base, "docs/contracts/autonomy-tasks.schema.json"),
 			ActionsSchema: filepath.Join(base, "docs/contracts/autonomy-actions.schema.json"),
+			Harness: config.AutonomyHarnessConfig{
+				RolePackPath: ".codex",
+			},
 		},
 	}
 	if err := bootstrapAutonomyAssets(cfg, false); err != nil {
@@ -250,6 +264,20 @@ func TestBootstrapAutonomyAssets(t *testing.T) {
 	}
 	if !strings.Contains(string(actions), "\"autocodex autonomy actions\"") {
 		t.Fatalf("unexpected actions schema content")
+	}
+	rolePack, err := os.ReadFile(filepath.Join(base, ".codex", "config.toml"))
+	if err != nil {
+		t.Fatalf("read role pack config: %v", err)
+	}
+	if !strings.Contains(string(rolePack), "profile = \"max_capability\"") {
+		t.Fatalf("unexpected role pack content")
+	}
+	preflight, err := os.ReadFile(filepath.Join(base, "scripts", "dev", "harness-cli-preflight.sh"))
+	if err != nil {
+		t.Fatalf("read harness preflight script: %v", err)
+	}
+	if !strings.Contains(string(preflight), "bd hooks list --json") {
+		t.Fatalf("unexpected harness preflight script content")
 	}
 }
 
@@ -331,10 +359,15 @@ func TestBootstrapRepoEndToEnd(t *testing.T) {
 		filepath.Join("skills", "core-qna-synthesis", "SKILL.md"),
 		filepath.Join("skills", "core-holistic-planning-and-tracking", "SKILL.md"),
 		filepath.Join("skills", "core-ask-questions-if-underspecified", "SKILL.md"),
+		filepath.Join(".codex", "config.toml"),
+		filepath.Join(".codex", "agents", "workflow_orchestrator.toml"),
 		filepath.Join("docs", "specs", "TEMPLATE.md"),
 		filepath.Join("docs", "plans", "TEMPLATE.md"),
 		filepath.Join("docs", "contracts", "autonomy-tasks.schema.json"),
 		filepath.Join("docs", "contracts", "autonomy-actions.schema.json"),
+		filepath.Join("docs", "agents", "autocodex-harness-v2-operating-pack.md"),
+		filepath.Join("docs", "runbooks", "harness-cli-preflight.md"),
+		filepath.Join("scripts", "dev", "harness-cli-preflight.sh"),
 		filepath.Join(".autocodex", "memory", "TODO.md"),
 	}
 	for _, path := range expectedFiles {
