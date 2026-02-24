@@ -7,7 +7,7 @@
 autocodex orchestrates a structured loop: ideate → plan → implement → review → test. It uses Beads for task tracking, runs the local Codex CLI, and supports external plugins via JSON‑RPC.
 
 > 🚀 **Quickstart**
-> 1) `autocodex bootstrap`  
+> 1) `autocodex bootstrap --profile max_capability`  
 > 2) `autocodex "Review backend API and fix issues."`  
 > 3) `autocodex ui`
 
@@ -142,6 +142,12 @@ autocodex init
 
 ```bash
 autocodex bootstrap
+```
+
+Other profile presets:
+```bash
+autocodex bootstrap --profile balanced
+autocodex bootstrap --profile max_throughput
 ```
 
 ### Run a task

@@ -15,6 +15,15 @@
         "v1"
       ]
     },
+    "profile": {
+      "type": "string",
+      "enum": [
+        "max_capability",
+        "balanced",
+        "max_throughput"
+      ],
+      "default": "max_capability"
+    },
     "mode": {
       "type": "string",
       "enum": [

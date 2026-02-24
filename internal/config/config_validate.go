@@ -13,6 +13,9 @@ func (c Config) Validate() error {
 	if c.Version != "v1" {
 		return fmt.Errorf("unsupported config version: %s", c.Version)
 	}
+	if c.Profile != "" && !oneOf(c.Profile, []string{"max_capability", "balanced", "max_throughput"}) {
+		return fmt.Errorf("invalid profile: %s", c.Profile)
+	}
 	if c.Codex.ApprovalPolicy != "" {
 		if !oneOf(c.Codex.ApprovalPolicy, []string{"untrusted", "on-failure", "on-request", "never"}) {
 			return fmt.Errorf("invalid codex.approval_policy: %s", c.Codex.ApprovalPolicy)

@@ -1,4 +1,5 @@
 version: v1
+profile: max_capability
 mode: yolo
 
 codex:

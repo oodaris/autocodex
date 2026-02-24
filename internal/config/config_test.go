@@ -21,6 +21,9 @@ func TestLoadAppliesDefaults(t *testing.T) {
 	if cfg.Codex.CLIPath == "" {
 		t.Fatalf("expected codex cli path default")
 	}
+	if cfg.Profile != "max_capability" {
+		t.Fatalf("expected profile default max_capability")
+	}
 	if cfg.Codex.ReasoningEffort == "" {
 		t.Fatalf("expected codex reasoning effort default")
 	}
@@ -103,6 +106,14 @@ func TestLoadAppliesDefaults(t *testing.T) {
 
 func TestValidateRejectsInvalidMode(t *testing.T) {
 	cfg := Config{Version: "v1", Mode: "bad"}
+	cfg.ApplyDefaults()
+	if err := cfg.Validate(); err == nil {
+		t.Fatalf("expected validation error")
+	}
+}
+
+func TestValidateRejectsInvalidProfile(t *testing.T) {
+	cfg := Config{Version: "v1", Mode: "yolo", Profile: "ultra"}
 	cfg.ApplyDefaults()
 	if err := cfg.Validate(); err == nil {
 		t.Fatalf("expected validation error")

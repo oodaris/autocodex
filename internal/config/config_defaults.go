@@ -9,6 +9,9 @@ func (c *Config) ApplyDefaults() {
 	if c.Version == "" {
 		c.Version = "v1"
 	}
+	if c.Profile == "" {
+		c.Profile = "max_capability"
+	}
 	if c.Mode == "" {
 		c.Mode = "yolo"
 	}

@@ -13,6 +13,7 @@ func ResolveConfigPath() string {
 
 type Config struct {
 	Version  string         `yaml:"version"`
+	Profile  string         `yaml:"profile"`
 	Mode     string         `yaml:"mode"`
 	Codex    CodexConfig    `yaml:"codex"`
 	Paths    PathsConfig    `yaml:"paths"`

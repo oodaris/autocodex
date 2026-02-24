@@ -65,6 +65,13 @@ open‑source users.
 autocodex bootstrap --config autocodex.yaml
 ```
 
+Profile examples:
+```bash
+autocodex bootstrap --profile max_capability
+autocodex bootstrap --profile balanced
+autocodex bootstrap --profile max_throughput
+```
+
 ## Run a loop
 
 After `init` or `bootstrap`, you can run the loop:

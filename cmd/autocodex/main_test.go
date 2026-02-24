@@ -322,7 +322,7 @@ func TestBootstrapRepoEndToEnd(t *testing.T) {
 		_ = os.Chdir(cwd)
 	}()
 
-	if err := bootstrapRepo("autocodex.yaml", false, false, false); err != nil {
+	if err := bootstrapRepo("autocodex.yaml", "", false, false, false); err != nil {
 		t.Fatalf("bootstrap repo: %v", err)
 	}
 

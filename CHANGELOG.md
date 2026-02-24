@@ -7,6 +7,12 @@ Semantic Versioning.
 
 ## [Unreleased]
 
+### Added
+- `autocodex bootstrap --profile` support with `max_capability`, `balanced`, and `max_throughput` presets.
+
+### Changed
+- Config now includes a top-level `profile` field (default `max_capability`) and bootstrap applies selected profile defaults automatically for new configs or explicit `--profile` runs.
+
 ## [0.8.5] - 2026-02-24
 
 ### Changed

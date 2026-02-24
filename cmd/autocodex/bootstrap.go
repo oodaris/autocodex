@@ -3,6 +3,8 @@ package main
 import (
 	"flag"
 	"fmt"
+	"os"
+	"strings"
 
 	"github.com/oodaris/autocodex/internal/config"
 	"github.com/oodaris/autocodex/internal/state"
@@ -11,24 +13,42 @@ import (
 func runBootstrap(args []string) {
 	fs := flag.NewFlagSet("bootstrap", flag.ExitOnError)
 	configPath := fs.String("config", config.ResolveConfigPath(), "Config file path")
+	profile := fs.String("profile", "", "bootstrap profile: max_capability|balanced|max_throughput (default: profile from config or max_capability)")
 	force := fs.Bool("force", false, "overwrite existing templates, schemas, and skills")
 	initGit := fs.Bool("init-git", true, "initialize a git repo if missing")
 	initBD := fs.Bool("init-bd", true, "initialize beads if missing")
 	fs.Parse(args)
 
-	if err := bootstrapRepo(*configPath, *force, *initGit, *initBD); err != nil {
+	if err := bootstrapRepo(*configPath, strings.TrimSpace(*profile), *force, *initGit, *initBD); err != nil {
 		exitErr(err)
 	}
 	fmt.Printf("Bootstrap complete. Config: %s\n", *configPath)
 }
 
-func bootstrapRepo(configPath string, force bool, initGit bool, initBD bool) error {
+func bootstrapRepo(configPath string, requestedProfile string, force bool, initGit bool, initBD bool) error {
+	_, configExistsErr := os.Stat(configPath)
+	configExists := configExistsErr == nil
+	if configExistsErr != nil && !os.IsNotExist(configExistsErr) {
+		return configExistsErr
+	}
 	if err := ensureConfig(configPath); err != nil {
 		return err
 	}
 	cfg, err := config.Load(configPath)
 	if err != nil {
 		return err
+	}
+	selectedProfile, explicitProfile, err := resolveBootstrapProfile(requestedProfile, cfg.Profile)
+	if err != nil {
+		return err
+	}
+	if explicitProfile || !configExists {
+		if err := applyBootstrapProfile(&cfg, selectedProfile); err != nil {
+			return err
+		}
+		if err := writeBootstrapConfig(configPath, cfg); err != nil {
+			return err
+		}
 	}
 
 	if err := ensureRepoPrereqs(cfg, initGit, initBD); err != nil {

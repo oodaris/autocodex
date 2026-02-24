@@ -6,9 +6,10 @@ This reference explains the `autocodex.yaml` configuration file. Use
 - Example: `config.example.yaml`
 - Schema: `docs/contracts/config.schema.json`
 
-## Required fields
+## Top-level fields
 
 - `version`: must be `v1`
+- `profile`: `max_capability` | `balanced` | `max_throughput` (default: `max_capability`)
 - `mode`: `yolo` or `safe`
 
 ## Core sections
