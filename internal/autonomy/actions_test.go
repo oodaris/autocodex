@@ -186,6 +186,9 @@ func TestApplyActionsHighImpactPassesWithRequiredVerdicts(t *testing.T) {
 	cfg.Beads.AutoUpdate = false
 
 	qualityPassed := true
+	evalScenarios := 6
+	evalPassRate := 1.0
+	evalSoftFails := 0
 	ctrl := Controller{Config: cfg}
 	stopReason, gateFailure, _, err := ctrl.applyActions("", &Actions{
 		Version: "1.0",
@@ -196,6 +199,9 @@ func TestApplyActionsHighImpactPassesWithRequiredVerdicts(t *testing.T) {
 			CouncilVerdict: "GREEN",
 			CriticVerdict:  "GO",
 			QualityPassed:  &qualityPassed,
+			EvalScenarios:  &evalScenarios,
+			EvalPassRate:   &evalPassRate,
+			EvalSoftFails:  &evalSoftFails,
 		},
 	})
 	if err != nil {
@@ -206,5 +212,42 @@ func TestApplyActionsHighImpactPassesWithRequiredVerdicts(t *testing.T) {
 	}
 	if stopReason != "" {
 		t.Fatalf("expected empty stop reason, got %q", stopReason)
+	}
+}
+
+func TestApplyActionsHighImpactFailsOnEvalThresholds(t *testing.T) {
+	cfg := config.Config{}
+	cfg.ApplyDefaults()
+	cfg.Autonomy.Harness.Enabled = true
+	cfg.Autonomy.Harness.ImpactMode = "high"
+	cfg.Beads.AutoUpdate = false
+
+	qualityPassed := true
+	evalScenarios := 3
+	evalPassRate := 0.5
+	evalSoftFails := 2
+	ctrl := Controller{Config: cfg}
+	stopReason, gateFailure, _, err := ctrl.applyActions("", &Actions{
+		Version: "1.0",
+		Summary: "test",
+		Next:    ActionNext{Type: "none"},
+		Gates: &ActionGates{
+			Blocking:       false,
+			CouncilVerdict: "GREEN",
+			CriticVerdict:  "GO",
+			QualityPassed:  &qualityPassed,
+			EvalScenarios:  &evalScenarios,
+			EvalPassRate:   &evalPassRate,
+			EvalSoftFails:  &evalSoftFails,
+		},
+	})
+	if err != nil {
+		t.Fatalf("apply actions: %v", err)
+	}
+	if !gateFailure {
+		t.Fatalf("expected gate failure when eval thresholds are not met")
+	}
+	if stopReason == "" {
+		t.Fatalf("expected stop reason for eval threshold failure")
 	}
 }

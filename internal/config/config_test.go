@@ -72,6 +72,18 @@ func TestLoadAppliesDefaults(t *testing.T) {
 	if cfg.Autonomy.Coordinator.MaxParallel == nil || *cfg.Autonomy.Coordinator.MaxParallel == 0 {
 		t.Fatalf("expected autonomy coordinator max_parallel default")
 	}
+	if cfg.Autonomy.Coordinator.SelectionMode != "run_scoped" {
+		t.Fatalf("expected autonomy coordinator selection_mode default run_scoped")
+	}
+	if cfg.Autonomy.Coordinator.FailureSummaryLimit != 5 {
+		t.Fatalf("expected autonomy coordinator failure_summary_limit default 5")
+	}
+	if cfg.Autonomy.Gate.MaxFixAttemptsScope != "global" {
+		t.Fatalf("expected autonomy gate max_fix_attempts_scope default global")
+	}
+	if cfg.Autonomy.Gate.FixAttemptsStore == "" {
+		t.Fatalf("expected autonomy gate fix_attempts_store default")
+	}
 	if cfg.Autonomy.Harness.ImpactMode != "normal" {
 		t.Fatalf("expected harness impact_mode default normal")
 	}
@@ -192,6 +204,33 @@ func TestValidateRejectsInvalidCoordinatorStrategy(t *testing.T) {
 	cfg := Config{Version: "v1", Mode: "yolo"}
 	cfg.ApplyDefaults()
 	cfg.Autonomy.Coordinator.Strategy = "nope"
+	if err := cfg.Validate(); err == nil {
+		t.Fatalf("expected validation error")
+	}
+}
+
+func TestValidateRejectsInvalidCoordinatorSelectionMode(t *testing.T) {
+	cfg := Config{Version: "v1", Mode: "yolo"}
+	cfg.ApplyDefaults()
+	cfg.Autonomy.Coordinator.SelectionMode = "unsupported"
+	if err := cfg.Validate(); err == nil {
+		t.Fatalf("expected validation error")
+	}
+}
+
+func TestValidateRejectsInvalidCoordinatorFailureSummaryLimit(t *testing.T) {
+	cfg := Config{Version: "v1", Mode: "yolo"}
+	cfg.ApplyDefaults()
+	cfg.Autonomy.Coordinator.FailureSummaryLimit = -1
+	if err := cfg.Validate(); err == nil {
+		t.Fatalf("expected validation error")
+	}
+}
+
+func TestValidateRejectsInvalidMaxFixAttemptsScope(t *testing.T) {
+	cfg := Config{Version: "v1", Mode: "yolo"}
+	cfg.ApplyDefaults()
+	cfg.Autonomy.Gate.MaxFixAttemptsScope = "session"
 	if err := cfg.Validate(); err == nil {
 		t.Fatalf("expected validation error")
 	}
