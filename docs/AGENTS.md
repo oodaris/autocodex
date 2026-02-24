@@ -56,7 +56,8 @@ Plan → Contracts → Code → Tests → Docs → Rollout
 - **State**: Repo-local markdown memory + JSONL logs.
 
 ## 2.1) Agent setup (minimum)
-- For autonomy-ready setup, run `autocodex bootstrap` (creates config, templates/schemas, and a minimal skill pack).
+- For autonomy-ready setup, run `autocodex bootstrap` (creates config, templates/schemas, Harness v2 policy assets, and a minimal skill pack).
+- For strict onboarding validation, run `autocodex bootstrap --profile max_capability --ready`.
 - For minimal setup, run `autocodex init` (config + `.autocodex/` only).
 - If `config.example.yaml` is missing, bootstrap falls back to the embedded config.
 - Codex CLI available on PATH or set `codex.cli_path` in config.

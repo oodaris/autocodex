@@ -10,6 +10,9 @@ Semantic Versioning.
 ### Fixed
 - `autocodex bootstrap --profile max_capability --ready` now bootstraps the Harness v2 role pack and governance assets in fresh repos so strict preflight/lint checks pass without manual file copying.
 
+### Docs
+- Updated `AGENTS.md`, `docs/AGENTS.md`, and config/release docs to reflect self-contained Harness v2 bootstrap behavior and add a bootstrap readiness smoke checkpoint to release prep.
+
 ## [0.8.6] - 2026-02-24
 
 ### Added

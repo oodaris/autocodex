@@ -26,9 +26,11 @@ bd dolt test --json   # Validate Dolt connectivity for this repo
 Use `autocodex bootstrap` when you want autonomy ready immediately.
 - Creates `autocodex.yaml` if missing (falls back to the embedded config if `config.example.yaml` is absent).
 - Creates autonomy templates/schemas in `docs/`.
+- Creates Harness v2 policy assets when missing (`.codex/`, `docs/agents/`, `scripts/dev/harness-cli-preflight.sh`, and `docs/runbooks/harness-cli-preflight.md`).
 - Writes a minimal skill pack to `skills/` and expects `skills.paths` to include `skills`.
 - Does not overwrite existing files unless `--force` is provided.
 - If `bd` is missing, bead creation/updates are skipped with a warning.
+- For contributor onboarding, prefer `autocodex bootstrap --profile max_capability --ready`.
 
 Use `autocodex init` for a minimal setup (config + `.autocodex/` only).
 

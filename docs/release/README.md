@@ -28,6 +28,12 @@ bd dolt push
 ```bash
 goreleaser release --snapshot --clean -f goreleaser.yml
 ```
+   Optional but recommended (bootstrap/harness regression guard):
+```bash
+go build -o /tmp/autocodex-release-smoke ./cmd/autocodex
+tmpdir="$(mktemp -d /tmp/autocodex-release-smoke-XXXXXX)"
+(cd "$tmpdir" && /tmp/autocodex-release-smoke bootstrap --profile max_capability --ready)
+```
 4) Export release token for publishing:
 ```bash
 export GITHUB_TOKEN="$(gh auth token)"
