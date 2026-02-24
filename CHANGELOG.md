@@ -7,6 +7,18 @@ Semantic Versioning.
 
 ## [Unreleased]
 
+## [0.8.2] - 2026-02-24
+
+### Fixed
+- Harness CLI preflight now auto-starts a local Dolt SQL server when `bd` reports the configured Dolt endpoint as unreachable.
+- Auto-started Dolt server is now launched detached so connectivity persists after preflight exits.
+
+### Changed
+- Harness preflight runbook now documents automatic Dolt startup behavior and the `AUTO_START_DOLT_SERVER=0` opt-out.
+
+### Docs
+- CLI and release docs were aligned with current harness/preflight semantics and release publishing caveats.
+
 ## [0.8.1] - 2026-02-24
 
 ### Added
