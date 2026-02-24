@@ -20,6 +20,12 @@ func (o *Orchestrator) heartbeatLoop(ctx context.Context, runID string, pid int)
 	defer ticker.Stop()
 
 	for {
+		select {
+		case <-ctx.Done():
+			return
+		default:
+		}
+
 		if err := o.Store.TouchRunHeartbeat(runID, pid); err != nil && o.Logger != nil {
 			o.Logger.Warn("heartbeat update failed", "stage", "heartbeat", "run_id", runID, "error", err.Error())
 		}
