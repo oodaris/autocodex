@@ -7,6 +7,8 @@ Semantic Versioning.
 
 ## [Unreleased]
 
+## [0.8.7] - 2026-02-24
+
 ### Fixed
 - `autocodex bootstrap --profile max_capability --ready` now bootstraps the Harness v2 role pack and governance assets in fresh repos so strict preflight/lint checks pass without manual file copying.
 
