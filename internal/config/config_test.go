@@ -273,6 +273,15 @@ func TestValidateRejectsUnsupportedReasoningEffort(t *testing.T) {
 	}
 }
 
+func TestValidateAllowsNoneReasoningEffort(t *testing.T) {
+	cfg := Config{Version: "v1", Mode: "yolo"}
+	cfg.ApplyDefaults()
+	cfg.Codex.ReasoningEffort = "none"
+	if err := cfg.Validate(); err != nil {
+		t.Fatalf("expected validation success for none reasoning effort: %v", err)
+	}
+}
+
 func TestValidateRejectsGpt51UnsupportedReasoningEffort(t *testing.T) {
 	cfg := Config{Version: "v1", Mode: "yolo"}
 	cfg.ApplyDefaults()

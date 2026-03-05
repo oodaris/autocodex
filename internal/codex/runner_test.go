@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -75,5 +76,26 @@ func TestRunnerStreamsOutput(t *testing.T) {
 	}
 	if !strings.Contains(string(stderrBytes), "err-1") {
 		t.Fatalf("stderr missing expected output")
+	}
+}
+
+func TestModeFlagsUsesApprovalPolicyConfigOverride(t *testing.T) {
+	flags := modeFlags("safe", "never", "workspace-write")
+
+	if slices.Contains(flags, "--ask-for-approval") {
+		t.Fatalf("expected modeFlags to avoid deprecated --ask-for-approval flag")
+	}
+	if !slices.Contains(flags, "--sandbox") || !slices.Contains(flags, "workspace-write") {
+		t.Fatalf("expected sandbox flags, got %v", flags)
+	}
+	if !slices.Contains(flags, "-c") || !slices.Contains(flags, `approval_policy="never"`) {
+		t.Fatalf("expected approval_policy config override, got %v", flags)
+	}
+}
+
+func TestModeFlagsDefaultsToFullAutoWhenNoPolicyProvided(t *testing.T) {
+	flags := modeFlags("safe", "", "")
+	if len(flags) != 1 || flags[0] != "--full-auto" {
+		t.Fatalf("expected --full-auto fallback, got %v", flags)
 	}
 }

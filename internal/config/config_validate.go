@@ -197,7 +197,7 @@ func validateReasoningEffort(model, effort string) error {
 	if effort == "" {
 		return nil
 	}
-	allowed := []string{"minimal", "low", "medium", "high", "xhigh"}
+	allowed := []string{"none", "minimal", "low", "medium", "high", "xhigh"}
 	if !oneOf(effort, allowed) {
 		return fmt.Errorf("invalid codex.reasoning_effort: %s", effort)
 	}

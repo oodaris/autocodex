@@ -262,7 +262,7 @@ func modeFlags(mode, approvalPolicy, sandboxMode string) []string {
 		flags = append(flags, "--sandbox", sandboxMode)
 	}
 	if approvalPolicy != "" {
-		flags = append(flags, "--ask-for-approval", approvalPolicy)
+		flags = append(flags, "-c", fmt.Sprintf(`approval_policy=%q`, approvalPolicy))
 	}
 	if len(flags) == 0 {
 		flags = append(flags, "--full-auto")

@@ -20,6 +20,7 @@ Controls the Codex CLI invocation.
 - `cli_path`: path or binary name (default: `codex`)
 - `model`: default `gpt-5.2-codex`
 - `reasoning_effort`: default `xhigh` (passed to Codex as `-c model_reasoning_effort=...`)
+  - Accepted values in autocodex: `none|minimal|low|medium|high|xhigh`
   - Model-specific limits apply (examples):
     - `gpt-5.1*`: `low|medium|high` (no `xhigh`)
   - `xhigh` is model-dependent; use `medium`/`high` if unsure.
@@ -38,7 +39,7 @@ Controls the Codex CLI invocation.
     - `features.web_search_request`, `features.web_search_cached`, `tools.web_search`, `features.web_search`
 - Non-interactive constraints: autocodex runs `codex exec` (non-interactive).
   - Tools like `request_user_input` are only available in interactive Codex modes (Plan/Pair). Include required context in tasks to avoid follow-up prompts.
-- `approval_policy`: Codex 0.93.0+ enables smarter approvals by default (including explicit approval prompts for some tool calls); for non-interactive runs, set `approval_policy: never` (or `mode: yolo`) to avoid follow-up prompts
+- `approval_policy`: passed via `-c approval_policy=...` for compatibility with modern Codex CLI versions; for non-interactive runs, set `approval_policy: never` (or `mode: yolo`) to avoid follow-up prompts
 - `approval_policy` and `sandbox_mode`: ignored in `mode: yolo`
 - `json_output`: emit JSONL events from `codex exec` (requires `output_last_message`)
 - `output_last_message`: write the final agent message to an artifact per phase

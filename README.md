@@ -64,8 +64,8 @@ autocodex plugins --action list
 
 **Runtime requirements (binary users)**
 - Codex CLI on PATH (`codex --version`)
-  - Tested with: `codex-cli 0.104.0`
-  - Recommended: `codex-cli >= 0.94.0` (older versions may work but have different defaults around approvals/search/modes)
+  - Tested with: `codex-cli 0.110.0`
+  - Recommended: `codex-cli >= 0.105.0` (older versions may work but can diverge on approval/config behavior)
 - Beads (`bd`) optional, required when `autonomy.require_bd: true`
   - Tested with: `bd 0.56.1`
   - Recommended: `bd >= 0.56.1` for strict doctor/preflight checks in this repo

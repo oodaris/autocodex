@@ -47,6 +47,7 @@
     "reasoning_effort": {
       "type": "string",
       "enum": [
+        "none",
         "minimal",
         "low",
         "medium",
