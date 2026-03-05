@@ -7,6 +7,8 @@ Semantic Versioning.
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-03-05
+
 ### Added
 - Autonomy coordinator controls for run-scoped bead selection (`selection_mode`), selector filters (`bead_ids`, `bead_prefix`), and bounded failure aggregation (`failure_summary_limit`).
 - CLI overrides for coordinator scoping/filtering on `run`, `once`, and `resume` (`--bead-scope`, `--allow-all-ready-fallback`, `--bead`, `--bead-prefix`).
@@ -16,10 +18,15 @@ Semantic Versioning.
 - High-impact Harness v2 gating now enforces eval metrics from ACTIONS (`eval_scenarios`, `eval_pass_rate`, `eval_soft_failures`) against configured thresholds.
 - Coordinator `require_next` now enforces single-worker execution when parallelism is configured.
 - Default fix-attempt store path is now `artifacts/autonomy/fix_attempts.json` and resolves under `paths.state_dir` when relative.
+- `codex.reasoning_effort` validation and config schema now allow `none` (subject to model/tool constraints enforced by Codex at runtime).
 
 ### Fixed
 - Gate failures now report bead-scoped errors and aggregated coordinator failure summaries instead of only returning the first error.
 - Fix-bead generation now uses deterministic IDs, avoids nested `fix-fix-*` prefixes, and links fix beads to parent dependencies.
+- Safe-mode Codex invocation now passes approval policy using `-c approval_policy=...` instead of removed `--ask-for-approval` flag.
+
+### Docs
+- Updated Codex runtime compatibility notes and config docs for modern approval-policy wiring.
 
 ## [0.8.7] - 2026-02-24
 
