@@ -55,7 +55,7 @@ var (
 )
 
 func runHarnessLint(cfg config.Config, configPath string) harnessCheck {
-	repoRoot, err := resolveHarnessLintRepoRoot(configPath)
+	repoRoot, err := resolveRepoRootFromConfigPath(configPath)
 	if err != nil {
 		return harnessCheck{Name: "harness.lint", Status: "error", Details: err.Error()}
 	}
@@ -66,7 +66,7 @@ func runHarnessLint(cfg config.Config, configPath string) harnessCheck {
 	return harnessCheck{Name: "harness.lint", Status: "ok", Details: harnessLintPassMessage}
 }
 
-func resolveHarnessLintRepoRoot(configPath string) (string, error) {
+func resolveRepoRootFromConfigPath(configPath string) (string, error) {
 	trimmedConfigPath := strings.TrimSpace(configPath)
 	if trimmedConfigPath != "" {
 		absConfigPath, err := filepath.Abs(trimmedConfigPath)

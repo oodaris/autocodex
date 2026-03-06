@@ -102,6 +102,7 @@ Harness mode does not replace scheduling; it adds closure policy and evidence ga
 - Enable with `autonomy.harness.enabled: true`
 - Preflight command: `autocodex harness preflight --strict`
 - Lint command: `autocodex harness lint`
+- In a source checkout, these harness commands fall back to repo-root `config.example.yaml` when `autocodex.yaml` is absent and no explicit config path is set.
 - In `impact_mode: high`, ACTIONS closure must include:
   - `council_verdict: GREEN`
   - `critic_verdict: GO`

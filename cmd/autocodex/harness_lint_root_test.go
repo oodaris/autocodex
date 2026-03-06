@@ -36,6 +36,93 @@ func TestRunHarnessLintUsesConfigPathFromNestedDirectory(t *testing.T) {
 	}
 }
 
+func TestRunHarnessPreflightChecksUseConfigPathFromNestedDirectory(t *testing.T) {
+	root := t.TempDir()
+	writeHarnessFixture(t, root)
+	if err := os.Remove(filepath.Join(root, "autocodex.yaml")); err != nil {
+		t.Fatalf("remove autocodex.yaml: %v", err)
+	}
+	writeFile(t, filepath.Join(root, "config.example.yaml"), "version: v1\nmode: yolo\n")
+	fakeBin := t.TempDir()
+	writeExecutable(t, filepath.Join(fakeBin, "codex"), `#!/usr/bin/env bash
+set -euo pipefail
+if [[ "${1-}" == "--version" ]]; then
+  echo 'codex-cli 0.111.0'
+  exit 0
+fi
+if [[ "${1-}" == "features" && "${2-}" == "list" ]]; then
+cat <<'EOF'
+shell_tool stable true
+unified_exec stable true
+shell_snapshot stable true
+collaboration_modes stable true
+multi_agent stable true
+runtime_metrics stable true
+memory_tool stable false
+child_agents_md stable true
+EOF
+  exit 0
+fi
+echo "unexpected codex args: $*" >&2
+exit 1
+`)
+	writeExecutable(t, filepath.Join(fakeBin, "bd"), `#!/usr/bin/env bash
+set -euo pipefail
+if [[ "${1-}" == "--version" ]]; then
+  echo 'bd version 0.56.1'
+  exit 0
+fi
+if [[ "${1-}" == "dolt" && "${2-}" == "show" && "${3-}" == "--json" ]]; then
+  echo '{"backend":"dolt","database":"beads","host":"127.0.0.1","port":3307,"connection_ok":true}'
+  exit 0
+fi
+echo "unexpected bd args: $*" >&2
+exit 1
+`)
+	t.Setenv("PATH", fakeBin+":"+os.Getenv("PATH"))
+
+	nested := filepath.Join(root, "nested", "deeper")
+	if err := os.MkdirAll(nested, 0o755); err != nil {
+		t.Fatalf("mkdir nested: %v", err)
+	}
+
+	cwd, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("get wd: %v", err)
+	}
+	if err := os.Chdir(nested); err != nil {
+		t.Fatalf("chdir nested: %v", err)
+	}
+	defer func() { _ = os.Chdir(cwd) }()
+
+	resolvedConfig := resolveHarnessConfigPath(config.ResolveConfigPath(), false)
+	cfg, err := config.Load(resolvedConfig)
+	if err != nil {
+		t.Fatalf("load fallback config: %v", err)
+	}
+	checks, hasFailure := runHarnessPreflightChecks(cfg, resolvedConfig, true)
+	if hasFailure {
+		t.Fatalf("expected nested preflight checks to pass, got failure set: %#v", checks)
+	}
+	if result := harnessCheckByName(t, checks, "doctor.git"); result.Status != "ok" {
+		t.Fatalf("expected doctor.git ok from nested preflight, got %s (%s)", result.Status, result.Details)
+	}
+	if result := harnessCheckByName(t, checks, "harness.role-pack"); result.Status != "ok" {
+		t.Fatalf("expected harness.role-pack ok from nested preflight, got %s (%s)", result.Status, result.Details)
+	}
+}
+
+func harnessCheckByName(t *testing.T, checks []harnessCheck, name string) harnessCheck {
+	t.Helper()
+	for _, check := range checks {
+		if check.Name == name {
+			return check
+		}
+	}
+	t.Fatalf("missing harness check %q", name)
+	return harnessCheck{}
+}
+
 func writeHarnessFixture(t *testing.T, root string) {
 	t.Helper()
 

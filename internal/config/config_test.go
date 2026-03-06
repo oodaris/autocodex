@@ -24,6 +24,9 @@ func TestLoadAppliesDefaults(t *testing.T) {
 	if cfg.Profile != "max_capability" {
 		t.Fatalf("expected profile default max_capability")
 	}
+	if cfg.Codex.Model != "gpt-5.4" {
+		t.Fatalf("expected codex model default gpt-5.4, got %q", cfg.Codex.Model)
+	}
 	if cfg.Codex.ReasoningEffort == "" {
 		t.Fatalf("expected codex reasoning effort default")
 	}

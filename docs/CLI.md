@@ -9,6 +9,7 @@ autocodex "Review backend API and fix issues."
 
 ## Global behavior
 - Default config path: `autocodex.yaml` (override with `AUTOCODEX_CONFIG` or `--config`).
+- `autocodex harness preflight` and `autocodex harness lint` fall back to repo-root `config.example.yaml` when `autocodex.yaml` is absent and no explicit config path is set.
 - Shortcut: `autocodex "<task>"` is equivalent to `autocodex run --task "<task>"`.
 - Positional args: `run`, `once`, and `resume` accept a positional task string; `snapshot`, `resume`, and `kill` accept a positional run id.
 - autocodex runs `codex exec` (non-interactive). Codex rejects `request_user_input` outside interactive Plan/Pair modes, so include required context in the task (or run Codex interactively to clarify first).
@@ -117,6 +118,7 @@ Notes:
 - `autocodex harness --help` prints harness subcommand usage.
 - `autocodex harness preflight --json` writes parseable JSON to stdout without trailing text.
 - `autocodex harness lint` runs the same policy-pack invariants as preflight's lint check.
+- Source-checkout behavior: if you run these commands from a repo clone without `autocodex.yaml`, they automatically use repo-root `config.example.yaml` unless `--config` or `AUTOCODEX_CONFIG` is set.
 
 ### status
 Show run status.

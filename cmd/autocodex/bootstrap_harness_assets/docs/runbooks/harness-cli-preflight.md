@@ -14,6 +14,10 @@ Optional strict mode:
 autocodex harness preflight --strict
 ```
 
+In a source checkout, bare harness commands automatically use repo-root
+`config.example.yaml` when `autocodex.yaml` is absent and neither `--config`
+nor `AUTOCODEX_CONFIG` is set.
+
 ## Checks
 1. `bd` command availability and repo-state probe (`bd info --json` from repo root).
 2. `bd --version` meets this repo baseline (`>=0.56.1`).

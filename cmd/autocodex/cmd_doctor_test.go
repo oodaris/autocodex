@@ -55,7 +55,7 @@ func TestDoctorMemoryDirMissing(t *testing.T) {
 	cfg := config.Config{Version: "v1", Mode: "yolo"}
 	cfg.ApplyDefaults()
 	cfg.Paths.MemoryDir = filepath.Join(t.TempDir(), "missing")
-	result := checkMemoryDir(cfg)
+	result := checkMemoryDir(cfg, "")
 	if result.Status != "warn" {
 		t.Fatalf("expected warn status, got %s", result.Status)
 	}
@@ -253,4 +253,45 @@ func TestAssessBDDoltShowOutput(t *testing.T) {
 	if !strings.Contains(details, "embedded mode") {
 		t.Fatalf("unexpected embedded text details: %q", details)
 	}
+}
+
+func TestRunDoctorChecksUsesConfigPathForRepoSignals(t *testing.T) {
+	root := t.TempDir()
+	writeHarnessFixture(t, root)
+
+	nested := filepath.Join(root, "docs", "nested")
+	if err := os.MkdirAll(nested, 0o755); err != nil {
+		t.Fatalf("mkdir nested: %v", err)
+	}
+
+	cwd, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("get wd: %v", err)
+	}
+	if err := os.Chdir(nested); err != nil {
+		t.Fatalf("chdir nested: %v", err)
+	}
+	defer func() { _ = os.Chdir(cwd) }()
+
+	cfg := config.Config{Version: "v1", Mode: "yolo"}
+	cfg.ApplyDefaults()
+	results := runDoctorChecks(cfg, filepath.Join("..", "..", "autocodex.yaml"))
+
+	if result := doctorCheckByName(t, results, "git"); result.Status != "ok" {
+		t.Fatalf("expected git check to use config-derived repo root, got %s (%s)", result.Status, result.Details)
+	}
+	if result := doctorCheckByName(t, results, "memory"); result.Status != "warn" || !strings.Contains(result.Details, ".autocodex/memory") {
+		t.Fatalf("expected memory check to resolve against repo root, got %s (%s)", result.Status, result.Details)
+	}
+}
+
+func doctorCheckByName(t *testing.T, results []checkResult, name string) checkResult {
+	t.Helper()
+	for _, result := range results {
+		if result.Name == name {
+			return result
+		}
+	}
+	t.Fatalf("missing doctor check %q", name)
+	return checkResult{}
 }

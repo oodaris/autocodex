@@ -253,7 +253,7 @@ check_bd_hooks() {
 
 check_harness_preflight() {
   if command -v go >/dev/null 2>&1; then
-    if (cd "$ROOT_DIR" && go run ./cmd/autocodex harness preflight --config "$ROOT_DIR/config.example.yaml" --strict >/dev/null 2>&1); then
+    if (cd "$ROOT_DIR" && go run ./cmd/autocodex harness preflight --strict >/dev/null 2>&1); then
       pass "go-run harness preflight passes"
     else
       fail "go-run harness preflight failed"
@@ -263,7 +263,7 @@ check_harness_preflight() {
 
   if command -v autocodex >/dev/null 2>&1; then
     warn "go not found; using autocodex from PATH (may not match repo source)"
-    if (cd "$ROOT_DIR" && autocodex harness preflight --config "$ROOT_DIR/config.example.yaml" --strict >/dev/null 2>&1); then
+    if (cd "$ROOT_DIR" && autocodex harness preflight --strict >/dev/null 2>&1); then
       pass "autocodex harness preflight passes"
     else
       fail "autocodex harness preflight failed"
@@ -276,7 +276,7 @@ check_harness_preflight() {
 
 check_harness_lint() {
   if command -v go >/dev/null 2>&1; then
-    if (cd "$ROOT_DIR" && go run ./cmd/autocodex harness lint --config "$ROOT_DIR/config.example.yaml" >/dev/null 2>&1); then
+    if (cd "$ROOT_DIR" && go run ./cmd/autocodex harness lint >/dev/null 2>&1); then
       pass "go-run harness lint passes"
     else
       fail "go-run harness lint failed"
@@ -286,7 +286,7 @@ check_harness_lint() {
 
   if command -v autocodex >/dev/null 2>&1; then
     warn "go not found; using autocodex from PATH (may not match repo source)"
-    if (cd "$ROOT_DIR" && autocodex harness lint --config "$ROOT_DIR/config.example.yaml" >/dev/null 2>&1); then
+    if (cd "$ROOT_DIR" && autocodex harness lint >/dev/null 2>&1); then
       pass "autocodex harness lint passes"
     else
       fail "autocodex harness lint failed"

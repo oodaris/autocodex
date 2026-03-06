@@ -4,7 +4,7 @@ mode: yolo
 
 codex:
   cli_path: codex
-  model: gpt-5.2-codex
+  model: gpt-5.4
   reasoning_effort: xhigh
   collaboration_enabled: true
   collaboration_mode: auto

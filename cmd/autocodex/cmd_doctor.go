@@ -55,10 +55,11 @@ func runDoctor(args []string) {
 
 func runDoctorChecks(cfg config.Config, configPath string) []checkResult {
 	results := []checkResult{}
+	repoRoot := doctorRepoRoot(configPath)
 
 	results = append(results, checkConfigFile(configPath))
 	results = append(results, checkConfigValidation(cfg))
-	results = append(results, checkGitRepo())
+	results = append(results, checkGitRepo(repoRoot))
 	results = append(results, checkCommandOnPath("codex"))
 	results = append(results, checkCodexVersion())
 	results = append(results, checkCodexFeatures())
@@ -73,7 +74,7 @@ func runDoctorChecks(cfg config.Config, configPath string) []checkResult {
 		results = append(results, checkBDVersion(bdCheck.Details))
 		results = append(results, checkBDDoltReadiness(bdCheck.Details))
 	}
-	results = append(results, checkMemoryDir(cfg))
+	results = append(results, checkMemoryDir(cfg, repoRoot))
 	results = append(results, checkPortAvailability(cfg))
 	return results
 }
@@ -95,11 +96,15 @@ func checkConfigValidation(cfg config.Config) checkResult {
 	return checkResult{Name: "config", Status: "ok", Details: "validated", Required: true}
 }
 
-func checkGitRepo() checkResult {
-	if _, err := os.Stat(".git"); err == nil {
+func checkGitRepo(repoRoot string) checkResult {
+	root := repoRoot
+	if strings.TrimSpace(root) == "" {
+		root = "."
+	}
+	if _, err := os.Stat(filepath.Join(root, ".git")); err == nil {
 		return checkResult{Name: "git", Status: "ok", Details: "repo detected", Required: true}
 	}
-	return checkResult{Name: "git", Status: "warn", Details: "no .git directory in cwd", Required: true}
+	return checkResult{Name: "git", Status: "warn", Details: "no .git directory near config or cwd", Required: true}
 }
 
 func checkCommandOnPath(name string) checkResult {
@@ -511,15 +516,34 @@ func parseCodexFeatureList(raw string) map[string]bool {
 	return rows
 }
 
-func checkMemoryDir(cfg config.Config) checkResult {
+func checkMemoryDir(cfg config.Config, repoRoot string) checkResult {
 	path := cfg.MemoryDir()
 	if strings.TrimSpace(path) == "" {
 		return checkResult{Name: "memory", Status: "warn", Details: "memory dir is empty", Required: false}
 	}
-	if _, err := os.Stat(path); err != nil {
-		return checkResult{Name: "memory", Status: "warn", Details: fmt.Sprintf("missing (%s)", path), Required: false}
+	resolvedPath := path
+	if repoRoot != "" && !filepath.IsAbs(resolvedPath) {
+		resolvedPath = filepath.Join(repoRoot, resolvedPath)
 	}
-	return checkResult{Name: "memory", Status: "ok", Details: path, Required: false}
+	if _, err := os.Stat(resolvedPath); err != nil {
+		return checkResult{Name: "memory", Status: "warn", Details: fmt.Sprintf("missing (%s)", displayDoctorPath(repoRoot, resolvedPath)), Required: false}
+	}
+	return checkResult{Name: "memory", Status: "ok", Details: displayDoctorPath(repoRoot, resolvedPath), Required: false}
+}
+
+func doctorRepoRoot(configPath string) string {
+	root, err := resolveRepoRootFromConfigPath(configPath)
+	if err != nil {
+		return ""
+	}
+	return root
+}
+
+func displayDoctorPath(repoRoot, path string) string {
+	if repoRoot == "" {
+		return filepath.Clean(path)
+	}
+	return repoRelativePath(repoRoot, path)
 }
 
 func checkPortAvailability(cfg config.Config) checkResult {

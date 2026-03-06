@@ -109,6 +109,10 @@ autocodex harness preflight --strict
 autocodex harness lint
 ```
 
+In a source checkout, these harness commands automatically fall back to
+`config.example.yaml` when `autocodex.yaml` is absent and no explicit config
+path is provided.
+
 ### What happens on run
 ```
 task → spec → plan → tasks.json → beads → loop (ideate/plan/implement/review/test)

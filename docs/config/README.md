@@ -6,6 +6,9 @@ This reference explains the `autocodex.yaml` configuration file. Use
 - Example: `config.example.yaml`
 - Schema: `docs/contracts/config.schema.json`
 
+Harness note:
+- In a source checkout, `autocodex harness preflight` and `autocodex harness lint` automatically fall back to repo-root `config.example.yaml` when `autocodex.yaml` is absent and no explicit config path is provided.
+
 ## Top-level fields
 
 - `version`: must be `v1`

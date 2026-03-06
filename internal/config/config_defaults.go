@@ -19,7 +19,7 @@ func (c *Config) ApplyDefaults() {
 		c.Codex.CLIPath = "codex"
 	}
 	if c.Codex.Model == "" {
-		c.Codex.Model = "gpt-5.2-codex"
+		c.Codex.Model = "gpt-5.4"
 	}
 	if c.Codex.TimeoutSeconds == 0 {
 		c.Codex.TimeoutSeconds = 900

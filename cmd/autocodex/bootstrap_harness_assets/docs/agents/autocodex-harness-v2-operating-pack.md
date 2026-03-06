@@ -57,6 +57,9 @@ Rules:
 3. `autocodex harness preflight --strict`
 4. `autocodex harness lint`
 
+Source-checkout note: when `autocodex.yaml` is absent, the harness commands use
+repo-root `config.example.yaml` unless `--config` or `AUTOCODEX_CONFIG` is set.
+
 If any gate fails: stop, produce minimal repro, and create/claim fix bead.
 
 ## 6) Runtime lifecycle/admission contract

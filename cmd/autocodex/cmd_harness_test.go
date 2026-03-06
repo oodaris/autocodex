@@ -93,6 +93,124 @@ func TestHarnessPreflightJSONOutputIsParseable(t *testing.T) {
 	}
 }
 
+func TestResolveHarnessConfigPathFallsBackToRepoRootExampleFromNestedDirectory(t *testing.T) {
+	root := t.TempDir()
+	writeHarnessFixture(t, root)
+	if err := os.Remove(filepath.Join(root, "autocodex.yaml")); err != nil {
+		t.Fatalf("remove autocodex.yaml: %v", err)
+	}
+	writeFile(t, filepath.Join(root, "config.example.yaml"), "version: v1\nmode: yolo\n")
+
+	nested := filepath.Join(root, "nested", "deeper")
+	if err := os.MkdirAll(nested, 0o755); err != nil {
+		t.Fatalf("mkdir nested: %v", err)
+	}
+
+	cwd, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("get wd: %v", err)
+	}
+	if err := os.Chdir(nested); err != nil {
+		t.Fatalf("chdir nested: %v", err)
+	}
+	defer func() { _ = os.Chdir(cwd) }()
+
+	resolved := resolveHarnessConfigPath(config.ResolveConfigPath(), false)
+	expected, err := filepath.Abs(filepath.Join(root, "config.example.yaml"))
+	if err != nil {
+		t.Fatalf("abs expected fallback path: %v", err)
+	}
+	if canonicalTestPath(t, resolved) != canonicalTestPath(t, expected) {
+		t.Fatalf("expected repo-root config.example fallback %q, got %q", expected, resolved)
+	}
+
+	cfg, err := config.Load(resolved)
+	if err != nil {
+		t.Fatalf("load fallback config: %v", err)
+	}
+	result := runHarnessLint(cfg, resolved)
+	if result.Status != "ok" {
+		t.Fatalf("expected harness lint to pass with fallback config, got %s (%s)", result.Status, result.Details)
+	}
+}
+
+func TestResolveHarnessConfigPathPrefersRepoRootAutocodexOverExample(t *testing.T) {
+	root := t.TempDir()
+	writeHarnessFixture(t, root)
+	writeFile(t, filepath.Join(root, "config.example.yaml"), "version: v1\nmode: yolo\n")
+
+	nested := filepath.Join(root, "nested", "deeper")
+	if err := os.MkdirAll(nested, 0o755); err != nil {
+		t.Fatalf("mkdir nested: %v", err)
+	}
+
+	cwd, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("get wd: %v", err)
+	}
+	if err := os.Chdir(nested); err != nil {
+		t.Fatalf("chdir nested: %v", err)
+	}
+	defer func() { _ = os.Chdir(cwd) }()
+
+	resolved := resolveHarnessConfigPath(config.ResolveConfigPath(), false)
+	expected, err := filepath.Abs(filepath.Join(root, "autocodex.yaml"))
+	if err != nil {
+		t.Fatalf("abs expected autocodex path: %v", err)
+	}
+	if canonicalTestPath(t, resolved) != canonicalTestPath(t, expected) {
+		t.Fatalf("expected repo-root autocodex.yaml %q, got %q", expected, resolved)
+	}
+}
+
+func TestResolveHarnessConfigPathHonorsAutocodexConfigEnv(t *testing.T) {
+	t.Setenv("AUTOCODEX_CONFIG", "custom.yaml")
+	resolved := resolveHarnessConfigPath(config.ResolveConfigPath(), false)
+	if resolved != "custom.yaml" {
+		t.Fatalf("expected AUTOCODEX_CONFIG to win, got %q", resolved)
+	}
+}
+
+func TestResolveHarnessConfigPathHonorsExplicitConfigFlag(t *testing.T) {
+	resolved := resolveHarnessConfigPath("missing.yaml", true)
+	if resolved != "missing.yaml" {
+		t.Fatalf("expected explicit config flag to win, got %q", resolved)
+	}
+}
+
+func TestResolveHarnessConfigPathDoesNotUseNestedExampleConfig(t *testing.T) {
+	root := t.TempDir()
+	writeFile(t, filepath.Join(root, ".git"), "gitdir: .git\n")
+	nested := filepath.Join(root, "nested", "deeper")
+	if err := os.MkdirAll(nested, 0o755); err != nil {
+		t.Fatalf("mkdir nested: %v", err)
+	}
+	writeFile(t, filepath.Join(nested, "config.example.yaml"), "version: v1\nmode: yolo\n")
+
+	cwd, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("get wd: %v", err)
+	}
+	if err := os.Chdir(nested); err != nil {
+		t.Fatalf("chdir nested: %v", err)
+	}
+	defer func() { _ = os.Chdir(cwd) }()
+
+	resolved := resolveHarnessConfigPath(config.ResolveConfigPath(), false)
+	if resolved != config.DefaultConfigFile {
+		t.Fatalf("expected nested config.example.yaml to be ignored, got %q", resolved)
+	}
+}
+
+func canonicalTestPath(t *testing.T, path string) string {
+	t.Helper()
+	canonical, err := filepath.EvalSymlinks(path)
+	if err != nil {
+		return filepath.Clean(path)
+	}
+	return canonical
+}
+
 func TestHarnessLintJSONOutputIsParseable(t *testing.T) {
 	checks := []harnessCheck{
 		{Name: "harness.lint", Status: "ok", Details: "lint ok"},
