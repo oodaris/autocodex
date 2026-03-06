@@ -11,6 +11,7 @@ This pack favors high capability while keeping deterministic closure gates:
 2. Multi-agent enabled for orchestrator/architect roles; specialist roles remain single-agent.
 3. Harness mode is policy-driven by `autonomy.harness` runtime config.
 4. Governance is executable: preflight + lint + eval docs.
+5. The repo-local `max_capability` profile and Harness V2 role files map to `gpt-5.4`; Spark stays isolated in its own profile.
 
 ## 1) Canonical decision precedence
 1. Nearest `AGENTS.md` wins.

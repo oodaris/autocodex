@@ -13,6 +13,8 @@ import (
 
 const (
 	harnessLintExpectedProfile = "max_capability"
+	harnessLintExpectedModel   = "gpt-5.4"
+	harnessLintExpectedSpark   = "gpt-5.3-codex-spark"
 	harnessLintPassMessage     = "Harness config lint passed: autocodex harness role pack and governance assets validated."
 )
 
@@ -129,6 +131,44 @@ func lintHarnessConfig(cfg config.Config, repoRoot string) []string {
 		if profile != harnessLintExpectedProfile {
 			issues = append(issues, fmt.Sprintf("%s profile must be %q", repoRelativePath(repoRoot, configPath), harnessLintExpectedProfile))
 		}
+		if model := strings.TrimSpace(stringValue(rootCfg["model"])); model != harnessLintExpectedModel {
+			issues = append(issues, fmt.Sprintf("%s model must be %q", repoRelativePath(repoRoot, configPath), harnessLintExpectedModel))
+		}
+		if reviewModel := strings.TrimSpace(stringValue(rootCfg["review_model"])); reviewModel != harnessLintExpectedModel {
+			issues = append(issues, fmt.Sprintf("%s review_model must be %q", repoRelativePath(repoRoot, configPath), harnessLintExpectedModel))
+		}
+
+		profilesTable, profilesOK := mapValue(rootCfg["profiles"])
+		if !profilesOK {
+			issues = append(issues, fmt.Sprintf("%s missing [profiles] table", repoRelativePath(repoRoot, configPath)))
+		} else {
+			maxCapability, maxCapabilityOK := mapValue(profilesTable["max_capability"])
+			if !maxCapabilityOK {
+				issues = append(issues, fmt.Sprintf("%s missing [profiles.max_capability] table", repoRelativePath(repoRoot, configPath)))
+			} else {
+				if model := strings.TrimSpace(stringValue(maxCapability["model"])); model != harnessLintExpectedModel {
+					issues = append(issues, fmt.Sprintf("%s profiles.max_capability.model must be %q", repoRelativePath(repoRoot, configPath), harnessLintExpectedModel))
+				}
+				if reviewModel := strings.TrimSpace(stringValue(maxCapability["review_model"])); reviewModel != harnessLintExpectedModel {
+					issues = append(issues, fmt.Sprintf("%s profiles.max_capability.review_model must be %q", repoRelativePath(repoRoot, configPath), harnessLintExpectedModel))
+				}
+			}
+
+			sparkProfile, sparkOK := mapValue(profilesTable["spark"])
+			if !sparkOK {
+				issues = append(issues, fmt.Sprintf("%s missing [profiles.spark] table", repoRelativePath(repoRoot, configPath)))
+			} else {
+				if model := strings.TrimSpace(stringValue(sparkProfile["model"])); model != harnessLintExpectedSpark {
+					issues = append(issues, fmt.Sprintf("%s profiles.spark.model must be %q", repoRelativePath(repoRoot, configPath), harnessLintExpectedSpark))
+				}
+				if reviewModel := strings.TrimSpace(stringValue(sparkProfile["review_model"])); reviewModel != harnessLintExpectedSpark {
+					issues = append(issues, fmt.Sprintf("%s profiles.spark.review_model must be %q", repoRelativePath(repoRoot, configPath), harnessLintExpectedSpark))
+				}
+				if summary := strings.TrimSpace(stringValue(sparkProfile["model_reasoning_summary"])); summary != "none" {
+					issues = append(issues, fmt.Sprintf("%s profiles.spark.model_reasoning_summary must be %q", repoRelativePath(repoRoot, configPath), "none"))
+				}
+			}
+		}
 
 		agentsTable, tableOK := mapValue(rootCfg["agents"])
 		if !tableOK {
@@ -171,6 +211,9 @@ func lintHarnessConfig(cfg config.Config, repoRoot string) []string {
 				roleCfg, roleOK := loadTOMLMap(rolePath, repoRoot, &issues)
 				if !roleOK {
 					continue
+				}
+				if model := strings.TrimSpace(stringValue(roleCfg["model"])); model != harnessLintExpectedModel {
+					issues = append(issues, fmt.Sprintf("%s model must be %q", repoRelativePath(repoRoot, rolePath), harnessLintExpectedModel))
 				}
 
 				features, featuresOK := mapValue(roleCfg["features"])

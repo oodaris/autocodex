@@ -22,6 +22,7 @@ autocodex harness preflight --strict
 5. `codex` CLI availability and version/capability checks.
 6. `autocodex harness preflight --strict` (or go-run fallback), which includes doctor + harness lint checks.
 7. Standalone harness config lint (`autocodex harness lint` or go-run fallback) as explicit policy-pack validation.
+8. Profile invariants: root and `max_capability` must stay on `gpt-5.4`, while Spark must keep `model_reasoning_summary = "none"`.
 
 ## Success marker
 `Harness preflight passed.`
@@ -43,3 +44,4 @@ autocodex harness preflight --strict
    - `ENFORCE_JSONL_HOOKS=1 bash scripts/dev/harness-cli-preflight.sh`
 5. If lint fails, resolve missing role/config/doc markers.
 6. If doctor fails feature checks, align Codex CLI and config assumptions.
+7. If lint reports model-policy drift, restore root/`max_capability`/role-pack defaults to `gpt-5.4` and keep Spark isolated from unsupported `reasoning.summary` settings.

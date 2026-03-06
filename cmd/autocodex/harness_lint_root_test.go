@@ -47,13 +47,30 @@ func writeHarnessFixture(t *testing.T, root string) {
 	}
 
 	var rolePack strings.Builder
-	rolePack.WriteString("profile = \"max_capability\"\n\n[agents]\nmax_threads = 4\n")
+	rolePack.WriteString(strings.Join([]string{
+		"profile = \"max_capability\"",
+		"model = \"gpt-5.4\"",
+		"review_model = \"gpt-5.4\"",
+		"",
+		"[agents]",
+		"max_threads = 4",
+		"",
+		"[profiles.max_capability]",
+		"model = \"gpt-5.4\"",
+		"review_model = \"gpt-5.4\"",
+		"",
+		"[profiles.spark]",
+		"model = \"gpt-5.3-codex-spark\"",
+		"review_model = \"gpt-5.3-codex-spark\"",
+		"model_reasoning_summary = \"none\"",
+	}, "\n"))
 	for _, role := range harnessLintExpectedRoles {
 		rolePack.WriteString(fmt.Sprintf("\n[agents.%s]\nconfig_file = \"agents/%s.toml\"\n", role, role))
 	}
 	writeFile(t, filepath.Join(root, ".codex", "config.toml"), rolePack.String())
 
 	roleConfig := strings.Join([]string{
+		"model = \"gpt-5.4\"",
 		"developer_instructions = \"ok\"",
 		"",
 		"[features]",

@@ -18,7 +18,7 @@ This reference explains the `autocodex.yaml` configuration file. Use
 Controls the Codex CLI invocation.
 
 - `cli_path`: path or binary name (default: `codex`)
-- `model`: default `gpt-5.2-codex`
+- `model`: default `gpt-5.4`
 - `reasoning_effort`: default `xhigh` (passed to Codex as `-c model_reasoning_effort=...`)
   - Accepted values in autocodex: `none|minimal|low|medium|high|xhigh`
   - Model-specific limits apply (examples):
