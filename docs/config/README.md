@@ -204,6 +204,10 @@ autonomy:
     impact_mode: normal
 ```
 
+Repo-local Codex note:
+- The bootstrap-generated `.codex/config.toml` maps `max_capability` to `gpt-5.4`.
+- The same config also keeps a separate `gpt53_codex` profile for users who want an explicit coding-specialist model choice.
+
 `balanced`
 
 ```yaml

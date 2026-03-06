@@ -191,9 +191,10 @@ Use these settings to reduce compute:
 
 ### Capability vs performance profiles
 Use profile-style settings from `docs/config/README.md`:
-- `max_capability`: highest reasoning quality + strongest governance defaults.
+- `max_capability`: highest reasoning quality + strongest governance defaults. In the repo-local Codex config this maps to `gpt-5.4`.
 - `balanced`: recommended default for most daily engineering tasks.
 - `max_throughput`: lower latency/cost with collaboration disabled.
+- `gpt53_codex`: explicit coding-specialist fallback in the generated `.codex/config.toml` when you want Codex-tuned behavior over general-model maximum capability.
 
 See the exact YAML snippets in `docs/config/README.md#recommended-profiles`.
 
