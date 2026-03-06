@@ -2,32 +2,38 @@
 
 profile = "max_capability"
 
-model = "gpt-5.2-codex"
-review_model = "gpt-5.2-codex"
-model_reasoning_effort = "xhigh"
-model_reasoning_summary = "detailed"
+model = "gpt-5.1-codex-mini"
+review_model = "gpt-5.4"
+model_reasoning_effort = "medium"
 model_verbosity = "high"
 personality = "pragmatic"
 
 approval_policy = "never"
 sandbox_mode = "danger-full-access"
 web_search = "live"
+
 project_doc_max_bytes = 524288
 tool_output_token_limit = 120000
+suppress_unstable_features_warning = true
 
 [features]
-multi_agent = true
-unified_exec = true
-shell_snapshot = true
 shell_tool = true
+shell_snapshot = true
+unified_exec = true
+request_rule = true
 collaboration_modes = true
 runtime_metrics = true
-memory_tool = true
+multi_agent = true
+apply_patch_freeform = true
+memories = true
 sqlite = true
 child_agents_md = true
 enable_request_compression = true
 steer = true
 personality = true
+apps = true
+prevent_idle_sleep = true
+js_repl = true
 
 [agents]
 max_threads = 64
@@ -81,8 +87,8 @@ description = "Runs council rubric merge and Harness-v2 architecture checks."
 config_file = "agents/agentic_ai_architect.toml"
 
 [profiles.max_capability]
-model = "gpt-5.2-codex"
-review_model = "gpt-5.2-codex"
+model = "gpt-5.3-codex"
+review_model = "gpt-5.4"
 model_reasoning_effort = "xhigh"
 model_reasoning_summary = "detailed"
 model_verbosity = "high"
@@ -92,20 +98,123 @@ sandbox_mode = "danger-full-access"
 web_search = "live"
 project_doc_max_bytes = 524288
 tool_output_token_limit = 120000
+plan_mode_reasoning_effort = "xhigh"
+service_tier = "fast"
 
 [profiles.max_capability.features]
-multi_agent = true
-unified_exec = true
-shell_snapshot = true
 shell_tool = true
+shell_snapshot = true
+unified_exec = true
+request_rule = true
 collaboration_modes = true
 runtime_metrics = true
-memory_tool = true
+multi_agent = true
+apply_patch_freeform = true
+memories = true
 sqlite = true
 child_agents_md = true
 enable_request_compression = true
 steer = true
 personality = true
+apps = true
+prevent_idle_sleep = true
+js_repl = true
 
 [profiles.max_capability.agents]
 max_threads = 64
+
+[profiles.gpt54]
+model = "gpt-5.4"
+review_model = "gpt-5.4"
+model_reasoning_effort = "xhigh"
+model_reasoning_summary = "detailed"
+model_verbosity = "high"
+personality = "pragmatic"
+approval_policy = "never"
+sandbox_mode = "danger-full-access"
+web_search = "live"
+project_doc_max_bytes = 524288
+tool_output_token_limit = 120000
+plan_mode_reasoning_effort = "xhigh"
+
+[profiles.gpt54.features]
+shell_tool = true
+shell_snapshot = true
+unified_exec = true
+request_rule = true
+collaboration_modes = true
+runtime_metrics = true
+multi_agent = true
+apply_patch_freeform = true
+memories = true
+sqlite = true
+child_agents_md = true
+enable_request_compression = true
+steer = true
+personality = true
+apps = true
+prevent_idle_sleep = true
+js_repl = true
+
+[profiles.gpt54.agents]
+max_threads = 64
+
+[profiles.gpt53_codex]
+model = "gpt-5.3-codex"
+review_model = "gpt-5.3-codex"
+model_reasoning_effort = "xhigh"
+model_reasoning_summary = "detailed"
+model_verbosity = "high"
+personality = "pragmatic"
+approval_policy = "never"
+sandbox_mode = "danger-full-access"
+web_search = "live"
+project_doc_max_bytes = 524288
+tool_output_token_limit = 120000
+plan_mode_reasoning_effort = "xhigh"
+
+[profiles.gpt53_codex.features]
+shell_tool = true
+shell_snapshot = true
+unified_exec = true
+request_rule = true
+collaboration_modes = true
+runtime_metrics = true
+multi_agent = true
+apply_patch_freeform = true
+memories = true
+sqlite = true
+child_agents_md = true
+enable_request_compression = true
+steer = true
+personality = true
+apps = true
+prevent_idle_sleep = true
+js_repl = true
+
+[profiles.gpt53_codex.agents]
+max_threads = 64
+
+[profiles.max_performance]
+model = "gpt-5.3-codex"
+model_reasoning_effort = "low"
+
+[profiles.spark]
+model = "gpt-5.3-codex-spark"
+review_model = "gpt-5.3-codex-spark"
+model_reasoning_effort = "xhigh"
+model_reasoning_summary = "none"
+model_verbosity = "high"
+personality = "pragmatic"
+approval_policy = "never"
+sandbox_mode = "danger-full-access"
+web_search = "live"
+project_doc_max_bytes = 524288
+tool_output_token_limit = 120000
+plan_mode_reasoning_effort = "xhigh"
+
+[notice]
+hide_rate_limit_model_nudge = true
+
+[notice.model_migrations]
+"gpt-5.2-codex" = "gpt-5.3-codex"
