@@ -7,6 +7,19 @@ Semantic Versioning.
 
 ## [Unreleased]
 
+## [0.9.1] - 2026-03-05
+
+### Changed
+- Repo example/default config surfaces now align with the `gpt-5.4` max-capability model policy used by the Harness v2 role pack.
+
+### Fixed
+- `autocodex harness preflight --strict` and `autocodex harness lint` now work in source checkouts without `--config` by falling back to repo-root `config.example.yaml` when `autocodex.yaml` is absent.
+- Harness preflight/doctor checks now resolve repo-root `.git`, `.codex`, and `.autocodex/memory` paths from the config location so nested-directory invocations behave the same as repo-root runs.
+- Repo preflight scripts and embedded bootstrap copies now use bare harness commands, turning the source-checkout path into direct regression coverage instead of an explicit `--config` workaround.
+
+### Docs
+- Documented source-checkout harness fallback behavior in README, CLI/config references, harness runbooks, and operating-pack guidance.
+
 ## [0.9.0] - 2026-03-05
 
 ### Added
