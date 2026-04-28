@@ -151,6 +151,21 @@ func TestAssessBDDoltShowOutput(t *testing.T) {
 		t.Fatalf("unexpected embedded details: %q", details)
 	}
 
+	embeddedJSONWithoutMode := `{
+  "backend": "dolt",
+  "data_dir": "/repo/.beads/embeddeddolt",
+  "database": "beads",
+  "embedded": true,
+  "schema_version": 1
+}`
+	status, details = assessBDDoltShowOutput(embeddedJSONWithoutMode)
+	if status != "ok" {
+		t.Fatalf("expected ok for embedded json output without mode, got %s", status)
+	}
+	if !strings.Contains(details, "mode=embedded") || !strings.Contains(details, "embedded mode") {
+		t.Fatalf("unexpected embedded without mode details: %q", details)
+	}
+
 	serverJSONReachable := `{
   "backend": "dolt",
   "database": "beads",
