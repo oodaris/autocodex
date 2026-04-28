@@ -283,6 +283,7 @@ func assessBDDoltShowJSON(raw string) (string, string, bool) {
 	summary := summarizeBDDoltShowJSON(payload)
 	mode := strings.ToLower(strings.TrimSpace(toString(payload["mode"])))
 	backend := strings.ToLower(strings.TrimSpace(toString(payload["backend"])))
+	embedded, hasEmbedded := jsonBool(payload, "embedded")
 
 	if backend != "" && backend != "dolt" {
 		return "warn", summary + fmt.Sprintf(" (unexpected backend %q)", backend), true
@@ -294,6 +295,9 @@ func assessBDDoltShowJSON(raw string) (string, string, bool) {
 		return "warn", summary + " (server not reachable)", true
 	}
 	if mode == "embedded" {
+		return "ok", summary + " (embedded mode)", true
+	}
+	if mode == "" && hasEmbedded && embedded {
 		return "ok", summary + " (embedded mode)", true
 	}
 	if mode == "server" {
@@ -347,6 +351,8 @@ func summarizeBDDoltShowJSON(payload map[string]any) string {
 	}
 	if mode, ok := jsonString(payload, "mode"); ok {
 		parts = append(parts, "mode="+mode)
+	} else if embedded, ok := jsonBool(payload, "embedded"); ok && embedded {
+		parts = append(parts, "mode=embedded")
 	}
 	if database, ok := jsonString(payload, "database"); ok {
 		parts = append(parts, "database="+database)
